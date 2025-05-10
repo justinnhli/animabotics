@@ -1,0 +1,101 @@
+"""Utilities for caching results."""
+
+from collections.abc import Hashable
+from typing import TypeVar, Generic, Iterator
+
+
+KT = TypeVar('KT', bound=Hashable)
+VT = TypeVar('VT')
+
+
+class LRUCacheNode(Generic[KT, VT]):
+    """A linked list node."""
+
+    def __init__(self, key, value, head=None, tail=None):
+        # type: (KT, VT, LRUCacheNode[KT, VT], LRUCacheNode[KT, VT]) -> None
+        self.key = key
+        self.value = value
+        self.head = head
+        self.tail = tail
+
+
+class LRUCache(Generic[KT, VT]):
+    """A least recently used cache.
+
+    Unlike functools.lru_cache, this can be used as part of object instances.
+    """
+
+    def __init__(self, maxsize=1024):
+        # type: (int) -> None
+        if maxsize <= 0:
+            raise ValueError(f'maxsize must be > 1, but got {maxsize}')
+        self.max_size = maxsize
+        self.size = 0
+        self.head = None # type: LRUCacheNode[KT, VT]
+        self.tail = None # type: LRUCacheNode[KT, VT]
+        self.nodes = {} # type: dict[KT, LRUCacheNode[KT, VT]]
+
+    @property
+    def most_recent(self):
+        # type: () -> tuple[KT, VT]
+        """Get the most recently used key-value."""
+        return (self.head.key, self.head.value)
+
+    def __len__(self):
+        # type: () -> int
+        return self.size
+
+    def __getitem__(self, key):
+        # type: (KT) -> VT
+        self.touch(key)
+        return self.head.value
+
+    def __setitem__(self, key, value):
+        # type: (KT, VT) -> None
+        if key in self.nodes:
+            self.touch(key)
+            self.head.value = value
+            return
+        self.head = LRUCacheNode(key, value, head=None, tail=self.head)
+        self.nodes[key] = self.head
+        if self.size == 0:
+            self.tail = self.head
+        else:
+            self.head.tail.head = self.head
+            if self.size == self.max_size:
+                del self.nodes[self.tail.key]
+                self.tail = self.tail.head
+                self.tail.tail = None
+                return
+        self.size += 1
+
+    def clear(self):
+        # type: () -> None
+        """Clear the cache."""
+        self.size = 0
+        self.head = None
+        self.tail = None
+        self.nodes = {}
+
+    def touch(self, key):
+        # type: (KT) -> None
+        """Touch a key and move it to the front of the cache."""
+        if self.head.key == key:
+            return
+        node = self.nodes[key]
+        if self.tail == node:
+            self.tail = node.head
+        else:
+            node.tail.head = node.head
+        node.head.tail = node.tail
+        self.head.head = node
+        node.tail = self.head
+        self.head = node
+
+    def items(self):
+        # type: () -> Iterator[tuple[KT, VT]]
+        """Get the items in the cache, most recently used first."""
+        curr = self.head
+        while curr:
+            yield (curr.key, curr.value)
+            curr = curr.tail
