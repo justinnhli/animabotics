@@ -33,9 +33,18 @@ class HashGrid:
         self.cells = defaultdict(list) # type: dict[Point2D, list[Transformable]]
         self.clear()
 
+    def __bool__(self):
+        # type: () -> int
+        return self.num_objects > 0
+
     def __len__(self):
         # type: () -> int
         return self.num_objects
+
+    def __contains__(self, obj):
+        # type: (Transformable) -> bool
+        coord = self.to_cell_coord(obj.position)
+        return obj in self.cells[coord]
 
     @property
     def objects(self):
