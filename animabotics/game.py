@@ -130,9 +130,13 @@ class Game:
         # FIXME need to separate drawing from collision
         # in its simplest form: do a separate hierarchical grid for Drawables
         # this is inefficient: collision is many-to-many, while culling is one to many
+        drawables = defaultdict(list)
         for entity in self.get_component_entities(Drawable):
             assert isinstance(entity, Drawable)
-            self.draw_recursive(entity)
+            drawables[entity.z_level].append(entity)
+        for z_level in sorted(drawables):
+            for entity in drawables[z_level]:
+                self.draw_recursive(entity)
         # call all post-update hooks
         for callback in self.hooks[HookTrigger.POST_UPDATE]:
             callback(elapsed_msec)
