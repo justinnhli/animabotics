@@ -15,8 +15,8 @@ except (ModuleNotFoundError, ImportError): # pragma: no cover
     def import_error_factory(module_name):
         # type: (str) -> Callable[[], None]
         """Create a function that raises ImportError."""
-        def raise_import_error():
-            # type: () -> None
+        def raise_import_error(*args, **kwargs):
+            # type: (*Any, **Any) -> None
             raise ImportError(f'{module_name} not imported')
         return raise_import_error
 
