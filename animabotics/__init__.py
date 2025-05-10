@@ -1,7 +1,7 @@
 """A animabotics of code that may eventually resemble a game engine."""
 
 from .algorithms import bentley_ottmann, triangulate_polygon
-from .animation import Animation, Sprite, Shape
+from .animation import AnimationController, AnimationClip, Sprite, Shape
 from .basic_window import BasicWindow
 from .camera import Camera
 from .canvas import Input, EventCallback, Canvas

@@ -2,7 +2,7 @@
 
 from math import sin, cos
 
-from .animation import Animation, Sprite, Shape
+from .animation import AnimationController, Sprite, Shape
 from .canvas import Input
 from .color import Color
 from .game import Game
@@ -18,7 +18,7 @@ class DummyGameObject(GameObject):
         """Initialize the DummyGameObject."""
         super().__init__()
         self.collision_geometry = geometry
-        self.animation = Animation.create_static_animation(Sprite([Shape(
+        self.animation = AnimationController.create_static_animation(Sprite([Shape(
             self.collision_geometry,
             fill_color,
             line_color,

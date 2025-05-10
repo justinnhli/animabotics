@@ -3,7 +3,7 @@
 from functools import cached_property
 from typing import Sequence
 
-from .animation import Animation, Sprite
+from .animation import AnimationController, Sprite
 from .simplex import Geometry, Point2D, Vector2D
 from .transformable import Transformable
 
@@ -19,7 +19,7 @@ class GameObject(Transformable):
         # type: (Sequence[str], Point2D, float) -> None
         """Initialize the GameObject."""
         super().__init__(position, rotation)
-        self.animation = None # type: Animation
+        self.animation = None # type: AnimationController
         self.collision_geometry = None # type: Geometry
         self.collision_radius = 0.0
         self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
