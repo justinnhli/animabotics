@@ -165,3 +165,8 @@ class Game:
             self.canvas.bind(input_event, callback)
         self.prestart()
         self.canvas.start(self.dispatch_tick, 40, *delayed_callbacks)
+
+    def stop(self):
+        # type: () -> None
+        """Stop the game."""
+        self.canvas.tk.destroy()
