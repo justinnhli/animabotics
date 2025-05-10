@@ -12,11 +12,13 @@ from hypostrats import rationals, affine_space_metatest, abelian_group_metatest
 
 def points():
     # type: () -> strats.SearchStrategy[Point2D]
+    """Generate Point2Ds."""
     return strats.builds(Point2D, rationals(), rationals())
 
 
 def vectors():
     # type: () -> strats.SearchStrategy[Vector2D]
+    """Generate Vector2Ds."""
     return strats.builds(Vector2D, rationals(), rationals())
 
 
@@ -111,17 +113,27 @@ def test_segment():
     # at most one point of intersection, include_end=True
     segments = [
         # vertical second segment
-        (Segment(Point2D(0, 2), Point2D(0, 4)), (Point2D(0, 2), None)), # parallel, co-linear, end-end
-        (Segment(Point2D(1, 2), Point2D(1, 4)), (None, None)), # parallel, not co-linear, not intersecting
-        (Segment(Point2D(1, 1), Point2D(1, 3)), (None, None)), # parallel, not co-linear, not intersecting
-        (Segment(Point2D(1, 0), Point2D(1, 2)), (None, None)), # parallel, not co-linear, not intersecting
+        # parallel, co-linear, end-end
+        (Segment(Point2D(0, 2), Point2D(0, 4)), (Point2D(0, 2), None)),
+        # parallel, not co-linear, not intersecting
+        (Segment(Point2D(1, 2), Point2D(1, 4)), (None, None)),
+        # parallel, not co-linear, not intersecting
+        (Segment(Point2D(1, 1), Point2D(1, 3)), (None, None)),
+        # parallel, not co-linear, not intersecting
+        (Segment(Point2D(1, 0), Point2D(1, 2)), (None, None)),
         # horizontal second segment
-        (Segment(Point2D(-1, 3), Point2D(1, 3)), (None, None)), # not parallel, not co-linear, not intersecting
-        (Segment(Point2D(-1, 2), Point2D(1, 2)), (Point2D(0, 2), None)), # not parallel, co-linear, middle-end
-        (Segment(Point2D(-1, 1), Point2D(1, 1)), (Point2D(0, 1), Point2D(0, 1))), # not parallel, not co-linear, middle-middle
-        (Segment(Point2D(0, 3), Point2D(2, 3)), (None, None)), # not parallel, not co-linear, not intersecting
-        (Segment(Point2D(0, 2), Point2D(2, 2)), (Point2D(0, 2), None)), # not parallel, co-linear, end-end
-        (Segment(Point2D(0, 1), Point2D(2, 1)), (Point2D(0, 1), None)), # not parallel, co-linear, middle-end
+        # not parallel, not co-linear, not intersecting
+        (Segment(Point2D(-1, 3), Point2D(1, 3)), (None, None)),
+        # not parallel, co-linear, middle-end
+        (Segment(Point2D(-1, 2), Point2D(1, 2)), (Point2D(0, 2), None)),
+        # not parallel, not co-linear, middle-middle
+        (Segment(Point2D(-1, 1), Point2D(1, 1)), (Point2D(0, 1), Point2D(0, 1))),
+        # not parallel, not co-linear, not intersecting
+        (Segment(Point2D(0, 3), Point2D(2, 3)), (None, None)),
+        # not parallel, co-linear, end-end
+        (Segment(Point2D(0, 2), Point2D(2, 2)), (Point2D(0, 2), None)),
+        # not parallel, co-linear, middle-end
+        (Segment(Point2D(0, 1), Point2D(2, 1)), (Point2D(0, 1), None)),
     ]
     segment1 = Segment(Point2D(0, 0), Point2D(0, 2))
     for segment2, expecteds in segments:
@@ -195,7 +207,7 @@ def test_segment():
     assert segment2.is_overlapping(segment1)
     # 2026-05-16
     segment1 = Segment(Point2D(-300.0, -200.0), Point2D(-300.0, 39.0))
-    segment2 = Segment(Point2D(-300.0, -144.0), Point2D(-300.0, -26.0)) 
+    segment2 = Segment(Point2D(-300.0, -144.0), Point2D(-300.0, -26.0))
     assert segment1.intersect(segment2, include_end=False) is not None
 
 def test_triangle():

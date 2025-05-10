@@ -1,6 +1,7 @@
 """A 2D camera."""
 
 from functools import lru_cache
+from typing import Any
 
 from .animation import Shape, Sprite
 from .caching import cached_method
@@ -8,8 +9,7 @@ from .canvas import Canvas
 from .color import Color
 from .components import Positionable
 from .matrix import Matrix
-from .polygon import Polygon
-from .simplex import Geometry, Point2D
+from .simplex import Geometry
 from .transform import Transform
 
 
@@ -27,7 +27,7 @@ class Camera(Positionable):
     """A 2D camera."""
 
     def __init__(self, canvas, zoom_level=0, **kwargs):
-        # type: (Canvas, int) -> None
+        # type: (Canvas, int, **Any) -> None
         """Initialize the Camera."""
         super().__init__(**kwargs)
         self.canvas = canvas

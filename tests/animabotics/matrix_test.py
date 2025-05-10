@@ -12,6 +12,7 @@ from hypostrats import rationals, abelian_group_metatest
 
 def sized_matrices(height, width, strategy=None):
     # type: (int, int) -> strats.SearchStrategy[Matrix]
+    """Generate matrices of a given size."""
     if strategy is None:
         strategy = rationals
     elements = []
@@ -26,6 +27,7 @@ def sized_matrices(height, width, strategy=None):
 @strats.composite
 def matrices(draw, strategy=None):
     # type: (strats.DrawFn, strats.SearchStrategy[Matrix]) -> Matrix
+    """Generate matrices of any size."""
     height = draw(strats.integers(1, 10))
     width = draw(strats.integers(1, 10))
     return draw(sized_matrices(height, width, strategy=strategy))
@@ -74,9 +76,18 @@ def test_matrix():
     assert Matrix(((4, 0, 0, 0),)).transpose.normalized == Matrix(((1, 0, 0, 0),)).transpose
     assert Matrix(((1, 2, 3, 0),)).transpose.normalized.magnitude == 1
     # dot and cross product
-    assert Matrix(((1, 2, 3, 0),)).transpose.dot(Matrix(((2, 3, 4, 0),)).transpose) == 20
-    assert Matrix(((1, 2, 3, 0),)).transpose.cross(Matrix(((2, 3, 4, 0),)).transpose) == Matrix(((-1, 2, -1, 0),)).transpose
-    assert Matrix(((2, 3, 4, 0),)).transpose.cross(Matrix(((1, 2, 3, 0),)).transpose) == Matrix(((1, -2, 1, 0),)).transpose
+    assert (
+        Matrix(((1, 2, 3, 0),)).transpose.dot(Matrix(((2, 3, 4, 0),)).transpose)
+        == 20
+    )
+    assert (
+        Matrix(((1, 2, 3, 0),)).transpose.cross(Matrix(((2, 3, 4, 0),)).transpose)
+        == Matrix(((-1, 2, -1, 0),)).transpose
+    )
+    assert (
+        Matrix(((2, 3, 4, 0),)).transpose.cross(Matrix(((1, 2, 3, 0),)).transpose)
+        == Matrix(((1, -2, 1, 0),)).transpose
+    )
     # matrix multiplication
     m1 = Matrix(((1, 2, 3, 4), (5, 6, 7, 8), (9, 8, 7, 6), (5, 4, 3, 2)))
     m2 = Matrix(((-2, 1, 2, 3), (3, 2, 1, -1), (4, 3, 6, 5), (1, 2, 7, 8)))
@@ -100,7 +111,10 @@ def test_matrix():
     # determinant
     assert Matrix(((1, 5), (-3, 2))).determinant == 17
     assert Matrix(((1, 5, 0), (-3, 2, 7), (0, 6, -3))).submatrix(0, 2) == Matrix(((-3, 2), (0, 6)))
-    assert Matrix(((-6, 1, 1, 6), (-8, 5, 8, 6), (-1, 0, 8, 2), (-7, 1, -1, 1))).submatrix(2, 1) == Matrix(((-6, 1, 6), (-8, 8, 6), (-7, -1, 1)))
+    assert (
+        Matrix(((-6, 1, 1, 6), (-8, 5, 8, 6), (-1, 0, 8, 2), (-7, 1, -1, 1))).submatrix(2, 1)
+        == Matrix(((-6, 1, 6), (-8, 8, 6), (-7, -1, 1)))
+    )
     assert Matrix(((3, 5, 0), (2, -1, -7), (6, -1, 5))).minor(1, 0) == 25
     m = Matrix(((3, 5, 0), (2, -1, -7), (6, -1, 5)))
     assert m.cofactor(0, 0) == -12
@@ -115,7 +129,10 @@ def test_matrix():
     assert round(m1 @ m2 @ m2.inverse, 3) == round(m1, 3)
     # translation and scaling
     assert identity(4).translate(5, -3, 2) @ Matrix(((-3, 4, 5, 1),)).transpose == Matrix(((2, 1, 7, 1),)).transpose
-    assert identity(4).translate(5, -3, 2).inverse @ Matrix(((-3, 4, 5, 1),)).transpose == Matrix(((-8, 7, 3, 1),)).transpose
+    assert (
+        identity(4).translate(5, -3, 2).inverse @ Matrix(((-3, 4, 5, 1),)).transpose
+        == Matrix(((-8, 7, 3, 1),)).transpose
+    )
     assert identity(4).translate(5, -3, 2) @ Matrix(((-3, 4, 5, 0),)).transpose == Matrix(((-3, 4, 5, 0),)).transpose
     assert identity(4).scale(2, 3, 4) @ Matrix(((-4, 6, 8, 1),)).transpose == Matrix(((-8, 18, 32, 1),)).transpose
     assert identity(4).scale(2, 3, 4) @ Matrix(((-4, 6, 8, 0),)).transpose == Matrix(((-8, 18, 32, 0),)).transpose

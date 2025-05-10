@@ -14,6 +14,7 @@ class InterruptibleAlgorithm:
     """Abstract base class for an interruptible algorithm."""
 
     def __init__(self):
+        # type: () -> None
         self._process = None # type: Iterator[None]
 
     @property

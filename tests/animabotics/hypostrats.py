@@ -1,7 +1,7 @@
 """Shared Hypothesis strategies and tests."""
 
 from fractions import Fraction
-from typing import TypeVar, Any, Union
+from typing import TypeVar, Union
 
 from hypothesis import strategies as strats, given
 
@@ -16,11 +16,13 @@ finite_floats = strats.floats(
 
 def rationals():
     # type: () -> Union[int, Fraction]
+    """Generate rational numberss."""
     return strats.one_of(strats.integers(), strats.fractions())
 
 
 def reals():
     # type: () -> Union[int, Fraction, float]
+    """Generate real numbers."""
     return strats.one_of(strats.integers(), strats.fractions(), finite_floats)
 
 
@@ -30,6 +32,8 @@ T = TypeVar('T')
 
 def affine_space_metatest(point_strategy, vector_strategy, vector_identity):
     # type: (strats.SearchStrategy[S], strats.SearchStrategy[T], T) -> None
+    """Test that objects form an affine space and an associated vector space."""
+    # pylint: disable = no-value-for-parameter
 
     @given(point_strategy)
     def test_identity(point):
@@ -69,6 +73,8 @@ def affine_space_metatest(point_strategy, vector_strategy, vector_identity):
 
 def abelian_group_metatest(strategy, identity):
     # type: (strats.SearchStrategy[T], T) -> None
+    """Test that objects form an abelian group."""
+    # pylint: disable = no-value-for-parameter
 
     @given(strategy)
     def test_double_inverse(obj):
@@ -118,6 +124,8 @@ def abelian_group_metatest(strategy, identity):
 
 def field_metatest(strategy, additive_identity, multiplicative_identity):
     # type: (strats.SearchStrategy[T], T, T) -> None
+    """Test that objects form a field."""
+    # pylint: disable = no-value-for-parameter
 
     @given(strategy, strategy, strategy)
     def test_additive_associativity(element1, element2, element3):
