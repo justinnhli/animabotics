@@ -58,7 +58,7 @@ class Animated(Drawable, NeedsUpdates):
         # type: () -> Sprite
         return self.animation.get_sprite()
 
-    def update(self, elapsed_msec, _):
-        # type: (int, int) -> None
+    def update(self, _1, elapsed_msec, _2):
+        # type: (int, int, int) -> None
         """Advance the animation state."""
         self.animation.advance_state(elapsed_msec)

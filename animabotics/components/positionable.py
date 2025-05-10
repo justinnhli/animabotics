@@ -152,8 +152,8 @@ class Newtonian(Positionable, HasPhysicsGeometry, NeedsUpdates):
         """Calculate the moment of inertia for a given center of rotation as a point mass."""
         return self.mass * (self.center_of_mass - center_of_rotation).magnitude ** 2
 
-    def update(self, elapsed_msec, elapsed_msec_squared):
-        # type: (int, int) -> None
+    def update(self, _, elapsed_msec, elapsed_msec_squared):
+        # type: (int, int, int) -> None
         """Update the velocity and the position."""
         net_force, net_torque = self.sum_forces(self.forces)
         # translate net force into global coordinates

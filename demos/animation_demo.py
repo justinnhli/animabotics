@@ -49,10 +49,10 @@ class Ball(Newtonian, Collidable):
         ))
         self.velocity = Vector2D(0, 1.275)
 
-    def energy_update(self, elapsed_msec, elapsed_msec_squared):
-        # type: (int, int) -> None
+    def energy_update(self, tick_start_msec, elapsed_msec, elapsed_msec_squared):
+        # type: (int, int, int) -> None
         """Print kinetic and potential energy after updating."""
-        super().update(elapsed_msec, elapsed_msec_squared)
+        super().update(tick_start_msec, elapsed_msec, elapsed_msec_squared)
         ke = self.kinetic_energy
         pe = self.mass * abs(self.acceleration.y) * self.position.y
         print(f'y={self.position.y:.5f}, v={self.velocity.y:.5f}')
@@ -111,10 +111,10 @@ class AnimatedBall(Ball, Animated):
         super().bounce_vertical(ground)
         self.animation.set_state('bouncing')
 
-    def update(self, elapsed_msec, elapsed_msec_squared):
-        # type: (int, int) -> None
-        Newtonian.update(self, elapsed_msec, elapsed_msec_squared)
-        Animated.update(self, elapsed_msec, elapsed_msec_squared)
+    def update(self, tick_start_msec, elapsed_msec, elapsed_msec_squared):
+        # type: (int, int, int) -> None
+        Newtonian.update(self, tick_start_msec, elapsed_msec, elapsed_msec_squared)
+        Animated.update(self, tick_start_msec, elapsed_msec, elapsed_msec_squared)
 
 
 class Ground(Collidable, Unanimated):
@@ -173,8 +173,8 @@ class AnimationDemo(Game):
             (lambda ball, ground: ball.bounce_vertical(ground)),
         )
 
-    def apply_gravity(self, _):
-        # type: (int) -> None
+    def apply_gravity(self, _1, _2, _3):
+        # type: (int, int, int) -> None
         """Apply gravity to the balls."""
         self.stoic_ball.apply_force(Vector2D(0, -0.001))
         self.anime_ball.apply_force(Vector2D(0, -0.001))

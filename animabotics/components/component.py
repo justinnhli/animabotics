@@ -49,7 +49,7 @@ class Component:
 class NeedsUpdates(Component):
     """Components that need to be updated every tick."""
 
-    def update(self, elapsed_msec, elapsed_msec_squared):
-        # type: (int, int) -> None
+    def update(self, tick_start_msec, elapsed_msec, elapsed_msec_squared):
+        # type: (int, int, int) -> None
         """Update the component."""
         raise NotImplementedError()

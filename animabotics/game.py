@@ -8,9 +8,10 @@ from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
 from .components import Component, Collidable, Drawable, NeedsUpdates
 from .scene import HierarchicalHashGrid
+from .timing import get_msec
 
 
-HookCallback = Callable[[int], Any]
+HookCallback = Callable[[int, int, int], Any]
 CollisionCallback = Callable[[Collidable, Collidable], Any]
 
 
@@ -89,9 +90,9 @@ class Game:
         # type: (int, int) -> None
         """Run for the specified time, updating at a fixed interval."""
         while duration > update_every:
-            self.dispatch_tick(update_every)
+            self.dispatch_tick(get_msec(), update_every)
             duration -= update_every
-        self.dispatch_tick(duration)
+        self.dispatch_tick(get_msec(), duration)
 
     def dispatch_tick(self, tick_start_msec, elapsed_msec):
         # type: (int, int) -> None
@@ -100,11 +101,11 @@ class Game:
         elapsed_msec_squared = elapsed_msec * elapsed_msec
         # call all pre-update hooks
         for callback in self.hooks[HookTrigger.PRE_UPDATE]:
-            callback(elapsed_msec)
+            callback(tick_start_msec, elapsed_msec, elapsed_msec_squared)
         # update entities
         for entity in self.get_component_entities(NeedsUpdates):
             assert isinstance(entity, NeedsUpdates)
-            entity.update(elapsed_msec, elapsed_msec_squared)
+            entity.update(tick_start_msec, elapsed_msec, elapsed_msec_squared)
         # add all collidable entities to the scene
         for entity in self.get_component_entities(Collidable):
             assert isinstance(entity, Collidable)
@@ -139,7 +140,7 @@ class Game:
                 self.draw_recursive(entity)
         # call all post-update hooks
         for callback in self.hooks[HookTrigger.POST_UPDATE]:
-            callback(elapsed_msec)
+            callback(tick_start_msec, elapsed_msec, elapsed_msec_squared)
 
     def draw_recursive(self, entity):
         # type: (Drawable) -> None
