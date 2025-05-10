@@ -47,6 +47,9 @@ class LRUCache(Generic[KT, VT]):
     def __len__(self) -> int:
         return self.size
 
+    def __contains__(self, key:KT) -> bool:
+        return key in self.nodes
+
     def __getitem__(self, key:KT) -> VT:
         self.touch(key)
         return self.head.value
