@@ -88,11 +88,11 @@ class HashGrid(Generic[KT]):
         if not self.cells[coord]:
             del self.cells[coord]
 
-    def nearest_neighbors(self, target, k=1):
+    def nearest_neighbors(self, target, k=None):
         # type: (Point2D, int) -> Iterator[KT]
         """Get the k nearest objects to a target Point2D."""
         # special case if all objects are "nearest"
-        if len(self) <= k:
+        if k is None or len(self) <= k:
             yield from sorted(
                 chain(*self.cells.values()),
                 key=(lambda obj: (obj.position - target).magnitude),
