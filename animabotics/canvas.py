@@ -107,7 +107,7 @@ class Input(metaclass=CachedMetaclass):
 
         Note: MouseWheel does not exist on Linux; instead, use Button4 or Button5.
 
-        The event pattern is based on https://www.tcl-lang.org/man/tcl/TkCmd/bind.htm
+        The event pattern is based on https://www.tcl-lang.org/man/tcl8.6/TkCmd/bind.htm
 
         The use of object.__setattr__ is due to a conflict between frozen dataclasses
         that also do define a custom __init__; see https://github.com/python/cpython/issues/82625
@@ -339,7 +339,6 @@ class Canvas:
             elapsed_msec = get_msec() - curr_msec
             self.prev_msec = curr_msec
             self.tk.after(
-                #max(0, msecs - (get_msec() - curr_msec)),
                 (0 if elapsed_msec > 40 else msecs - elapsed_msec),
                 callback,
             )

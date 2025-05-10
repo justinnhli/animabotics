@@ -198,7 +198,7 @@ class Collidable(Positionable, HasPhysicsGeometry):
     def __init__(self, collision_groups=None, **kwargs):
         # type: (MaybeSequence[str], **Any) -> None
         super().__init__(**kwargs)
-        self._collision_groups = frozenset(unwrap_maybe_sequence(collision_groups))
+        self._collision_groups = frozenset(unwrap_maybe_sequence(collision_groups)) # type: frozenset[str]
         self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
 
     @cached_property
