@@ -139,9 +139,19 @@ class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
 
     def __init__(self, is_property:bool=False, max_size:int=1024):
         self.is_property = is_property
-        self.instance: Optional[T] = None
-        self.func: Optional[Callable[Concatenate[T, P], R]] = None
         self.cache: LRUCache[tuple[object | tuple[str, object], ...], R] = LRUCache(max_size)
+        self.func: Optional[Callable[Concatenate[T, P], R]] = None
+        self.attr_name = ''
+        self.__doc__ = ''
+        self.__module__ = ''
+        self.instance: Optional[T] = None
+
+    def __set_name__(self, owner, name):
+        # type: (Any, str) -> None
+        if not self.attr_name:
+            self.attr_name = name
+        else:
+            assert self.attr_name == name
 
     def __get__(self, instance:T, objtype:Any) -> Union[R, Callable[P, R]]:
         if self.instance is None:
@@ -166,6 +176,8 @@ class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
 
     def __call__(self, func:Callable[Concatenate[T, P], R]) -> cached_method[T, P, R]:
         self.func = func
+        self.__doc__ = func.__doc__
+        self.__module__ = func.__module__
         return self
 
     def wrapper_func(self, *args:P.args, **kwargs:P.kwargs) -> R:
@@ -179,3 +191,4 @@ class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
         if key not in self.cache:
             self.cache[key] = self.func(self.instance, *args, **kwargs)
         return self.cache[key]
+
