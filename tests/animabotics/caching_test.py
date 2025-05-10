@@ -1,6 +1,8 @@
 """Tests for caching.py."""
 
-from animabotics.caching import LRUCache
+from collections import defaultdict
+
+from animabotics.caching import LRUCache, method_cache
 
 
 def assert_lrucache_contents(cache, expected):
@@ -48,3 +50,116 @@ def test_lrucache():
         pass
     cache.clear()
     assert_lrucache_contents(cache, ())
+
+
+class MethCacheTestDummy:
+    """A class to test the method_cache decorator."""
+
+    def __init__(self, n=1):
+        # type: (int) -> None
+        self.n = n
+        self.log = defaultdict(int)
+
+    @method_cache(is_property=True)
+    def add_0(self):
+        # type: () -> int
+        """Add one to the value."""
+        self.log['add_0'] += 1
+        return self.n
+
+    @method_cache(is_property=True)
+    def add_1(self):
+        # type: () -> int
+        """Add one to the value."""
+        self.log['add_1'] += 1
+        return self.n + 1
+
+    @method_cache()
+    def add_2(self):
+        # type: () -> int
+        """Add one to the value."""
+        self.log['add_2'] += 1
+        return self.n + 2
+
+    @method_cache()
+    def add_n(self, n):
+        # type: (int) -> int
+        """Add n to the value."""
+        self.log['add_n'] += 1
+        return self.n + n
+
+    @method_cache()
+    def add_nm(self, n, m=2):
+        # type: (int, int) -> int
+        """Add n and m to the value."""
+        self.log['add_nm'] += 1
+        return self.n + n + m
+
+
+def test_autocache():
+    # type: () -> None
+    """Run the test function."""
+    t = MethCacheTestDummy(0)
+    # test setting a property before a normal call
+    t.add_0 = 2
+    assert t.log['add_0'] == 0
+    # test property
+    assert t.log['add_1'] == 0
+    assert t.add_1 == 1
+    assert t.log['add_1'] == 1
+    assert t.add_1 == 1
+    assert t.log['add_1'] == 1
+    # test setting a property
+    t.add_1 = 2
+    assert t.add_1 == 2
+    assert t.log['add_1'] == 1
+    assert t.add_1 == 2
+    assert t.log['add_1'] == 1
+    # test clearing a property
+    del t.add_1
+    assert t.add_1 == 1
+    assert t.log['add_1'] == 2
+    # test method with no parameters
+    assert t.log['add_2'] == 0
+    assert t.add_2() == 2
+    assert t.log['add_2'] == 1
+    assert t.add_2() == 2
+    assert t.log['add_2'] == 1
+    # test method with one parameter
+    assert t.log['add_n'] == 0
+    assert t.add_n(0) == 0
+    assert t.log['add_n'] == 1
+    assert t.add_n(0) == 0
+    assert t.log['add_n'] == 1
+    assert t.add_n(1) == 1
+    assert t.log['add_n'] == 2
+    assert t.add_n(1) == 1
+    assert t.log['add_n'] == 2
+    # test method with optional parameter, using the default value
+    assert t.log['add_nm'] == 0
+    assert t.add_nm(1) == 3
+    assert t.log['add_nm'] == 1
+    assert t.add_nm(1) == 3
+    assert t.log['add_nm'] == 1
+    # test method with optional parameter, passing positionally
+    assert t.add_nm(1, 2) == 3
+    assert t.log['add_nm'] == 2
+    assert t.add_nm(1, 2) == 3
+    assert t.log['add_nm'] == 2
+    # test method with optional parameter, passing by keyword
+    assert t.log['add_nm'] == 2
+    assert t.add_nm(1, m=2) == 3
+    assert t.log['add_nm'] == 3
+    assert t.add_nm(1, m=2) == 3
+    assert t.log['add_nm'] == 3
+    # test method with optional parameter, with new parameters
+    assert t.add_nm(2, m=3) == 5
+    assert t.log['add_nm'] == 4
+    assert t.add_nm(2, m=3) == 5
+    assert t.log['add_nm'] == 4
+    # test that setting a method is an error
+    try:
+        t.add_nm = 0
+        assert False
+    except AttributeError:
+        pass

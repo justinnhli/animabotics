@@ -1,7 +1,8 @@
 """Utilities for caching results."""
 
 from collections.abc import Hashable
-from typing import TypeVar, Generic, Optional, Iterator
+from typing import TypeVar, Generic, ParamSpec, Concatenate
+from typing import Callable, Any, Optional, Union, Iterator
 
 
 KT = TypeVar('KT', bound=Hashable)
@@ -110,3 +111,55 @@ class LRUCache(Generic[KT, VT]):
         while curr:
             yield (curr.key, curr.value)
             curr = curr.tail
+
+
+T = TypeVar('T') # instance
+P = ParamSpec('P') # parameters
+R = TypeVar('R') # return
+
+
+class method_cache(Generic[T, P, R]): # pylint: disable = invalid-name
+    """A caching class that implements the Descriptor protocol."""
+
+    def __init__(self, is_property:bool=False, max_size:int=1024):
+        self.is_property = is_property
+        self.instance: Optional[T] = None
+        self.func: Optional[Callable[Concatenate[T, P], R]] = None
+        self.cache: LRUCache[tuple[object | tuple[str, object], ...], R] = LRUCache(max_size)
+
+    def __get__(self, instance:T, objtype:Any) -> Union[R, Callable[P, R]]:
+        if self.instance is None:
+            self.instance = instance
+        if self.is_property:
+            if () not in self.cache:
+                assert self.func is not None
+                self.cache[()] = self.func(self.instance) # pyright: ignore
+            return self.cache[()]
+        else:
+            return self.wrapper_func
+
+    def __set__(self, instance:T, value:R) -> None:
+        if self.instance is None:
+            self.instance = instance
+        if not self.is_property:
+            raise AttributeError('trying to set method')
+        self.cache[()] = value
+
+    def __delete__(self, instance:T) -> None:
+        self.cache.clear()
+
+    def __call__(self, func:Callable[Concatenate[T, P], R]) -> method_cache[T, P, R]:
+        self.func = func
+        return self
+
+    def wrapper_func(self, *args:P.args, **kwargs:P.kwargs) -> R:
+        """Call the wrapped function and cache its results if necessary."""
+        key = (
+            *args,
+            *sorted(kwargs.items()),
+        )
+        assert self.func is not None
+        assert self.instance is not None
+        if key not in self.cache:
+            self.cache[key] = self.func(self.instance, *args, **kwargs)
+        return self.cache[key]
