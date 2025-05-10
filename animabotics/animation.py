@@ -1,6 +1,5 @@
 """Classes for sprites and animations."""
 
-from dataclasses import dataclass
 from functools import cached_property
 from math import inf as INF
 from typing import Any, Iterator, Sequence
@@ -26,11 +25,7 @@ class Shape(Transformable, metaclass=CachedMetaclass):
             position=None, rotation=0,
         ):
         # type: (Geometry, Color, Color, Point2D, float) -> None
-        """Initialize the Shape.
-
-        The use of object.__setattr__ is due to a conflict between frozen dataclasses
-        that also do define a custom __init__; see https://github.com/python/cpython/issues/82625
-        """
+        """Initialize the Shape."""
         Transformable.__init__(self, position, rotation)
         self.polygon = polygon
         self.fill_color = fill_color
