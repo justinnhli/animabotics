@@ -42,6 +42,7 @@ class LRUCache(Generic[KT, VT]):
     @property
     def most_recent(self) -> tuple[KT, VT]:
         """Get the most recently used key-value."""
+        assert self.head is not None
         return (self.head.key, self.head.value)
 
     def __len__(self) -> int:
@@ -51,11 +52,14 @@ class LRUCache(Generic[KT, VT]):
         return key in self.nodes
 
     def __getitem__(self, key:KT) -> VT:
+        assert self.head is not None
+        assert self.tail is not None
         self.touch(key)
         return self.head.value
 
     def __setitem__(self, key:KT, value:VT) -> None:
         if key in self.nodes:
+            assert self.head is not None
             self.touch(key)
             self.head.value = value
             return
@@ -64,10 +68,14 @@ class LRUCache(Generic[KT, VT]):
         if self.size == 0:
             self.tail = self.head
         else:
+            assert self.head.tail is not None
             self.head.tail.head = self.head
             if self.size == self.max_size:
+                assert self.tail is not None
                 del self.nodes[self.tail.key]
                 self.tail = self.tail.head
+                assert self.tail is not None
+                assert self.tail.tail is not None
                 self.tail.tail = None
                 return
         self.size += 1
@@ -81,13 +89,16 @@ class LRUCache(Generic[KT, VT]):
 
     def touch(self, key:KT) -> None:
         """Touch a key and move it to the front of the cache."""
+        assert self.head is not None
         if self.head.key == key:
             return
         node = self.nodes[key]
         if self.tail == node:
             self.tail = node.head
         else:
+            assert node.tail is not None
             node.tail.head = node.head
+        assert node.head is not None
         node.head.tail = node.tail
         self.head.head = node
         node.tail = self.head
