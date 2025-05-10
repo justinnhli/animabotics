@@ -163,7 +163,7 @@ class PhysicsObject(GameObject):
         # type: () -> None
         """Initialize the PhysicsObject."""
         super().__init__()
-        self.mass = 0
+        self.mass = 1
         self.velocity = Vector2D()
         self.angular_velocity = 0.0
         self.acceleration = Vector2D()
