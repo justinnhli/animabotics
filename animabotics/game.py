@@ -68,6 +68,11 @@ class Game:
         for component_cls in entity.components:
             self.component_entities_map[component_cls].remove(entity)
 
+    def clear_entities(self):
+        # type: () -> None
+        """Remove all entities from the game."""
+        self.component_entities_map.clear()
+
     def bind(self, input_event, callback):
         # type: (Input, EventCallback) -> None
         """Add a keybind."""
