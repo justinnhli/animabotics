@@ -333,9 +333,9 @@ class Canvas:
         def callback():
             # type: () -> None
             curr_msec = get_msec()
+            self.display_page()
             self.new_page()
             update_fn(get_msec() - self.prev_msec)
-            self.display_page()
             elapsed_msec = get_msec() - curr_msec
             self.prev_msec = curr_msec
             self.tk.after(
