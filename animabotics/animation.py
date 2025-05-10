@@ -6,8 +6,7 @@ from math import inf as INF
 from typing import Any, Iterator, Sequence
 
 from .color import Color
-from .polygon import Polygon
-from .simplex import Point2D
+from .simplex import Geometry, Point2D
 from .metaprogramming import CachedMetaclass
 from .transform import Transform
 from .transformable import Transformable
@@ -15,7 +14,7 @@ from .transformable import Transformable
 
 class Shape(Transformable, metaclass=CachedMetaclass):
     """A colored polygon."""
-    polygon: Polygon
+    polygon: Geometry
     fill_color: Color
     line_color: Color
 
