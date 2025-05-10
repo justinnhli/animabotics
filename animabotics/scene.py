@@ -144,10 +144,13 @@ class HierarchicalHashGrid:
 
     def _get_exponent(self, game_object):
         # type: (Collidable) -> int
-        return min(
-            max(ceil(log2(game_object.collision_radius)), self.min_exponent),
-            self.max_exponent,
-        )
+        if game_object.collision_radius == 0:
+            return self.min_exponent
+        else:
+            return min(
+                max(ceil(log2(game_object.collision_radius)), self.min_exponent),
+                self.max_exponent,
+            )
 
     def add(self, game_object):
         # type: (Collidable) -> None
