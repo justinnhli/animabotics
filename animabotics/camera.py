@@ -3,10 +3,10 @@
 from functools import lru_cache
 
 from .animation import Shape, Sprite
-from .canvas import Canvas
 from .caching import cached_method
+from .canvas import Canvas
 from .color import Color
-from .components import Collidable
+from .components import Positionable
 from .matrix import Matrix
 from .polygon import Polygon
 from .simplex import Geometry, Point2D
@@ -23,25 +23,19 @@ def projection_matrix(width, height, x, y, rotation, zoom): # pylint: disable = 
     )
 
 
-class Camera(Collidable):
+class Camera(Positionable):
     """A 2D camera."""
 
-    def __init__(self, canvas, zoom_level=0):
+    def __init__(self, canvas, zoom_level=0, **kwargs):
         # type: (Canvas, int) -> None
         """Initialize the Camera."""
-        super().__init__(
-            physics_geometry=Polygon.rectangle(
-                canvas.width,
-                canvas.height,
-            ),
-        )
+        super().__init__(**kwargs)
         self.canvas = canvas
         self._zoom_level = zoom_level
         self.origin_transform = Transform(
             self.canvas.width // 2,
             self.canvas.height // 2,
         )
-        self._set_collision_geometry()
 
     @property
     def zoom(self):
@@ -60,7 +54,6 @@ class Camera(Collidable):
         # type: (int) -> None
         """Set the zoom level."""
         self._zoom_level = value
-        self._set_collision_geometry()
 
     @property
     def projection_matrix(self):
@@ -85,26 +78,6 @@ class Camera(Collidable):
         # type: () -> Matrix
         """Create the inverse of the projection matrix."""
         return self.projection_matrix.inverse
-
-    def _set_collision_geometry(self):
-        # type: () -> None
-        corner = Point2D.from_matrix(
-            self.projection_matrix.inverse @ Point2D(0, 0).matrix
-        )
-        min_x = corner.x
-        max_y = corner.y
-        corner = Point2D.from_matrix(
-            self.projection_matrix.inverse
-            @ Point2D(self.canvas.width, self.canvas.height).matrix
-        )
-        max_x = corner.x
-        min_y = corner.y
-        self.collision_geometry = Polygon((
-            Point2D(min_x, max_y),
-            Point2D(min_x, min_y),
-            Point2D(max_x, min_y),
-            Point2D(max_x, max_y),
-        ))
 
     @cached_method(max_size=2**20) # type: ignore
     def _project(self, matrix):
