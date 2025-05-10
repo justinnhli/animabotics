@@ -12,7 +12,7 @@ def test_point():
     point = Point2D(1, 2)
     assert Point2D.from_matrix(point.matrix) == point
     try:
-        new_point = point + Point2D(-1, -2)
+        _ = point + Point2D(-1, -2)
         assert False
     except AssertionError:
         pass

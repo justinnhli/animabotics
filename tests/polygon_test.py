@@ -28,6 +28,7 @@ def test_polygon():
 
 def test_simplify_perimeter():
     # type: () -> None
+    """Test simplifying a polygon."""
     # horizontal
     points = (
         Point2D(-3, 0), Point2D(-1, -1), Point2D(1, -1),

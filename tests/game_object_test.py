@@ -6,6 +6,7 @@ from animabotics.basic_window import DummyGameObject
 
 def colliding_and_commutes(obj1, obj2):
     # type: (DummyGameObject, DummyGameObject) -> bool
+    """Check that two objects are colliding from both directions."""
     result = obj1.is_colliding(obj2)
     assert result == obj2.is_colliding(obj1)
     return result
@@ -13,6 +14,7 @@ def colliding_and_commutes(obj1, obj2):
 
 def test_collision():
     # type: () -> None
+    """Test collisions."""
     # rectangles
     obj1 = DummyGameObject(Polygon.rectangle(100, 100))
     obj2 = DummyGameObject(Polygon.rectangle(100, 100))
