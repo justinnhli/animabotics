@@ -13,6 +13,9 @@ def get_msec():
 class InterruptibleAlgorithm:
     """Abstract base class for an interruptible algorithm."""
 
+    def __init__(self):
+        self._process = None # type: Iterator[None]
+
     @property
     def completed(self):
         # type: () -> bool
@@ -24,21 +27,32 @@ class InterruptibleAlgorithm:
         """Initialize any state as necessary."""
         raise NotImplementedError()
 
-    def resume(self):
+    def hurry_up_and_wait(self):
         # type: () -> Iterator[None]
-        """Resume running the algorithm."""
+        """Run the algorithm, yielding when appropriate."""
         raise NotImplementedError()
+
+    def step(self):
+        # type: () -> None
+        """Take a step in the algorithm until the next yield."""
+        if self.completed:
+            return
+        if self._process is None:
+            self._process = self.hurry_up_and_wait()
+        try:
+            next(self._process)
+        except StopIteration:
+            pass
 
     def run_for_msec(self, msecs):
         # type: (int) -> None
         """Run the algorithm for a fixed time."""
         deadline = get_msec() + msecs
-        for _ in self.resume():
-            if get_msec() >= deadline:
-                break
+        while get_msec() < deadline and not self.completed:
+            self.step()
 
     def run(self):
         # type: () -> None
         """Run the algorithm until completion."""
-        for _ in self.resume():
-            pass
+        while not self.completed:
+            self.step()

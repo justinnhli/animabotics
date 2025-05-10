@@ -22,11 +22,12 @@ class SieveOfEratosthenes(InterruptibleAlgorithm):
 
     def restart(self):
         # type: () -> None
-        self.count = 0
+        self.count = 2
         self.primes = [2]
 
-    def resume(self):
+    def hurry_up_and_wait(self):
         # type: () -> None
+        self.restart()
         while self.count < self.max_num:
             for self.count in range(self.count, min(self.count + self.batch_size, self.max_num + 1)):
                 if not any(self.count % k == 0 for k in self.primes):
@@ -41,7 +42,7 @@ def test_interruptible_algorithm():
     sieve = SieveOfEratosthenes(100_000, batch_size=1000)
     assert not sieve.completed
     pre_msec = get_msec()
-    sieve.run_for_msec(500)
+    sieve.run_for_msec(time_budget)
     assert not sieve.completed
     aft_msec = get_msec()
     diff = aft_msec - pre_msec
