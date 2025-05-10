@@ -8,7 +8,7 @@ from .canvas import Input, EventCallback, Canvas
 from .color import Color
 from .data_structures import SortedDict, SortedSet, PriorityQueue
 from .game import Game
-from .game_object import GameObject
+from .game_object import GameObject, PhysicsObject
 from .matrix import Matrix, identity
 from .metaprogramming import CachedMetaclass
 from .polygon import ConvexPolygon, Polygon
@@ -27,7 +27,7 @@ __all__ = [
     'Color',
     'SortedDict', 'SortedSet', 'PriorityQueue',
     'Game',
-    'GameObject',
+    'GameObject', 'PhysicsObject',
     'Matrix', 'identity',
     'CachedMetaclass',
     'Polygon',
