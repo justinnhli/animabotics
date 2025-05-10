@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from .animation import Sprite, Shape
+from .animation import Shape, Sprite
 from .canvas import Canvas
 from .caching import cached_method
 from .color import Color
@@ -106,7 +106,7 @@ class Camera(Collidable):
             Point2D(max_x, max_y),
         ))
 
-    @cached_method(max_size=2**20)
+    @cached_method(max_size=2**20) # type: ignore
     def _project(self, matrix):
         # type: (Matrix) -> Matrix
         """Project to screen coordinates."""

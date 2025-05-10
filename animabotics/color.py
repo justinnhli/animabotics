@@ -27,6 +27,13 @@ class Color(metaclass=CachedMetaclass):
         # type: () -> Iterator[float]
         yield from self.to_hsva_tuple()
 
+    @cached_property
+    def _rgba_hex(self):
+        # type: () -> str
+        return '#' + ''.join(
+            f'{n:02X}' for n in self.to_rgba_tuple(integer=True)
+        )
+
     def to_hsva_tuple(self, integer=True):
         # type: (bool) -> tuple[float, float, float, float]
         """Convert the color to a HSVA tuple."""
@@ -58,12 +65,6 @@ class Color(metaclass=CachedMetaclass):
             )
         else:
             return rgba
-
-    @cached_property
-    def _rgba_hex(self):
-        return '#' + ''.join(
-            f'{n:02X}' for n in self.to_rgba_tuple(integer=True)
-        )
 
     def to_rgb_hex(self):
         # type: () -> str

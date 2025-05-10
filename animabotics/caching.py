@@ -2,8 +2,8 @@
 
 from collections.abc import Hashable
 from functools import lru_cache
-from typing import TypeVar, Generic, ParamSpec, Concatenate
-from typing import Callable, Any, Optional, Union, Iterator
+from typing import TypeVar, ParamSpec, Concatenate, Generic
+from typing import Any, Optional, Union, Callable, Iterator
 
 
 class CachedMetaclass(type):
@@ -56,23 +56,11 @@ class LRUCache(Generic[KT, VT]):
         self.tail:Optional[LRUCacheNode[KT, VT]] = None
         self.nodes:dict[KT, LRUCacheNode[KT, VT]] = {}
 
-    @property
-    def most_recent(self) -> tuple[KT, VT]:
-        """Get the most recently used key-value."""
-        assert self.head is not None
-        return (self.head.key, self.head.value)
-
     def __len__(self) -> int:
         return self.size
 
     def __contains__(self, key:KT) -> bool:
         return key in self.nodes
-
-    def __getitem__(self, key:KT) -> VT:
-        assert self.head is not None
-        assert self.tail is not None
-        self.touch(key)
-        return self.head.value
 
     def __setitem__(self, key:KT, value:VT) -> None:
         if key in self.nodes:
@@ -96,6 +84,18 @@ class LRUCache(Generic[KT, VT]):
                 self.tail.tail = None
                 return
         self.size += 1
+
+    def __getitem__(self, key:KT) -> VT:
+        assert self.head is not None
+        assert self.tail is not None
+        self.touch(key)
+        return self.head.value
+
+    @property
+    def most_recent(self) -> tuple[KT, VT]:
+        """Get the most recently used key-value."""
+        assert self.head is not None
+        return (self.head.key, self.head.value)
 
     def clear(self) -> None:
         """Clear the cache."""

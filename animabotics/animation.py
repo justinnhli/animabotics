@@ -45,7 +45,7 @@ class Sprite:
         # type: () -> Iterator[Shape]
         yield from self.shapes
 
-    @cached_method()
+    @cached_method() # type: ignore
     def __rmatmul__(self, other):
         # type: (Transform) -> Sprite
         assert isinstance(other, Transform)
@@ -59,7 +59,7 @@ class Clip:
     """A single animation."""
 
     def __init__(self, duration_msec=0, **components):
-        # type: (int, **Any|Callable[[Any], Any]) -> None
+        # type: (int, **Any|Callable[..., Any]) -> None
         self.duration_msec = duration_msec
         self.components = components
         self.order = [] # type: list[str]
@@ -69,7 +69,7 @@ class Clip:
         self._process_components(components)
 
     def _process_components(self, components):
-        # type: (dict[str, Callable[[Any], Any]]) -> None
+        # type: (dict[str, Callable[..., Any]]) -> None
         num_dependencies = {} # type: dict[str, int]
         dependents = defaultdict(set) # type: dict[str, set[str]]
         ready = ['t']

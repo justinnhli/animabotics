@@ -33,13 +33,13 @@ class HashGrid:
         self.cells = defaultdict(list) # type: dict[Point2D, list[Positionable]]
         self.clear()
 
-    def __bool__(self):
-        # type: () -> int
-        return self.num_objects > 0
-
     def __len__(self):
         # type: () -> int
         return self.num_objects
+
+    def __bool__(self):
+        # type: () -> int
+        return self.num_objects > 0
 
     def __contains__(self, obj):
         # type: (Positionable) -> bool

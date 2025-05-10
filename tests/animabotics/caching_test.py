@@ -42,6 +42,8 @@ def test_cached_class():
 
 
 def assert_lrucache_contents(cache, expected):
+    # type: (LRUCache[int, int], tuple[tuple[int, int], ...]) -> None
+    """Assert that the LRUCache has the correct contents."""
     assert len(cache) == len(expected)
     assert tuple(cache.items()) == expected
     for key, value in reversed(expected):
@@ -52,6 +54,7 @@ def assert_lrucache_contents(cache, expected):
 
 def test_lrucache():
     # type: () -> None
+    """Test the LRUCache."""
     try:
         cache = LRUCache(0) # type: LRUCache[int, int]
         assert False
@@ -96,35 +99,35 @@ class CachedMethodDummy:
         self.n = n
         self.log = defaultdict(int)
 
-    @cached_method(is_property=True)
+    @cached_method(is_property=True) # type: cached_method[CachedMethodDummy, ..., int]
     def add_0(self):
         # type: () -> int
         """Add one to the value."""
         self.log['add_0'] += 1
         return self.n
 
-    @cached_method(is_property=True)
+    @cached_method(is_property=True) # type: cached_method[CachedMethodDummy, ..., int]
     def add_1(self):
         # type: () -> int
         """Add one to the value."""
         self.log['add_1'] += 1
         return self.n + 1
 
-    @cached_method()
+    @cached_method() # type: cached_method[CachedMethodDummy, ..., int]
     def add_2(self):
         # type: () -> int
         """Add one to the value."""
         self.log['add_2'] += 1
         return self.n + 2
 
-    @cached_method()
+    @cached_method() # type: cached_method[CachedMethodDummy, ..., int]
     def add_n(self, n):
         # type: (int) -> int
         """Add n to the value."""
         self.log['add_n'] += 1
         return self.n + n
 
-    @cached_method()
+    @cached_method() # type: cached_method[CachedMethodDummy, ..., int]
     def add_nm(self, n, m=2):
         # type: (int, int) -> int
         """Add n and m to the value."""

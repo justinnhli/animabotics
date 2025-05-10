@@ -42,17 +42,17 @@ class Game:
         # state
         self.prev_collisions = set() # type: set[tuple[Collidable, Collidable, tuple[str, str]]]
 
-    def add_entity(self, entity):
-        # type: (Component) -> None
-        """Add an entity to the game."""
-        for component_cls in entity.components:
-            self.component_entities_map[component_cls].add(entity)
-
     @property
     def entities(self):
         # type: () -> set[Component]
         """Get all entities."""
         return self.get_component_entities(Component)
+
+    def add_entity(self, entity):
+        # type: (Component) -> None
+        """Add an entity to the game."""
+        for component_cls in entity.components:
+            self.component_entities_map[component_cls].add(entity)
 
     def get_component_entities(self, *components):
         # type: (*type[Component]) -> set[Component]

@@ -106,6 +106,7 @@ def test_matrix():
 def test_rref():
     # type: () -> None
     """Test Matrix row-reduced echelon form."""
+    # pylint: disable = line-too-long
     testcases = [
         (
             Matrix(((2, 0, 0), (0, 3, 0),)),

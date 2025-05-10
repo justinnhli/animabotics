@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from fractions import Fraction
 from itertools import product
 from random import Random
-from typing import Any, TypeVar, Callable, Iterator
+from typing import TypeVar, Any, Callable, Iterator
 
 
 ValueT = TypeVar('ValueT')
