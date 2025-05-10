@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "animabotics"
+version = "0.0.0a0"
+dependencies = [
+  "pillow",
+  "pytest",
+  "coverage",
+]
+requires-python = ">=3.11" # for typing.Self
+authors = [
+  {name = "Justin Li", email = "justinnhli@gmail.com"},
+]
+description = "A Python library for games, animation, and robotics."
+readme = "README.md"
+license = "MIT"
+
+[project.urls]
+repository = "https://github.com/justinnhli/animabotics"
