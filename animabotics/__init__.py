@@ -14,7 +14,7 @@ from .metaprogramming import CachedMetaclass
 from .polygon import ConvexPolygon, Polygon
 from .scene import HierarchicalHashGrid
 from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
-from .timing import get_msec
+from .timing import get_msec, InterruptibleAlgorithm
 from .transform import Transform
 from .transformable import Transformable, Collidable
 
@@ -34,7 +34,7 @@ __all__ = [
     'Polygon',
     'HierarchicalHashGrid',
     'Geometry', 'Point2D', 'Vector2D', 'Segment', 'Triangle',
-    'get_msec',
+    'get_msec', 'InterruptibleAlgorithm',
     'Transform',
     'Transformable', 'Collidable',
 ]
