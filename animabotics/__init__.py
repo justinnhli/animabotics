@@ -1,5 +1,6 @@
 """A animabotics of code that may eventually resemble a game engine."""
 
+from .algebra import AlgebraParser
 from .algorithms import bentley_ottmann, triangulate_polygon
 from .animation import Shape, Sprite, Clip, AnimationController
 from .basic_window import BasicWindow
@@ -21,6 +22,7 @@ from .transform import Transform
 
 
 __all__ = [
+    'AlgebraParser',
     'bentley_ottmann', 'triangulate_polygon',
     'AnimationController', 'Clip', 'Sprite', 'Shape',
     'BasicWindow',
