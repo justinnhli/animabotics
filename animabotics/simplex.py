@@ -7,8 +7,8 @@ from functools import cached_property
 from math import sqrt, atan2, pi as PI, inf as INF
 from typing import TypeVar, Optional, Self
 
+from .caching import CachedMetaclass
 from .matrix import Matrix
-from .metaprogramming import CachedMetaclass
 from .transform import Transform
 
 

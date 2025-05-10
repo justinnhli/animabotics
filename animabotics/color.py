@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from ._okhsv import RGB as _RGB, HSV as _HSV
 from ._okhsv import okhsv_to_rgb as _okhsv_to_rgb, rgb_to_okhsv as _rgb_to_okhsv
-from .metaprogramming import CachedMetaclass
+from .caching import CachedMetaclass
 
 
 @dataclass(frozen=True, order=True)

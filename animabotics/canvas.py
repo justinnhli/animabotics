@@ -25,8 +25,8 @@ except (ModuleNotFoundError, ImportError): # pragma: no cover
     Draw = import_error_factory('PIL.ImageDraw.Draw')
     PhotoImage = import_error_factory('PIL.ImageTk.PhotoImage')
 
+from .caching import CachedMetaclass
 from .color import Color
-from .metaprogramming import CachedMetaclass
 from .simplex import Point2D
 from .timing import get_msec
 

@@ -4,8 +4,8 @@ from collections import defaultdict
 from inspect import signature
 from typing import Any, Callable, Iterator
 
+from .caching import CachedMetaclass
 from .color import Color
-from .metaprogramming import CachedMetaclass
 from .simplex import Geometry
 from .transform import Transform
 from .utilitypes import MaybeSequence, unwrap_maybe_sequence

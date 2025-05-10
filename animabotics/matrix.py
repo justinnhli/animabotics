@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import lru_cache as cache, cached_property
 from math import floor, ceil, sqrt, sin, cos
 
-from .metaprogramming import CachedMetaclass
+from .caching import CachedMetaclass
 
 
 @dataclass(frozen=True, order=True)

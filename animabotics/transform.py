@@ -5,8 +5,8 @@ from functools import cached_property
 from math import sin, cos
 from typing import Any
 
+from .caching import CachedMetaclass
 from .matrix import Matrix, identity
-from .metaprogramming import CachedMetaclass
 
 
 @dataclass(frozen=True, order=True)

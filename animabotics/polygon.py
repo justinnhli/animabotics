@@ -5,8 +5,8 @@ from math import sin, cos, pi as PI
 from typing import Self, Sequence
 
 from .algorithms import convex_partition
+from .caching import CachedMetaclass
 from .matrix import Matrix
-from .metaprogramming import CachedMetaclass
 from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
 from .transform import Transform
 

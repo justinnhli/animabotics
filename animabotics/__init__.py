@@ -3,7 +3,7 @@
 from .algorithms import bentley_ottmann, triangulate_polygon
 from .animation import AnimationController, Clip, Sprite, Shape
 from .basic_window import BasicWindow
-from .caching import LRUCache, method_cache
+from .caching import CachedMetaclass, LRUCache, method_cache
 from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
 from .color import Color
@@ -13,7 +13,6 @@ from .components.positionable import Positionable, HasPhysicsGeometry, Newtonian
 from .data_structures import HashGrid, SortedDict, SortedSet, PriorityQueue
 from .game import Game, HookTrigger
 from .matrix import Matrix, identity
-from .metaprogramming import CachedMetaclass
 from .polygon import ConvexPolygon, Polygon
 from .scene import HierarchicalHashGrid
 from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
@@ -25,7 +24,7 @@ __all__ = [
     'bentley_ottmann', 'triangulate_polygon',
     'AnimationController', 'Clip', 'Sprite', 'Shape',
     'BasicWindow',
-    'LRUCache', 'method_cache',
+    'CachedMetaclass', 'LRUCache', 'method_cache',
     'Camera',
     'Input', 'EventCallback', 'Canvas',
     'Color',
@@ -35,7 +34,6 @@ __all__ = [
     'HashGrid', 'SortedDict', 'SortedSet', 'PriorityQueue',
     'Game', 'HookTrigger',
     'Matrix', 'identity',
-    'CachedMetaclass',
     'ConvexPolygon', 'Polygon',
     'HierarchicalHashGrid',
     'Geometry', 'Point2D', 'Vector2D', 'Segment', 'Triangle',
