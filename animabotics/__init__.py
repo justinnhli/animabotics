@@ -1,7 +1,7 @@
 """A animabotics of code that may eventually resemble a game engine."""
 
 from .algorithms import bentley_ottmann, triangulate_polygon
-from .animation import AnimationController, AnimationClip, Sprite, Shape
+from .animation import AnimationController, Clip, Sprite, Shape
 from .basic_window import BasicWindow
 from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
@@ -20,7 +20,7 @@ from .transformable import Transformable
 
 __all__ = [
     'bentley_ottmann', 'triangulate_polygon',
-    'Animation', 'Sprite', 'Shape',
+    'AnimationController', 'Clip', 'Sprite', 'Shape',
     'BasicWindow',
     'Camera',
     'Canvas', 'Input', 'EventCallback', 'Canvas',
