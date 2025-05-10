@@ -193,7 +193,10 @@ def test_segment():
     assert segment2.is_colinear(segment1)
     assert segment1.is_overlapping(segment2)
     assert segment2.is_overlapping(segment1)
-
+    # 2026-05-16
+    segment1 = Segment(Point2D(-300.0, -200.0), Point2D(-300.0, 39.0))
+    segment2 = Segment(Point2D(-300.0, -144.0), Point2D(-300.0, -26.0)) 
+    assert segment1.intersect(segment2, include_end=False) is not None
 
 def test_triangle():
     # type: () -> None

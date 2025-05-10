@@ -553,7 +553,7 @@ class Segment(Geometry, metaclass=CachedMetaclass):
                 return None
             else:
                 return result
-        if not include_end:
+        if not include_end and not self.is_overlapping(other):
             return None
         if o1 == 0 and other.contains(self.point1, include_end=True):
             # p1, q1 and p2 are collinear and p2 lies on segment p1q1
