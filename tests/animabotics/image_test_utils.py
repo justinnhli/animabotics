@@ -4,7 +4,7 @@ from itertools import batched
 from pathlib import Path
 from typing import Iterator
 
-from PIL import Image, ImageGrab
+from PIL import Image, ImageDraw, ImageGrab
 
 from animabotics.canvas import Canvas
 
@@ -55,13 +55,27 @@ def check_image(image, filename):
     """Check that a canvas matches the file."""
     ppm_path = Path(__file__).parent / 'images' / filename
     width, height, ppm_pixels = read_ppm(ppm_path)
-    assert image.width == width
-    assert image.height == height
+    assert image.width == width, f'{image.width} != {width}'
+    assert image.height == height, f'{image.height} != {height}'
     pixels = image.get_flattened_data()
-    for x in range(width):
-        for y in range(height):
-            index = y * width + x
-            assert pixels[index] == ppm_pixels[index]
+    diffs = []
+    for r in range(height):
+        for c in range(width):
+            index = r * width + c
+            if pixels[index] != ppm_pixels[index]:
+                diffs.append((r, c, ppm_pixels[index], pixels[index]))
+    if diffs:
+        stem = ppm_path.stem
+        image.save(stem + '-actual.png')
+        expected = Image.new('RGB', (width, height))
+        expected.putdata(ppm_pixels)
+        expected.save(stem + '-expect.png')
+        diff_image = Image.new('RGB', (width, height))
+        draw = ImageDraw.Draw(diff_image)
+        for r, c, _, _ in diffs:
+            draw.point((c, r), '#FF0000')
+        diff_image.save(stem + '-diff.png')
+        assert False, diffs
 
 
 def save_image(image, filename):
