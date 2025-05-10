@@ -406,6 +406,7 @@ def test_polygon_triangulation_good():
 
 def test_polygon_triangulation_bad():
     # type: () -> None
+    """Test polygons that should fail triangulation."""
     shapes = (
         # shrink to a point
         (

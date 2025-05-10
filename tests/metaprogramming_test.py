@@ -1,7 +1,6 @@
 """Tests for metaprogramming.py."""
 
 from functools import cached_property
-from typing import Self
 
 from animabotics.metaprogramming import CachedMetaclass
 

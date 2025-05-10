@@ -28,7 +28,13 @@ def test_sorteddict():
     sorted_dict = SortedDict() # type: SortedDict[int, int]
     assert not sorted_dict
     assert 0 not in sorted_dict
-    assert list(sorted_dict) == list(sorted_dict.keys()) == list(sorted_dict.values()) == list(sorted_dict.items()) == []
+    assert (
+        list(sorted_dict)
+        == list(sorted_dict.keys())
+        == list(sorted_dict.values())
+        == list(sorted_dict.items())
+        == []
+    )
     assert repr(sorted_dict) == 'SortedDict()'
     assert str(sorted_dict) == 'SortedDict()'
     size = 7
@@ -69,7 +75,7 @@ def test_sorteddict():
     src_dict = {num: num * num for num in range(101)}
     assert SortedDict.from_dict(src_dict).to_dict() == src_dict
     # defaultdict check
-    sorted_dict_set = SortedDict(factory=set) # type: SortedDict[set[int]]
+    sorted_dict_set = SortedDict(factory=set) # type: SortedDict[int, set[int]]
     for i in range(10):
         for j in range(i, i + 5):
             sorted_dict_set[i].add(j)
@@ -79,11 +85,11 @@ def test_sorteddict():
     assert len(sorted_dict_set) == 0
     assert list(sorted_dict_set) == []
     # 2020-06-05
-    sorted_dict = SortedDict()
+    sorted_dict_str = SortedDict() # type: SortedDict[int, str]
     for i in [5, 2, 9, 1, 4, 7, 11, 0, 3, 6, 8, 10, 12]:
-        sorted_dict[i] = str(i)
-    del sorted_dict[5]
-    assert list(sorted_dict.keys()) == [*range(5), *range(6, 13)]
+        sorted_dict_str[i] = str(i)
+    del sorted_dict_str[5]
+    assert list(sorted_dict_str.keys()) == [*range(5), *range(6, 13)]
 
 
 def test_sorteddict_views():
