@@ -214,7 +214,7 @@ class Canvas:
             fill_color = Color(0, 0, 0)
         self.draw.point(
             (round(point[0]), round(point[1])),
-            fill=fill_color.to_rgba_tuple(),
+            fill=fill_color.to_rgba_hex(),
         )
 
     def draw_line(self, point1, point2, line_color=None):
@@ -231,12 +231,12 @@ class Canvas:
         _, line_color = Canvas._set_default_colors(fill_color=None, line_color=line_color)
         self.draw.line(
             [(point1_x, point1_y), (point2_x, point2_y)],
-            fill=line_color.to_rgba_tuple(),
+            fill=line_color.to_rgba_hex(),
             width=1,
         )
         self.draw.line(
             [(point2_x, point2_y), (point1_x, point1_y)],
-            fill=line_color.to_rgba_tuple(),
+            fill=line_color.to_rgba_hex(),
             width=1,
         )
 
@@ -260,8 +260,8 @@ class Canvas:
         fill_color, line_color = Canvas._set_default_colors(fill_color=fill_color, line_color=line_color)
         self.draw.polygon(
             [(round(point[0]), round(point[1])) for point in points],
-            outline=line_color.to_rgba_tuple(),
-            fill=fill_color.to_rgba_tuple(),
+            outline=line_color.to_rgba_hex(),
+            fill=fill_color.to_rgba_hex(),
             width=1,
         )
 
