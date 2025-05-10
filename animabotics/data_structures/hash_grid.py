@@ -103,7 +103,7 @@ class HashGrid:
                     ((obj.position - target).squared_magnitude, obj)
                     for obj in self.cells[coord]
                 )
-            holding_area = sorted(holding_area)
+            holding_area = sorted(holding_area, key=(lambda pair: pair[0])) # pylint: disable = superfluous-parens
             while num_results < k and holding_area and holding_area[0][0] < min_dist:
                 yield holding_area.pop(0)[-1]
                 num_results += 1
