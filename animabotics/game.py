@@ -93,8 +93,8 @@ class Game:
             duration -= update_every
         self.dispatch_tick(duration)
 
-    def dispatch_tick(self, elapsed_msec):
-        # type: (int) -> None
+    def dispatch_tick(self, tick_start_msec, elapsed_msec):
+        # type: (int, int) -> None
         """Deal with time passing."""
         # calculate elapsed time since last tick
         elapsed_msec_squared = elapsed_msec * elapsed_msec

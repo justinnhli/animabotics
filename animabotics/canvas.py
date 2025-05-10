@@ -327,7 +327,7 @@ class Canvas:
         )
 
     def _create_update_callback(self, update_fn, msecs):
-        # type: (Callable[[int], Any], int) -> Callable[[], None]
+        # type: (Callable[[int, int], Any], int) -> Callable[[], None]
         """Create the wrapped update callback function."""
 
         def callback():
@@ -335,7 +335,7 @@ class Canvas:
             curr_msec = get_msec()
             self.display_page()
             self.new_page()
-            update_fn(get_msec() - self.prev_msec)
+            update_fn(curr_msec, get_msec() - self.prev_msec)
             elapsed_msec = get_msec() - curr_msec
             self.prev_msec = curr_msec
             self.tk.after(
@@ -346,7 +346,7 @@ class Canvas:
         return callback
 
     def start(self, update_fn, msecs, *delayed_callbacks):
-        # type: (Callable[[int], Any], int, *tuple[int, Callable[[], Any]]) -> None
+        # type: (Callable[[int, int], Any], int, *tuple[int, Callable[[], Any]]) -> None
         """Display the canvas."""
         self.create_tk()
         self.canvas.focus_set()
