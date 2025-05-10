@@ -92,7 +92,6 @@ class GameObject(Transformable):
         """Update the object."""
         if self.animation is not None:
             self.animation.advance_state(elapsed_msec)
-        pass # pylint: disable = unnecessary-pass
 
     def squared_distance(self, other):
         # type: (GameObject) -> float
