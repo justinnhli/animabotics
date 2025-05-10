@@ -42,7 +42,7 @@ class InterruptibleAlgorithm:
         try:
             next(self._process)
         except StopIteration:
-            pass
+            self._process = None
 
     def run_for_msec(self, msecs):
         # type: (int) -> None
