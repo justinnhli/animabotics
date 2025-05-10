@@ -73,7 +73,7 @@ class Sprite:
         return Sprite(other @ shape for shape in self.shapes)
 
 
-class Animation:
+class AnimationController:
     """A state machine to control animation sprites/frames."""
 
     def __init__(self):
@@ -122,9 +122,9 @@ class Animation:
 
     @staticmethod
     def create_fixed_fps_animation(frame_duration_msec, sprites):
-        # type: (int, Sequence[Sprite]) -> Animation
+        # type: (int, Sequence[Sprite]) -> AnimationController
         """Create an animation with fixed timing."""
-        animation = Animation()
+        animation = AnimationController()
         for i, sprite in enumerate(sprites):
             animation.add_state(str(i), sprite)
         for i in range(len(sprites) - 1):
@@ -134,9 +134,9 @@ class Animation:
 
     @staticmethod
     def create_static_animation(sprite):
-        # type: (Sprite) -> Animation
+        # type: (Sprite) -> AnimationController
         """Create an "animation" that is a static image."""
-        animation = Animation()
+        animation = AnimationController()
         animation.add_state('0', sprite)
         animation.add_timed_transition('0', '0', INF)
         return animation
