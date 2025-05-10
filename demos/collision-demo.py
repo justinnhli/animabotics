@@ -1,4 +1,5 @@
 #!/home/justinnhli/.local/share/venv/animabotics/bin/python3
+"""Demo for object collisions."""
 
 import sys
 from random import Random
