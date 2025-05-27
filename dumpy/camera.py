@@ -4,10 +4,10 @@ from functools import lru_cache
 
 from .canvas import Canvas
 from .color import Color
-from .game_object import GameObject
 from .matrix import Matrix
 from .simplex import Geometry
 from .transform import Transform
+from .transformable import Transformable
 
 
 @lru_cache
@@ -20,7 +20,7 @@ def projection_matrix(width, height, x, y, rotation, zoom): # pylint: disable = 
     )
 
 
-class Camera(GameObject):
+class Camera(Transformable):
     """A 2D camera."""
 
     def __init__(self, canvas, zoom_level=0):
