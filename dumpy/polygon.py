@@ -10,6 +10,51 @@ from .metaprogramming import CachedMetaclass
 from .simplex import Geometry, Point2D, Vector2D, Triangle
 
 
+class ConvexPolygon(Geometry, metaclass=CachedMetaclass):
+    """A convex polygon."""
+
+    def __init__(self, points=None, matrix=None):
+        # type: (Sequence[Point2D], Matrix) -> None
+        if matrix is None:
+            matrix = Matrix(tuple(
+                (point.x, point.y, 0, 1)
+                for point in points
+            )).transpose
+        super().__init__(matrix)
+
+    @cached_property
+    def area(self):
+        # type: () -> float
+        """Calculate the area of the polygon.
+
+        Uses the shoelace formula.
+        """
+        result = 0 # type: float
+        for i, point2 in enumerate(self.points):
+            point1 = self.points[i - 1]
+            point2 = self.points[i]
+            result += point1.x * point2.y - point2.x * point1.y
+        return result / 2
+
+    @cached_property
+    def centroid(self):
+        # type: () -> Point2D
+        """Calculate the centroid of the polygon.
+
+        Uses the shoelace formula.
+        """
+        result = Vector2D()
+        for i, point2 in enumerate(self.points):
+            point1 = self.points[i - 1]
+            point2 = self.points[i]
+            factor = point1.x * point2.y - point2.x * point1.y
+            result += Vector2D(
+                (point1.x + point2.x) * factor,
+                (point1.y + point2.y) * factor,
+            )
+        return (result / (6 * self.area)).to_point()
+
+
 class Polygon(Geometry, metaclass=CachedMetaclass):
     """A (potentially non-convex) polygon."""
 
