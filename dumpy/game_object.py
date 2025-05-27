@@ -151,8 +151,8 @@ class GameObject:
         self._rotation += rotation
         self._clear_cache(rotated=True)
 
-    def update(self):
-        # type: () -> None
+    def update(self, elapsed_msec):
+        # type: (int) -> None
         """Update the object."""
         pass # pylint: disable = unnecessary-pass
 
@@ -236,12 +236,13 @@ class PhysicsObject(GameObject):
         self.acceleration = Vector2D()
         self.angular_acceleration = 0
 
-    def update(self):
-        # type: () -> None
+    def update(self, elapsed_msec):
+        # type: (int) -> None
         """Update the velocity and the position."""
-        self.velocity += self.acceleration
-        self.angular_velocity += self.angular_acceleration
+        super().update(elapsed_msec)
+        self.velocity += self.acceleration * elapsed_msec / 1000
+        self.angular_velocity += self.angular_acceleration * elapsed_msec / 1000
         if self.velocity:
-            self.move_by(self.velocity)
+            self.move_by(self.velocity * elapsed_msec / 1000)
         if self.angular_velocity:
-            self.rotate_by(self.angular_velocity)
+            self.rotate_by(self.angular_velocity * elapsed_msec / 1000)

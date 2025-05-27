@@ -95,8 +95,8 @@ class Bouncy(Game):
                 ),
             ))
             ball.velocity = Vector2D(
-                self.rng.randrange(-5, 6),
-                self.rng.randrange(-5, 6),
+                self.rng.randrange(-5, 6) / 100,
+                self.rng.randrange(-5, 6) / 100,
             )
             self.add_object(ball)
 

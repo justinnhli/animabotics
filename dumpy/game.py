@@ -55,7 +55,7 @@ class Game:
             elapsed_msec = curr_msec - self.prev_msec
         # update all physics objects
         for obj in self.scene.objects:
-            obj.update()
+            obj.update(elapsed_msec)
         # deal with collisions
         # FIXME use movement to optimize collision detection
         for obj1, obj2, group_pair in self.scene.collisions:
