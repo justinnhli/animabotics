@@ -9,6 +9,10 @@ from .simplex import Point2D, Vector2D
 from .camera import Camera
 from .game_object import GameObject
 
+CollisionGroups = frozenset[str]
+CollisionGroupPair = tuple[str, str]
+CollisionGroupsPair = tuple[frozenset[str], frozenset[str]]
+
 
 class HashGrid:
     """A hash grid."""
@@ -127,8 +131,8 @@ class HierarchicalHashGrid:
         for exponent in range(min_exponent, max_exponent + 1):
             self.grids.append(HashGrid(2 ** exponent, self))
         self.objects = [] # type: list[GameObject]
-        self.collision_group_pairs = set() # type: set[tuple[str, str]]
-        self.collision_groups_cache = {} # type: dict[tuple[frozenset[str], frozenset[str]], tuple[tuple[str, str], ...]]
+        self.collision_group_pairs = set() # type: set[CollisionGroupPair]
+        self.collision_groups_cache = {} # type: dict[CollisionGroupsPair, tuple[CollisionGroupPair, ...]]
 
     @cached_property
     def exponent_grids(self):
@@ -151,7 +155,7 @@ class HierarchicalHashGrid:
 
     @property
     def collisions(self):
-        # type: () -> Iterator[tuple[GameObject, GameObject, tuple[str, str]]]
+        # type: () -> Iterator[tuple[GameObject, GameObject, CollisionGroupPair]]
         """Yield all collisions of registered group pairs."""
         for obj1, obj2 in self.all_collisions:
             for pair in self.get_collision_group_pairs(obj1, obj2):
@@ -168,12 +172,12 @@ class HierarchicalHashGrid:
         )
 
     def get_collision_group_pairs(self, obj1, obj2):
-        # type: (GameObject, GameObject) -> tuple[tuple[str, str], ...]
+        # type: (GameObject, GameObject) -> tuple[CollisionGroupPair, ...]
         """Get the collision group pairs for the two objects."""
         return self._get_collision_group_pair(obj1.collision_groups, obj2.collision_groups)
 
     def _get_collision_group_pair(self, collision_groups1, collision_groups2):
-        # type: (frozenset[str], frozenset[str]) -> tuple[tuple[str, str], ...]
+        # type: (CollisionGroups, CollisionGroups) -> tuple[CollisionGroupPair, ...]
         """Get the collision group pairs for the two collision groups."""
         key = (collision_groups1, collision_groups2)
         if key not in self.collision_groups_cache:
@@ -201,7 +205,7 @@ class HierarchicalHashGrid:
         return self.objects # FIXME
 
     def set_collision_group_pairs(self, collision_pairs):
-        # type: (Iterable[tuple[str, str]]) -> None
+        # type: (Iterable[CollisionGroupPair]) -> None
         """Set collision group pairs to detect."""
         for group_pair in collision_pairs:
             self.collision_group_pairs.add(group_pair)
