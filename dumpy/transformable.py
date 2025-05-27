@@ -3,7 +3,7 @@
 from math import pi as PI
 from functools import cached_property
 
-from .simplex import Point2D
+from .simplex import Point2D, Vector2D
 from .transform import Transform
 
 
