@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from .animation import Sprite, Shape
 from .canvas import Canvas
 from .color import Color
 from .matrix import Matrix
@@ -57,6 +58,21 @@ class Camera(Transformable):
             self.rotation,
             self.zoom,
         ) @ matrix
+
+    def draw_sprite(self, sprite):
+        # type: (Sprite) -> None
+        """Draw a Sprite."""
+        for shape in sprite:
+            self.draw_shape(shape)
+
+    def draw_shape(self, shape):
+        # type: (Shape) -> None
+        """Draw a Shape."""
+        self.draw_geometry(
+            geometry=shape.polygon,
+            fill_color=shape.fill_color,
+            line_color=shape.line_color,
+        )
 
     def draw_geometry(self, geometry, fill_color=None, line_color=None):
         # type: (Geometry, Color, Color) -> None

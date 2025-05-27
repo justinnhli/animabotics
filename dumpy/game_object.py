@@ -3,7 +3,7 @@
 from functools import cached_property
 from typing import Iterator, Sequence
 
-from .color import Color
+from .animation import Animation, Sprite, Shape
 from .simplex import Geometry, Point2D, Vector2D
 from .transformable import Transformable
 
@@ -13,20 +13,19 @@ class GameObject(Transformable):
 
     def __init__(
         self,
-        geometry=None,
-        line_color=None, fill_color=None,
         collision_groups=None,
-        *args, **kwargs
+        position=None, rotation=0,
     ): # pylint: disable = unused-argument
-        # type: (Geometry, Color, Color, Point2D, float, Sequence[str]) -> None
+        # type: (Sequence[str], Point2D, float) -> None
         """Initialize the GameObject."""
-        super().__init__(*args, **kwargs)
-        self.geometry = geometry
+        super().__init__(position, rotation)
+        self.animation = None # type: Animation
+        self.collision_geometry = None # type: Geometry
         self.radius = 0 # type: float
-        self.line_color = line_color
-        self.fill_color = fill_color
         self._axis_projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
         self._collision_groups = frozenset() # type: frozenset[str]
+        self._transformed_geometry_cache = {} # type: dict[PointsMatrix, PointsMatrix]
+        self._transformed_sprite_cache = {} # type: dict[str, Sprite]
         if collision_groups:
             for group in collision_groups:
                 self.add_to_collision_group(group)
@@ -40,17 +39,17 @@ class GameObject(Transformable):
         return f'{type(self).__name__}({self.position})'
 
     @cached_property
-    def transformed_geometry(self):
+    def transformed_collision_geometry(self):
         # type: () -> Geometry
         """The transformed Geometry."""
-        return self.transform @ self.geometry
+        return self.transform @ self.collision_geometry
 
     @cached_property
     def segment_normals(self):
         # type: () -> set[Vector2D]
         """Return the set of normal vectors to the perimeter."""
         result = set() # type: set[Vector2D]
-        for segment in self.transformed_geometry.segments:
+        for segment in self.transformed_collision_geometry.segments:
             normal = segment.normal
             if normal.x < 0:
                 normal = -normal
@@ -63,12 +62,22 @@ class GameObject(Transformable):
         """Get the collision groups of the object."""
         return self._collision_groups
 
+    def _transform_geometry(self, geometry):
+        if geometry not in self._transformed_geometry_cache:
+            self._transformed_geometry_cache[geometry] = self.transform @ geometry
+        return self._transformed_geometry_cache[geometry]
+
+    def get_sprite(self):
+        # type: () -> Sprite
+        """Get the current animation sprite."""
+        return self.transform @ self.animation.get_sprite()
+
     def axis_projections(self, vector):
         # type: (Vector2D) -> Iterator[tuple[Geometry, float, float]]
         """Yield the min and max values of the points projected onto the vector."""
         cache = {} # type: dict[Point2D, float]
         denominator = (vector.x * vector.x + vector.y * vector.y) ** (1/2)
-        for partition in self.transformed_geometry.convex_partitions:
+        for partition in self.transformed_collision_geometry.convex_partitions:
             key = (partition, vector)
             if key in self._axis_projection_cache:
                 projected_min, projected_max = self._axis_projection_cache[key]
@@ -97,13 +106,17 @@ class GameObject(Transformable):
         super()._clear_cache(rotated=rotated)
         # need to provide a default to avoid KeyError
         self.__dict__.pop('transformed_geometry', None)
+        self.__dict__.pop('transformed_collision_geometry', None)
         self.__dict__.pop('segment_normals', None)
+        self._transformed_geometry_cache.clear()
         if rotated:
             self._axis_projection_cache.clear()
 
     def update(self, elapsed_msec):
         # type: (int) -> None
         """Update the object."""
+        if self.animation is not None:
+            self.animation.advance_state(elapsed_msec)
         pass # pylint: disable = unnecessary-pass
 
     def squared_distance(self, other):
@@ -139,8 +152,8 @@ class GameObject(Transformable):
         self.cache_axis_projections()
         other.cache_axis_projections()
         # define convenience variables
-        geometry1 = self.transformed_geometry
-        geometry2 = other.transformed_geometry
+        geometry1 = self.transformed_collision_geometry
+        geometry2 = other.transformed_collision_geometry
         # try the vector between centroids first
         vector = (geometry1.centroid - geometry2.centroid).normalized
         if self.separated_on_axis(other, vector):

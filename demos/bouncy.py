@@ -10,6 +10,7 @@ from dumpy.game import Game
 from dumpy.game_object import GameObject, PhysicsObject
 from dumpy.polygon import Polygon
 from dumpy.simplex import Point2D, Vector2D
+from dumpy.animation import Animation, Sprite, Shape
 
 
 class Ball(PhysicsObject):
@@ -17,12 +18,15 @@ class Ball(PhysicsObject):
 
     RADIUS = 15
     ELLIPSE = Polygon.ellipse(RADIUS, RADIUS)
+    SPRITE = Sprite([Shape(ELLIPSE)])
 
     def __init__(self):
         # type: () -> None
         super().__init__()
-        self.geometry = Ball.ELLIPSE
+        self.collision_geometry = Ball.ELLIPSE
+        self.animation = Animation.create_static_animation(Ball.SPRITE)
         self.radius = Ball.RADIUS
+        self.animation.set_state('0')
 
     def bounce_vertical(self, _):
         # type: (GameObject) -> None
@@ -43,8 +47,12 @@ class Wall(GameObject):
         super().__init__()
         self.width = width
         self.height = height
-        self.geometry = Polygon.rectangle(width, height)
+        self.collision_geometry = Polygon.rectangle(width, height)
+        self.animation = Animation.create_static_animation(Sprite([
+            Shape(self.collision_geometry),
+        ]))
         self.radius = max(width, height) / 2
+        self.animation.set_state('0')
 
 
 class Bouncy(Game):

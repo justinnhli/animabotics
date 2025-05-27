@@ -2,6 +2,7 @@
 
 from math import sin, cos
 
+from .animation import Animation, Sprite, Shape
 from .canvas import Input
 from .color import Color
 from .game import Game
@@ -16,9 +17,12 @@ class DummyGameObject(GameObject):
         # type: (Geometry, Color, Color) -> None
         """Initialize the DummyGameObject."""
         super().__init__()
-        self.geometry = geometry
-        self.fill_color = fill_color
-        self.line_color = line_color
+        self.collision_geometry = geometry
+        self.animation = Animation.create_static_animation(Sprite([Shape(
+            self.collision_geometry,
+            fill_color,
+            line_color,
+        )]))
         self.radius = max(
             point.distance(self.position)
             for point in geometry.points

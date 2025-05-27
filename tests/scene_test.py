@@ -24,7 +24,7 @@ def test_hierarchical_hash_grid():
     ]
     for x, y, radius, _ in data:
         obj = GameObject()
-        obj.geometry = Polygon.ellipse(radius, radius)
+        obj.collision_geometry = Polygon.ellipse(radius, radius)
         obj.move_to(Point2D(x, y))
         obj.radius = radius
         obj.add_to_collision_group('test')

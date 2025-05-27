@@ -62,11 +62,8 @@ class Game:
             self.collision_callbacks[group_pair](obj1, obj2)
         # draw all objects
         for game_object in self.scene.get_in_view(self.camera):
-            self.camera.draw_geometry(
-                game_object.transformed_geometry,
-                fill_color=game_object.fill_color,
-                line_color=game_object.line_color,
-            )
+            self.camera.draw_sprite(game_object.get_sprite())
+            #self.camera.draw_geometry(game_object.transformed_collision_geometry)
         # update timer
         self.prev_msec = curr_msec
 
