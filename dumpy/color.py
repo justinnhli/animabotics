@@ -49,7 +49,12 @@ class Color(metaclass=CachedMetaclass):
         """Convert the color to a RGB tuple."""
         rgba = (*_okhsv_to_rgb(_HSV(self.h, self.s, self.v)), self.a)
         if integer:
-            return tuple(min(round(256 * x), 255) for x in rgba)
+            return (
+                min(round(256 * rgba[0]), 255),
+                min(round(256 * rgba[1]), 255),
+                min(round(256 * rgba[2]), 255),
+                min(round(256 * rgba[3]), 255),
+            )
         else:
             return rgba
 
