@@ -515,7 +515,12 @@ class Segment(Geometry, metaclass=CachedMetaclass):
     def angle(p1, p2, p3):
         # type: (Point2D, Point2D, Point2D) -> float
         """Determine the angle going from p1 to p2 to p3."""
-        return atan2(p3.y - p2.y, p3.x - p2.x) - atan2(p1.y - p2.y, p1.x - p2.x)
+        result = atan2(p3.y - p2.y, p3.x - p2.x) - atan2(p1.y - p2.y, p1.x - p2.x)
+        if result < 0:
+            return result + 2 * PI
+        else:
+            return result
+
 
     @staticmethod
     def orientation(p1, p2, p3):
