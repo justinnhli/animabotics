@@ -59,6 +59,8 @@ class GameObject(Transformable):
 
     @property
     def collision_groups(self):
+        # type: () -> frozenset[str]
+        """Get the collision groups of the object."""
         return self._collision_groups
 
     def axis_projections(self, vector):
@@ -93,6 +95,7 @@ class GameObject(Transformable):
         # type: (bool) -> None
         """Clear the cached_property cache."""
         super()._clear_cache(rotated=rotated)
+        # need to provide a default to avoid KeyError
         self.__dict__.pop('transformed_geometry', None)
         self.__dict__.pop('segment_normals', None)
         if rotated:
@@ -110,10 +113,12 @@ class GameObject(Transformable):
 
     def add_to_collision_group(self, group):
         # type: (str) -> None
+        """Add the object to a collision group."""
         self._collision_groups |= set([group])
 
     def remove_from_collision_group(self, group):
         # type: (str) -> None
+        """Remove the object from a collision group."""
         self._collision_groups -= set([group])
 
     def is_colliding(self, other):
