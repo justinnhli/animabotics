@@ -15,13 +15,14 @@ from .transformable import Transformable
 class Shape(Transformable, metaclass=CachedMetaclass):
     """A colored polygon."""
     polygon: Polygon
-    line_color: Color
     fill_color: Color
+    line_color: Color
 
     def __init__(
             self,
             polygon,
-            line_color=None, fill_color=None,
+            fill_color=None,
+            line_color=None,
             position=None, rotation=0,
         ):
         # type: (Geometry, Color, Color, Point2D, float) -> None
@@ -32,16 +33,16 @@ class Shape(Transformable, metaclass=CachedMetaclass):
         """
         Transformable.__init__(self, position, rotation)
         self.polygon = polygon
-        self.line_color = line_color
         self.fill_color = fill_color
+        self.line_color = line_color
 
     def __rmatmul__(self, other):
         # type: (Transform) -> Self
         assert isinstance(other, Transform)
         return Shape(
             other @ self.polygon,
-            self.line_color,
-            self.fill_color,
+            fill_color=self.fill_color,
+            line_color=self.line_color,
         )
 
     @cached_property

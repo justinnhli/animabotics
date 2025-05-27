@@ -221,7 +221,7 @@ class Canvas:
         point1_y = round(point1[1])
         point2_x = round(point2[0])
         point2_y = round(point2[1])
-        _, line_color = Canvas._set_default_colors(None, line_color)
+        _, line_color = Canvas._set_default_colors(fill_color=None, line_color=line_color)
         self.draw.line(
             [(point1_x, point1_y), (point2_x, point2_y)],
             fill=line_color.to_rgba_tuple(),
@@ -250,7 +250,7 @@ class Canvas:
     def draw_poly(self, points, fill_color=None, line_color=None):
         # type: (Sequence[FloatCoord], Color, Color) -> None
         """Draw a polygon."""
-        fill_color, line_color = Canvas._set_default_colors(fill_color, line_color)
+        fill_color, line_color = Canvas._set_default_colors(fill_color=fill_color, line_color=line_color)
         self.draw.polygon(
             [(round(point[0]), round(point[1])) for point in points],
             outline=line_color.to_rgba_tuple(),
