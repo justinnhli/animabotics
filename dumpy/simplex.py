@@ -94,13 +94,13 @@ class Geometry(PointsMatrix):
             for point1, point2 in zip(points[:-1], points[1:])
         )
 
-    @cached_property
+    @property
     def area(self):
         # type: () -> float
         """Calculate the area of the PointsMatrix."""
         return 0
 
-    @cached_property
+    @property
     def centroid(self):
         # type: () -> Point2D
         """Calculate the centroid of the PointsMatrix."""
@@ -143,19 +143,19 @@ class Point2D(Geometry, metaclass=CachedMetaclass):
         # type: () -> str
         return f'Point2D({self.x}, {self.y})'
 
-    @cached_property
+    @property
     def x(self):
         # type: () -> float
         """Return the x component of the point."""
         return self.matrix.x
 
-    @cached_property
+    @property
     def y(self):
         # type: () -> float
         """Return the y component of the point."""
         return self.matrix.y
 
-    @cached_property
+    @property
     def centroid(self):
         # type: () -> Point2D
         """Calculate the centroid of the PointsMatrix."""
