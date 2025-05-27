@@ -1,35 +1,30 @@
 """GameObject and its hierarchy."""
 
 from functools import cached_property
-from math import pi as PI
 from typing import Iterator, Sequence
 
 from .color import Color
 from .simplex import Geometry, Point2D, Vector2D
-from .transform import Transform
+from .transformable import Transformable
 
 
-class GameObject:
+class GameObject(Transformable):
     """A basic game object."""
 
     def __init__(
         self,
         geometry=None,
         line_color=None, fill_color=None,
-        position=None, rotation=0,
-        collision_groups=None
+        collision_groups=None,
+        *args, **kwargs
     ): # pylint: disable = unused-argument
         # type: (Geometry, Color, Color, Point2D, float, Sequence[str]) -> None
         """Initialize the GameObject."""
+        super().__init__(*args, **kwargs)
         self.geometry = geometry
         self.radius = 0 # type: float
         self.line_color = line_color
         self.fill_color = fill_color
-        if position is None:
-            self._position = Point2D()
-        else:
-            self._position = position
-        self._rotation = rotation
         self._axis_projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
         self._collision_groups = frozenset() # type: frozenset[str]
         if collision_groups:
@@ -43,30 +38,6 @@ class GameObject:
     def __repr__(self):
         # type: () -> str
         return f'{type(self).__name__}({self.position})'
-
-    @property
-    def position(self):
-        # type: () -> Point2D
-        """Return the position."""
-        return self._position
-
-    @property
-    def rotation(self):
-        # type: () -> float
-        """Return the rotation in 2pi radians."""
-        return self._rotation
-
-    @property
-    def radians(self):
-        # type: () -> float
-        """Return the rotation in radians."""
-        return self.rotation * PI
-
-    @cached_property
-    def transform(self):
-        # type: () -> Transform
-        """The transform defined by the position of this object."""
-        return Transform(self.position.x, self.position.y, self.rotation)
 
     @cached_property
     def transformed_geometry(self):
@@ -121,35 +92,11 @@ class GameObject:
     def _clear_cache(self, rotated=False):
         # type: (bool) -> None
         """Clear the cached_property cache."""
-        self.__dict__.pop('transform', None)
+        super()._clear_cache(rotated=rotated)
         self.__dict__.pop('transformed_geometry', None)
         self.__dict__.pop('segment_normals', None)
         if rotated:
             self._axis_projection_cache.clear()
-
-    def move_to(self, point):
-        # type: (Point2D) -> None
-        """Move the object to the point."""
-        self._position = point
-        self._clear_cache()
-
-    def move_by(self, vector):
-        # type: (Vector2D) -> None
-        """Move the object by the vector."""
-        self._position += vector
-        self._clear_cache()
-
-    def rotate_to(self, rotation):
-        # type: (float) -> None
-        """Rotate the object to the angle."""
-        self._rotation = rotation
-        self._clear_cache(rotated=True)
-
-    def rotate_by(self, rotation):
-        # type: (float) -> None
-        """Rotate the object by the angle."""
-        self._rotation += rotation
-        self._clear_cache(rotated=True)
 
     def update(self, elapsed_msec):
         # type: (int) -> None
