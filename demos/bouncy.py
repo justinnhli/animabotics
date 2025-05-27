@@ -65,22 +65,18 @@ class Bouncy(Game):
         wall_thickness = 50
         window_width = self.window_width - (wall_thickness // 2)
         window_height = self.window_height - (wall_thickness // 2)
-        top_wall = Wall(window_width + 2 * wall_thickness, wall_thickness)
-        top_wall.add_to_collision_group('h_walls')
-        top_wall.move_to(Point2D(0, (window_height + wall_thickness) // 2))
-        self.add_object(top_wall)
-        bottom_wall = Wall(window_width + 2 * wall_thickness, wall_thickness)
-        bottom_wall.add_to_collision_group('h_walls')
-        bottom_wall.move_to(Point2D(0, -(window_height + wall_thickness) // 2))
-        self.add_object(bottom_wall)
-        left_wall = Wall(wall_thickness, window_height)
-        left_wall.add_to_collision_group('v_walls')
-        left_wall.move_to(Point2D(-(window_width + wall_thickness) // 2, 0))
-        self.add_object(left_wall)
-        right_wall = Wall(wall_thickness, window_height)
-        right_wall.add_to_collision_group('v_walls')
-        right_wall.move_to(Point2D((window_width + wall_thickness) // 2, 0))
-        self.add_object(right_wall)
+        # top and bottom walls
+        for indicator in (-1, 1):
+            wall = Wall(window_width + 2 * wall_thickness, wall_thickness)
+            wall.add_to_collision_group('h_walls')
+            wall.move_to(Point2D(0, indicator * (window_height + wall_thickness) // 2))
+            self.add_object(wall)
+        # left and right walls
+        for indicator in (-1, 1):
+            wall = Wall(wall_thickness, window_height)
+            wall.add_to_collision_group('v_walls')
+            wall.move_to(Point2D(indicator * (window_width + wall_thickness) // 2, 0))
+            self.add_object(wall)
         # add the balls
         area_width = window_width - wall_thickness - Ball.RADIUS
         area_height = window_height - wall_thickness - Ball.RADIUS
