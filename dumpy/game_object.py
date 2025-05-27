@@ -198,9 +198,9 @@ class PhysicsObject(GameObject):
         super().__init__()
         self.mass = 0
         self.velocity = Vector2D()
-        self.angular_velocity = 0
+        self.angular_velocity = 0 # type: float
         self.acceleration = Vector2D()
-        self.angular_acceleration = 0
+        self.angular_acceleration = 0 # type: float
 
     def update(self, elapsed_msec):
         # type: (int) -> None
