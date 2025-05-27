@@ -15,13 +15,14 @@ from dumpy.simplex import Point2D, Vector2D
 class Ball(PhysicsObject):
     """A bouncy ball."""
 
-    ELLIPSE = Polygon.ellipse(15, 15)
+    RADIUS = 15
+    ELLIPSE = Polygon.ellipse(RADIUS, RADIUS)
 
     def __init__(self):
         # type: () -> None
         super().__init__()
         self.geometry = Ball.ELLIPSE
-        self.radius = 15
+        self.radius = Ball.RADIUS
 
     def bounce_vertical(self, _):
         # type: (GameObject) -> None
@@ -81,17 +82,19 @@ class Bouncy(Game):
         right_wall.move_to(Point2D((window_width + wall_thickness) // 2, 0))
         self.add_object(right_wall)
         # add the balls
+        area_width = window_width - wall_thickness - Ball.RADIUS
+        area_height = window_height - wall_thickness - Ball.RADIUS
         for _ in range(self.num_balls):
             ball = Ball()
             ball.add_to_collision_group('balls')
             ball.move_to(Point2D(
                 self.rng.randrange(
-                    -(window_width // 2),
-                    (window_width // 2) + 1,
+                    -(area_width // 2),
+                    (area_width // 2) + 1,
                 ),
                 self.rng.randrange(
-                    -(window_height // 2),
-                    (window_height // 2) + 1,
+                    -(area_height // 2),
+                    (area_height // 2) + 1,
                 ),
             ))
             ball.velocity = Vector2D(
