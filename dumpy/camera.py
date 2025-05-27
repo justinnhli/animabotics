@@ -58,14 +58,10 @@ class Camera(Transformable):
             self.zoom,
         ) @ matrix
 
-    def draw_geometry(self, geometry, transform=None, fill_color=None, line_color=None):
-        # type: (Geometry, Transform, Color, Color) -> None
+    def draw_geometry(self, geometry, fill_color=None, line_color=None):
+        # type: (Geometry, Color, Color) -> None
         """Draw a Geometry."""
-        if transform is None:
-            matrix = geometry.matrix
-        else:
-            matrix = transform.matrix @ geometry.matrix
-        matrix = self._project(matrix)
+        matrix = self._project(geometry.matrix)
         if matrix.width == 1:
             self.canvas.draw_pixel(
                 (matrix[0][0], matrix[1][0]),
