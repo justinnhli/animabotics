@@ -2,12 +2,13 @@
 
 from functools import cached_property
 from math import sin, cos, pi as PI
-from typing import Sequence
+from typing import Self, Sequence
 
 from .algorithms import monotone_triangulation
 from .matrix import Matrix
 from .metaprogramming import CachedMetaclass
-from .simplex import Geometry, Point2D, Vector2D, Triangle
+from .simplex import Geometry, Point2D, Vector2D
+from .transform import Transform
 
 
 class ConvexPolygon(Geometry, metaclass=CachedMetaclass):
@@ -66,12 +67,12 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
                 for point in points
             )).transpose
         super().__init__(matrix)
-        self._triangle_index = [] # type: list[tuple[int, int, int]]
+        self._convex_index = tuple() # type: tuple[tuple[int, ...], ...]
 
     def __rmatmul__(self, other):
         # type: (Transform) -> Self
         result = super().__rmatmul__(other)
-        result._triangle_index = self._triangle_index
+        result._convex_index = self._convex_index
         return result
 
     @cached_property
@@ -95,21 +96,25 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
     def convex_partitions(self):
         # type: () -> tuple[Geometry, ...]
         """Return a convex partition of the polygon."""
-        if not self._triangle_index:
+        # FIXME be consistent in using ConvexPolygon or Triangle
+        if self._convex_index:
+            partitions = tuple(
+                ConvexPolygon(self.points[i] for i in indices)
+                for indices in self._convex_index
+            )
+        else:
             triangles = tuple(monotone_triangulation(self.points))
             points_map = {point: index for index, point in enumerate(self.points)}
-            for triangle in triangles:
-                self._triangle_index.append((
+            self._convex_index = tuple(
+                (
                     points_map[triangle.point1],
                     points_map[triangle.point2],
                     points_map[triangle.point3],
-                ))
-        else:
-            triangles = tuple(
-                Triangle(self.points[i], self.points[j], self.points[k])
-                for i, j, k in self._triangle_index
+                )
+                for triangle in triangles
             )
-        return triangles
+            partitions = triangles
+        return partitions
 
     def union(self, *polygons):
         # type: (*Polygon) -> Polygon
@@ -138,14 +143,21 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
             Point2D(half_width, -half_height),
             Point2D(half_width, half_height),
         )
-        return Polygon(points)
+        result = Polygon(points)
+        result._convex_index = ( # pylint: disable = protected-access
+            (0, 1, 3),
+            (1, 2, 3),
+        )
+        return result
 
     @staticmethod
     def ellipse(width_radius, height_radius, num_points=40):
         # type: (float, float, int) -> Polygon
         """Create a ellipse."""
         step = PI / (num_points / 2)
-        return Polygon(tuple(
+        result = Polygon(tuple(
             Point2D(width_radius * cos(i * step), height_radius * sin(i * step))
             for i in range(num_points)
         ))
+        result._convex_index = (tuple(range(num_points)),) # pylint: disable = protected-access
+        return result
