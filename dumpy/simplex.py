@@ -47,14 +47,9 @@ class Geometry(PointsMatrix):
     def __rmatmul__(self, other):
         # type: (Transform) -> Self
         result = super().__rmatmul__(other)
-        self_type = type(self)
         # manually update cached_properties is cheaper than recalculating from scratch
-        if hasattr(self_type, 'area'):
-            result.area = self.area
-        if hasattr(self_type, 'centroid'):
-            result.centroid = Point2D.from_matrix(other.matrix @ self.centroid.matrix)
-        if self_type.__name__ == 'Polygon':
-            result._triangle_index = self._triangle_index
+        result.area = self.area
+        result.centroid = Point2D.from_matrix(other.matrix @ self.centroid.matrix)
         return result
 
     @cached_property

@@ -23,6 +23,12 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
         super().__init__(matrix)
         self._triangle_index = [] # type: list[tuple[int, int, int]]
 
+    def __rmatmul__(self, other):
+        # type: (Transform) -> Self
+        result = super().__rmatmul__(other)
+        result._triangle_index = self._triangle_index
+        return result
+
     @cached_property
     def area(self):
         # type: () -> float
