@@ -2,23 +2,20 @@
 
 # pylint: disable = too-many-lines
 
+from dataclasses import dataclass
 from functools import lru_cache as cache, cached_property
 from math import floor, ceil, sqrt, sin, cos
-from typing import NamedTuple
 
-from .metaprogramming import cached_class
+from .metaprogramming import CachedMetaclass
 
 
 EPSILON = 0.00001
 
 
-class _Matrix(NamedTuple):
-    rows: tuple[tuple[float, ...], ...]
-
-
-@cached_class
-class Matrix(_Matrix): # pylint: disable = too-many-public-methods
+@dataclass(frozen=True, order=True)
+class Matrix(metaclass=CachedMetaclass): # pylint: disable = too-many-public-methods
     """A matrix."""
+    rows: tuple[tuple[float, ...], ...]
 
     def __getitem__(self, index):
         # type: (int) -> tuple[float, ...]

@@ -1,28 +1,21 @@
 """The Transform class."""
 
+from dataclasses import dataclass
 from functools import cached_property
 from math import sin, cos, pi as PI
-from typing import Any, Self, NamedTuple
+from typing import Any
 
 from .matrix import Matrix, identity
-from .metaprogramming import cached_class
+from .metaprogramming import CachedMetaclass
 
 
-class _Transform(NamedTuple):
-    x: float
-    y: float
-    theta: float
-    scale: float
-
-
-@cached_class
-class Transform(_Transform):
+@dataclass(frozen=True, order=True)
+class Transform(metaclass=CachedMetaclass):
     """A transform."""
-
-    def __new__(cls, x=0, y=0, theta=0, scale=1):
-        # type: (float, float, float, float) -> Self
-        """Initialize the Transform."""
-        return super(Transform, cls).__new__(cls, x, y, theta, scale)
+    x: float = 0
+    y: float = 0
+    theta: float = 0
+    scale: float = 1
 
     def __round__(self, ndigits=0):
         # type: (int) -> Transform

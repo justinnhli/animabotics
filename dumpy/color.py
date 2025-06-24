@@ -1,39 +1,26 @@
 """The Color class."""
 
 from collections.abc import Iterator
-from typing import Self, NamedTuple
+from dataclasses import dataclass
 
 from ._okhsv import RGB as _RGB, HSV as _HSV
 from ._okhsv import okhsv_to_rgb as _okhsv_to_rgb, rgb_to_okhsv as _rgb_to_okhsv
-from .metaprogramming import cached_class
+from .metaprogramming import CachedMetaclass
 
 
-class _Color(NamedTuple):
-    h: float
-    s: float
-    v: float
-    a: float
-
-
-@cached_class
-class Color(_Color):
+@dataclass(frozen=True, order=True)
+class Color(metaclass=CachedMetaclass):
     """A color, canonically represented as in OkHSVA."""
-
     # pylint: disable = invalid-name
+    h: float = 0
+    s: float = 0
+    v: float = 0
+    a: float = 1
 
     MAX_H = 360
     MAX_S = 100
     MAX_V = 100
     MAX_A = 256
-
-    def __new__(cls, h=0, s=0, v=0, a=1):
-        # type: (float, float, float, float) -> Self
-        """Initialize the Color."""
-        assert 0 <= h <= 1
-        assert 0 <= s <= 1
-        assert 0 <= v <= 1
-        assert 0 <= a <= 1
-        return super(Color, cls).__new__(cls, h, s, v, a)
 
     def __iter__(self):
         # type: () -> Iterator[float]

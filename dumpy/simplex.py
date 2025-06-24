@@ -2,16 +2,18 @@
 
 # mypy: disable-error-code="override"
 
+from dataclasses import dataclass
 from functools import cached_property
 from math import sqrt, atan2
-from typing import TypeVar, Optional, Self, NamedTuple
+from typing import TypeVar, Optional, Self
 
 from .matrix import Matrix
-from .metaprogramming import cached_class
+from .metaprogramming import CachedMetaclass
 from .transform import Transform
 
 
-class PointsMatrix(NamedTuple):
+@dataclass(frozen=True, order=True)
+class PointsMatrix:
     """Abstract class for a sequence of points."""
     matrix: Matrix
 
@@ -116,15 +118,14 @@ class Geometry(PointsMatrix):
         return (self,)
 
 
-@cached_class
-class Point2D(Geometry):
+class Point2D(Geometry, metaclass=CachedMetaclass):
     """A 2D point."""
 
-    def __new__(cls, x=0, y=0, matrix=None):
-        # type: (float, float, Matrix) -> Self
+    def __init__(self, x=0, y=0, matrix=None):
+        # type: (float, float, Matrix) -> None
         if matrix is None:
             matrix = Matrix(((x,), (y,), (0,), (1,)))
-        return super(Point2D, cls).__new__(cls, matrix)
+        super().__init__(matrix)
 
     def __neg__(self):
         # type: () -> Point2D
@@ -183,17 +184,16 @@ class Point2D(Geometry):
         return Vector2D(self.x, self.y)
 
 
-@cached_class
-class Vector2D(PointsMatrix):
+class Vector2D(PointsMatrix, metaclass=CachedMetaclass):
     """A 2D Vector."""
 
     RT = TypeVar('RT', Point2D, 'Vector2D')
 
-    def __new__(cls, x=0, y=0, matrix=None):
-        # type: (float, float, Matrix) -> Self
+    def __init__(self, x=0, y=0, matrix=None):
+        # type: (float, float, Matrix) -> None
         if matrix is None:
             matrix = Matrix(((x,), (y,), (0,), (0,)))
-        return super(Vector2D, cls).__new__(cls, matrix)
+        super().__init__(matrix)
 
     def __bool__(self):
         # type: () -> bool
@@ -278,12 +278,11 @@ class Vector2D(PointsMatrix):
         return Point2D(self.x, self.y)
 
 
-@cached_class
-class Segment(Geometry):
+class Segment(Geometry, metaclass=CachedMetaclass):
     """A line segment."""
 
-    def __new__(cls, point1=None, point2=None, matrix=None):
-        # type: (Point2D, Point2D, Matrix) -> Self
+    def __init__(self, point1=None, point2=None, matrix=None):
+        # type: (Point2D, Point2D, Matrix) -> None
         if matrix is None:
             assert point1 != point2
             matrix = Matrix((
@@ -292,7 +291,7 @@ class Segment(Geometry):
                 (0, 0),
                 (1, 1),
             ))
-        return super(Segment, cls).__new__(cls, matrix)
+        super().__init__(matrix)
 
     def __repr__(self):
         # type: () -> str
@@ -539,12 +538,11 @@ class Segment(Geometry):
             return 0
 
 
-@cached_class
-class Triangle(Geometry):
+class Triangle(Geometry, metaclass=CachedMetaclass):
     """A triangle."""
 
-    def __new__(cls, point1=None, point2=None, point3=None, matrix=None):
-        # type: (Point2D, Point2D, Point2D, Matrix) -> Self
+    def __init__(self, point1=None, point2=None, point3=None, matrix=None):
+        # type: (Point2D, Point2D, Point2D, Matrix) -> None
         if matrix is None:
             points_list = [point1, point2, point3]
             if Segment.orientation(point1, point2, point3) != -1:
@@ -555,7 +553,7 @@ class Triangle(Geometry):
                 (0, 0, 0),
                 (1, 1, 1),
             ))
-        return super(Triangle, cls).__new__(cls, matrix)
+        super().__init__(matrix)
 
     def __repr__(self):
         # type: () -> str

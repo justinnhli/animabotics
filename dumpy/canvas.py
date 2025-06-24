@@ -1,16 +1,17 @@
 """A canvas built in tk and Pillow."""
 
 from collections.abc import Collection, Sequence
+from dataclasses import dataclass
 from functools import cached_property
 from tkinter import CENTER, Tk, Canvas as TKCanvas, NW
-from typing import Callable, Self, NamedTuple
+from typing import Callable
 
 from PIL.Image import Image, new as new_image
 from PIL.ImageDraw import Draw
 from PIL.ImageTk import PhotoImage
 
 from .color import Color
-from .metaprogramming import cached_class
+from .metaprogramming import CachedMetaclass
 from .simplex import Point2D
 
 _CHAR_KEYSYM_MAP = {
@@ -77,32 +78,34 @@ _EVENT_TYPES = set([
 FloatCoord = tuple[float, float]
 
 
-class _Input(NamedTuple):
+@dataclass(frozen=True, order=True)
+class Input(metaclass=CachedMetaclass):
+    """A class to represent keyboard and mouse input."""
     event_type: str
     key_button: str
     modifiers: Collection[str] | str
 
-
-@cached_class
-class Input(_Input):
-    """A class to represent keyboard and mouse input."""
-
-    def __new__(cls, event_type, key_button=None, modifiers=None):
-        # type: (str, str, Collection[str]|str) -> Self
+    def __init__(self, event_type, key_button=None, modifiers=None):
+        # type: (str, str, Collection[str]|str) -> None
         """Initialize the Input.
 
         Note: MouseWheel does not exist on Linux; instead, use Button4 or Button5.
 
         The event pattern is based on https://www.tcl-lang.org/man/tcl/TkCmd/bind.htm
+
+        The use of object.__setattr__ is due to a conflict between frozen dataclasses
+        that also do define a custom __init__; see https://github.com/python/cpython/issues/82625
         """
+        object.__setattr__(self, 'event_type', event_type)
+        object.__setattr__(self, 'key_button', key_button)
         if modifiers is None:
             modifiers = frozenset()
         elif isinstance(modifiers, str):
             modifiers = frozenset([modifiers])
         else:
             modifiers = frozenset(modifiers)
+        object.__setattr__(self, 'modifiers', modifiers)
         Input._validate(event_type, key_button, modifiers)
-        return super(Input, cls).__new__(cls, event_type, key_button, modifiers)
 
     @cached_property
     def event_pattern(self):

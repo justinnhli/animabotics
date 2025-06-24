@@ -2,30 +2,25 @@
 
 from functools import cached_property
 from math import sin, cos, pi as PI
-from typing import Sequence, Self
+from typing import Sequence
 
 from .algorithms import monotone_triangulation
 from .matrix import Matrix
-from .metaprogramming import cached_class
+from .metaprogramming import CachedMetaclass
 from .simplex import Geometry, Point2D, Vector2D, Triangle
 
 
-@cached_class
-class Polygon(Geometry):
+class Polygon(Geometry, metaclass=CachedMetaclass):
     """A (potentially non-convex) polygon."""
 
-    def __new__(cls, points=None, matrix=None):
-        # type: (Sequence[Point2D], Matrix) -> Self
+    def __init__(self, points=None, matrix=None):
+        # type: (Sequence[Point2D], Matrix) -> None
         if matrix is None:
             matrix = Matrix(tuple(
                 (point.x, point.y, 0, 1)
                 for point in points
             )).transpose
-        return super(Polygon, cls).__new__(cls, matrix)
-
-    def __init__(self, matrix): # pylint: disable = unused-argument
-        # type: (Matrix) -> None
-        # pylint: disable = super-init-not-called
+        super().__init__(matrix)
         self._triangle_index = [] # type: list[tuple[int, int, int]]
 
     @cached_property
