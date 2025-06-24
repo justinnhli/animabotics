@@ -1,24 +1,17 @@
 """Tests for metaprogramming.py."""
 
 from functools import cached_property
-from typing import NamedTuple, Self
+from typing import Self
 
-from dumpy.metaprogramming import cached_class
-
-class _CachedClassDummy(NamedTuple):
-    x: int
+from dumpy.metaprogramming import CachedMetaclass
 
 
-@cached_class
-class CachedClassDummy(_CachedClassDummy):
+class CachedClassDummy(metaclass=CachedMetaclass):
     """A dummy class to test cached_class."""
-
-    def __new__(cls, x):
-        # type: (int) -> Self
-        return super(CachedClassDummy, cls).__new__(cls, x)
 
     def __init__(self, x): # pylint: disable = unused-argument
         # type: (int) -> None
+        self.x = x
         self.num_calls = 0
 
     @cached_property
