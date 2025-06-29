@@ -54,13 +54,13 @@ class Wall(GameObject):
         )
 
 
-class Bouncy(Game):
+class CollisionDemo(Game):
     """A bouncing ball collision demonstration."""
 
-    def __init__(self, num_balls):
-        # type: (int) -> None
+    def __init__(self, num_balls, random_seed=None):
+        # type: (int, int) -> None
         super().__init__(600, 400)
-        self.rng = Random(8675309)
+        self.rng = Random(random_seed)
         self.num_balls = num_balls
         self.create_objects()
         self.register_collisions()
@@ -114,11 +114,11 @@ class Bouncy(Game):
         self.on_collision('balls', 'v_walls', Ball.bounce_horizontal)
 
 
-def main():
+def main(): # pragma: no cover
     # type: () -> None
     """Provide a CLI entry point."""
-    Bouncy(20).start()
+    CollisionDemo(20).start()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     main()
