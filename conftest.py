@@ -13,6 +13,7 @@ def pytest_collection_modifyitems(session, config, items): # pylint: disable = u
     # type: (Any, Any, list[Any]) -> None
     """Sort tests by topological import order."""
     # group the tests by their paths
+    num_items = len(items)
     tests = defaultdict(list)
     for item in items:
         test_path, *_ = item.reportinfo()
@@ -38,10 +39,15 @@ def pytest_collection_modifyitems(session, config, items): # pylint: disable = u
     queue = sorted(modules - set(importees_of.keys()))
     while queue:
         importee = queue.pop(0)
-        items.extend(tests.get(importee, []))
+        if importee in tests:
+            items.extend(tests.pop(importee))
         newly_ready = set()
         for importer in sorted(importers_of.get(importee, set())):
             importees_of[importer].remove(importee)
             if not importees_of[importer]:
                 newly_ready.add(importer)
         queue.extend(sorted(newly_ready))
+    # add any non-matching tests at the end
+    for value in tests.values():
+        items.extend(value)
+    assert len(items) == num_items
