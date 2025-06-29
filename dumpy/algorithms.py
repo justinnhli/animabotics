@@ -14,7 +14,7 @@ from .simplex import Point2D, Segment
 class _SegmentWrapper:
     """A wrapper class for ordering Segments in sweep line algorithms."""
 
-    sweep_x = None # type: float
+    sweep_x = -float('Inf')
 
     def __init__(self, segment):
         # type: (Segment) -> None

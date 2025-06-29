@@ -21,7 +21,7 @@ class GameObject(Transformable):
         super().__init__(position, rotation)
         self.animation = None # type: Animation
         self.collision_geometry = None # type: Geometry
-        self.radius = 0 # type: float
+        self.radius = 0.0
         self._axis_projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
         self._collision_groups = frozenset() # type: frozenset[str]
         self._transformed_geometry_cache = {} # type: dict[PointsMatrix, PointsMatrix]
@@ -198,9 +198,9 @@ class PhysicsObject(GameObject):
         super().__init__()
         self.mass = 0
         self.velocity = Vector2D()
-        self.angular_velocity = 0 # type: float
+        self.angular_velocity = 0.0
         self.acceleration = Vector2D()
-        self.angular_acceleration = 0 # type: float
+        self.angular_acceleration = 0.0
 
     def update(self, elapsed_msec):
         # type: (int) -> None

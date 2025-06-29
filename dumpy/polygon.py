@@ -30,7 +30,7 @@ class ConvexPolygon(Geometry, metaclass=CachedMetaclass):
 
         Uses the shoelace formula.
         """
-        result = 0 # type: float
+        result = 0.0
         for i, point2 in enumerate(self.points):
             point1 = self.points[i - 1]
             point2 = self.points[i]
@@ -85,7 +85,7 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
     def centroid(self):
         # type: () -> Point2D
         """Calculate the centroid of the polygon."""
-        total_area = 0 # type: float
+        total_area = 0.0
         centroid = Vector2D()
         for partition in self.convex_partitions:
             total_area += partition.area
