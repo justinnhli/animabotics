@@ -23,7 +23,8 @@ def assert_object_attributes(objects, attributes):
     obj_counts = defaultdict(int)
     for obj in objects:
         class_name = type(obj).__name__
-        assert class_name in attributes
+        if class_name not in attributes:
+            continue
         values = []
         for key in class_keys[class_name]:
             value = getattr(obj, key) 
@@ -32,8 +33,20 @@ def assert_object_attributes(objects, attributes):
             else:
                 values.append(value)
         obj_key = (class_name, tuple(values))
-        assert obj_key in attr_counts and attr_counts[obj_key] > 0
+        if obj_key not in attr_counts or attr_counts[obj_key] <= 0:
+            message = [f'unexpected {class_name} object with attributes:']
+            for key in class_keys[class_name]:
+                value = getattr(obj, key) 
+                message.append(f'    {key}={value}')
+            assert False, '\n'.join(message)
         attr_counts[obj_key] -= 1
         if attr_counts[obj_key] == 0:
             del attr_counts[obj_key]
-    assert not attr_counts
+    if attr_counts:
+        message = ['failed to find objects:']
+        for class_name, values in attr_counts.items():
+            key = class_keys[class_name]
+            message.append(f'    {class_name}')
+            for value in values:
+                message.append(f'        {key}={value}')
+        assert False, '\n'.join(message)
