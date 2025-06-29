@@ -117,7 +117,7 @@ class Ground(GameObject):
         self.collision_radius = max(self.width, self.height) / 2
 
 
-class Bouncy(Game):
+class AnimationDemo(Game):
     """A bouncing ball animation demonstration."""
 
     def __init__(self):
@@ -157,7 +157,7 @@ class Bouncy(Game):
 def main(): # pragma: no cover
     # type: () -> None
     """Provide a CLI entry point."""
-    Bouncy().start()
+    AnimationDemo().start()
 
 
 if __name__ == '__main__': # pragma: no cover

@@ -1,7 +1,7 @@
 """Tests for Animation Demo."""
 
 from animabotics import Point2D
-from demos.animation_demo import Bouncy
+from demos.animation_demo import AnimationDemo
 
 from game_test_utils import assert_object_attributes
 
@@ -20,8 +20,8 @@ def assert_ball_size(objects, len_x, len_y):
         return
 
 
-def test_animation():
-    bouncy = Bouncy()
+def test_animation_demo():
+    bouncy = AnimationDemo()
     bouncy.prestart()
     assert_object_attributes(
         bouncy.objects, 
