@@ -387,11 +387,12 @@ class ClockDir(Enum):
 class WrappedPoint():
     """A wrapper around Point2D for polygon triangulation."""
 
-    def __init__(self, point, index):
-        # type: (Point2D, int) -> None
+    def __init__(self, point, polygon_index, point_index):
+        # type: (Point2D, int, int) -> None
         """A wrapper around points of a polygon, to tell them apart."""
         self.point = point
-        self.index = index
+        self.polygon_index = polygon_index
+        self.point_index = point_index
         self.point_type = None # type: PointType
         self.deasil_point = None # type: WrappedPoint
         self.deasil_segment = None # type: Segment
@@ -404,7 +405,7 @@ class WrappedPoint():
 
     def __repr__(self):
         # type: () -> str
-        return f'{self.index}:({self.point.x}, {self.point.y})'
+        return f'{self.polygon_index}:{self.point_index}:({self.point.x}, {self.point.y})'
 
     @property
     def x(self):
@@ -551,8 +552,8 @@ class Chain:
 
     def __repr__(self):
         # type: () -> str
-        points = [f'{point.index}:({point.x}, {point.y})' for point in self.points]
-        return f'Chain({", ".join(points)})'
+        args = ', '.join(repr(point) for point in self.points)
+        return f'Chain({args})'
 
     @property
     def deasil_point(self):
@@ -630,8 +631,8 @@ class Chain:
             point1, point2 = self.get_dir_pair(clock_dir)
             if Segment.orientation(point1.point, point2.point, point.point) != -1:
                 break
-            assert len(set([point1.index, point2.index, point.index])) == 3
-            triangles.append((point1.index, point2.index, point.index))
+            assert len(set([point1.point_index, point2.point_index, point.point_index])) == 3
+            triangles.append((point1.point_index, point2.point_index, point.point_index))
             self.points.pop(end_index)
         # update the pos-x and neg-x pointers
         if orig_end == self.posx_point:
@@ -906,22 +907,22 @@ class Chains:
                     assert key1 < key2, (key1, key2)
 
 
-def _preculculate_points_info(points):
-    # type: (Sequence[Point2D]) -> list[WrappedPoint]
+def _preculculate_points_info(polygon_index, points):
+    # type: (int, Sequence[Point2D]) -> list[WrappedPoint]
     segments = [
         Segment(points[i], points[i + 1])
         for i in range(-1, len(points) - 1)
     ]
     segments.append(segments[0])
     wrapped_points = [
-        WrappedPoint(point, index)
+        WrappedPoint(point, polygon_index, index)
         for index, point in enumerate(points)
     ]
     wrapped_points[0].deasil_point = wrapped_points[-1]
     wrapped_points[-1].widder_point = wrapped_points[0]
     for wrapped_point in wrapped_points:
         deasil_point = wrapped_point.deasil_point
-        widder_point = wrapped_points[(wrapped_point.index + 1) % len(points)]
+        widder_point = wrapped_points[(wrapped_point.point_index + 1) % len(points)]
         wrapped_point.widder_point = widder_point
         widder_point.deasil_point = wrapped_point
         if deasil_point.point < wrapped_point.point:
@@ -930,8 +931,8 @@ def _preculculate_points_info(points):
         else:
             wrapped_point.negx_point = widder_point
             wrapped_point.posx_point = deasil_point
-        deasil_segment = segments[wrapped_point.index]
-        widder_segment = segments[wrapped_point.index + 1]
+        deasil_segment = segments[wrapped_point.point_index]
+        widder_segment = segments[wrapped_point.point_index + 1]
         wrapped_point.deasil_segment = deasil_segment
         wrapped_point.widder_segment = widder_segment
         wrapped_point.point_type = PointType.FLANK
@@ -995,12 +996,10 @@ def triangulate_polygon(points):
     chain, which simplifies the triangle forming process.
     """
 
-    # build linked data structure with additional information
-    wrapped_points = _preculculate_points_info(points)
-    # define sweep line variables
+    # initialize sweep line variables
     priority_queue = PriorityQueue(key=WrappedPointKey) # type: PriorityQueue[WrappedPointKey, WrappedPoint]
     chains = Chains()
-    for point in wrapped_points:
+    for point in _preculculate_points_info(0, points):
         if point.point_type in (PointType.ENTER, PointType.SPLIT):
             priority_queue.push(point)
     # start the sweep line
