@@ -150,6 +150,31 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
         return result
 
 
+def _simplify_perimeter(points):
+    # type: (Sequence[Point2D]) -> list[Point2D]
+    """Simplify the points of a polygon for easier processing later.
+
+    * if two consecutive segments are co-linear, delete the middle point
+    * if two consecutive points are the same, delete one
+    """
+    new_points = []
+    prev_point = points[-1]
+    prev_segment = None
+    for i, curr_point in enumerate(points):
+        if prev_point == curr_point:
+            continue
+        if not prev_segment:
+            prev_segment = Segment(prev_point, curr_point)
+        next_point = points[(i + 1) % len(points)]
+        next_segment = Segment(curr_point, next_point)
+        if prev_segment.slope == next_segment.slope:
+            continue
+        new_points.append(curr_point)
+        prev_point = curr_point
+        prev_segment = next_segment
+    return new_points
+
+
 def make_geometry(points):
     # type: (Sequence[Point2D]) -> Geometry
     """Create the appropriate Geometry."""
