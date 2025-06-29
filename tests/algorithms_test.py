@@ -2,10 +2,12 @@
 
 from collections.abc import Sequence
 from itertools import product
+from math import pi as PI
 from typing import Iterator
 
-from dumpy.algorithms import bentley_ottmann, triangulate_polygon
-from dumpy.simplex import Point2D, Segment, Triangle
+from dumpy.algorithms import bentley_ottmann, triangulate_polygon, convex_partition
+from dumpy.simplex import Point2D, Segment
+from dumpy.polygon import ConvexPolygon
 
 
 def _no_duplicates_coord_segments(num_segments):
@@ -132,15 +134,192 @@ def test_bentley_ottmann():
     ) == [Point2D(54, 8)]
 
 
-def _test_triangulation(points):
-    # type: (Sequence[Point2D]) -> None
-    triangles = (
-        Triangle(
-            points[triangle_index[0]],
-            points[triangle_index[1]],
-            points[triangle_index[2]],
-        )
-        for triangle_index in triangulate_polygon(points)
+POLYGON_PARTITION_DATASET = (
+    # start, add, end
+    (
+        Point2D(4, 1), Point2D(2, 2), Point2D(-1, 2), Point2D(-3, 1),
+        Point2D(-4, -1), Point2D(-2, -2), Point2D(1, -2), Point2D(3, -1),
+    ),
+    (
+        Point2D(-8, 0), Point2D(-5, -1), Point2D(-3, -2),
+        Point2D(-2, -3), Point2D(-1, -5), Point2D(0, -8),
+        Point2D(1, 1),
+    ),
+    (
+        Point2D(-8, 0), Point2D(-5, -1), Point2D(-3, -2),
+        Point2D(-2, -3), Point2D(-1, -5), Point2D(0, -8),
+        Point2D(1, -4), Point2D(3, 0),
+    ),
+    (
+        Point2D(8, -4), Point2D(7, 4), Point2D(5, 4), Point2D(4, 1), Point2D(3, -1),
+        Point2D(2, -2), Point2D(0, -3), Point2D(-1, 4), Point2D(-8, 4), Point2D(-8, 1),
+        Point2D(-6, 2), Point2D(-5, 2), Point2D(-4, 1), Point2D(-3, -1), Point2D(-2, -4),
+    ),
+    (
+        Point2D(-2, 2), Point2D(-2, -2), Point2D(2, -2), Point2D(2, 2),
+    ),
+    (
+        Point2D(-2, 2), Point2D(-2, 0), Point2D(-2, -2), Point2D(0, -2),
+        Point2D(2, -2), Point2D(2, 0), Point2D(2, 2), Point2D(0, 2),
+    ),
+    # merge or split
+    (
+        Point2D(-1, 1), Point2D(0, 0), Point2D(-1, -1),
+        Point2D(2, -1), Point2D(1, 1),
+    ),
+    (
+        Point2D(-1, 1), Point2D(0, 0), Point2D(-1, -1),
+        Point2D(2, -1),
+    ),
+    (
+        Point2D(-1, 5), Point2D(0, 4), Point2D(-1, 3), Point2D(1, 2), Point2D(-1, 1), Point2D(0, 0),
+        Point2D(-1, -1), Point2D(1, -2), Point2D(-1, -3), Point2D(0, -4), Point2D(-1, -5), Point2D(8, 0),
+    ),
+    (
+        Point2D(-1, 2), Point2D(0, 0), Point2D(-2, 1),
+        Point2D(1, -2), Point2D(2, -1),
+    ),
+    (
+        Point2D(-1, 2), Point2D(0, 0), Point2D(-2, 1),
+        Point2D(2, -2), Point2D(1, 3),
+    ),
+    (
+        Point2D(-1, 3), Point2D(-2, 2), Point2D(0, 0),
+        Point2D(-2, 1), Point2D(1, -1),
+    ),
+    (
+        Point2D(0, 3), Point2D(-1, 2), Point2D(0, 1),
+        Point2D(0, -1), Point2D(-1, -2), Point2D(0, -3),
+        Point2D(2, 0),
+    ),
+    (
+        Point2D(1, 3), Point2D(-2, 2), Point2D(-1, 1), Point2D(0, 1),
+        Point2D(0, -1), Point2D(-1, -2), Point2D(1, -3), Point2D(2, 0),
+    ),
+    (
+        Point2D(3, 0), Point2D(2, 4), Point2D(-3, 4), Point2D(1, -1), Point2D(-1, 1),
+        Point2D(-3, 1), Point2D(-2, 0), Point2D(-3, -1), Point2D(-3, -4), Point2D(2, -4),
+    ),
+    (
+        Point2D(3, 0), Point2D(2, 4), Point2D(-3, 4), Point2D(1, -1), Point2D(-1, 1),
+        Point2D(-3, 1), Point2D(-2, 0), Point2D(-6, -4), Point2D(2, -4),
+    ),
+    (
+        Point2D(-2, 2),
+        Point2D(0, -1),
+        Point2D(-2, -2),
+        Point2D(1, -2),
+        Point2D(1, 1),
+        Point2D(2, 2),
+    ),
+    (
+        Point2D(-2, 2),
+        Point2D(0, -1),
+        Point2D(-2, -2),
+        Point2D(0, -2),
+        Point2D(1, 1),
+        Point2D(2, 2),
+    ),
+    (
+        Point2D(0, 0), Point2D(8, 2), Point2D(7, 4),
+        Point2D(8, 6), Point2D(7, 5), Point2D(6, 3), Point2D(5, 2), Point2D(3, 1),
+    ),
+    # merge and split
+    (
+        Point2D(0, 2), Point2D(-2, 1), Point2D(-1, 0), Point2D(-2, -1),
+        Point2D(0, -2), Point2D(2, -1), Point2D(1, 0), Point2D(2, 1),
+    ),
+    (
+        Point2D(-2, 1), Point2D(-1, 0), Point2D(-2, -1),
+        Point2D(2, -1), Point2D(1, 0), Point2D(2, 1),
+    ),
+    (
+        Point2D(-2, 4), Point2D(0, 3), Point2D(-2, 2), Point2D(0, 1),
+        Point2D(-2, -1), Point2D(0, -2), Point2D(-2, -3), Point2D(-1, -4),
+        Point2D(2, -4), Point2D(0, -3), Point2D(2, -2), Point2D(0, -1),
+        Point2D(2, 1), Point2D(0, 2), Point2D(2, 3), Point2D(1, 4),
+    ),
+    (
+        Point2D(3, 0),
+        Point2D(1, 2), Point2D(3, 4),
+        Point2D(-2, 4), Point2D(-1, 3), Point2D(-2, 2), Point2D(-1, 1),
+        Point2D(-2, 0),
+        Point2D(-1, -1), Point2D(-2, -2), Point2D(-1, -3), Point2D(-2, -4),
+        Point2D(3, -4), Point2D(1, -2),
+    ),
+    (
+        Point2D(3, 0),
+        Point2D(1, 2), Point2D(3, 4),
+        Point2D(-4, 4), Point2D(-1, 3), Point2D(-2, 2), Point2D(-1, 1),
+        Point2D(-2, 0),
+        Point2D(-1, -1), Point2D(-2, -2), Point2D(-1, -3), Point2D(-4, -4),
+        Point2D(3, -4), Point2D(1, -2),
+    ),
+    (
+        Point2D(1, 0), Point2D(2, 5), Point2D(-4, 1), Point2D(-2, 2), Point2D(-1, 2),
+        Point2D(0, 0), Point2D(-1, -2), Point2D(-2, -2), Point2D(-4, -1), Point2D(2, -5),
+    ),
+    (
+        Point2D(1, 0), Point2D(2, 5), Point2D(-4, 1), Point2D(-2, 2), Point2D(-1, 2),
+        Point2D(-1, -2), Point2D(-2, -2), Point2D(-4, -1), Point2D(2, -5),
+    ),
+    (
+        Point2D(-2, 2),
+        Point2D(-1, 1),
+        Point2D(-2, -2),
+        Point2D(2, -2),
+        Point2D(0, -1),
+        Point2D(2, 2),
+    ),
+    (
+        Point2D(0, -5), Point2D(10, -3), Point2D(9, 0), Point2D(10, 3),
+        Point2D(0, 5), Point2D(3, 4), Point2D(5, 3), Point2D(6, 2),
+        Point2D(7, 0), Point2D(6, -2), Point2D(5, -3), Point2D(3, -4),
+    ),
+    (
+        Point2D(-2, 4),
+        Point2D(-2, -4),
+        Point2D(0, -1),
+        Point2D(2, -4),
+        Point2D(2, -3),
+        Point2D(-1, 2),
+        Point2D(2, -2),
+        Point2D(2, 4),
+        Point2D(0, 1),
+    ),
+    # repeated points and opposite colinear segments
+    (
+        Point2D(0, 0), Point2D(1, 1), Point2D(2, 0), Point2D(1, -1),
+        Point2D(0, 0), Point2D(2, -3), Point2D(4, 0), Point2D(2, 3),
+    ),
+    (
+        Point2D(2, 0), Point2D(0, 2), Point2D(-2, 0), Point2D(0, -2), Point2D(2, 0),
+        Point2D(1, 0), Point2D(0, -1), Point2D(-1, 0), Point2D(0, 1), Point2D(1, 0),
+    ),
+    (
+        Point2D(0, 0), Point2D(2, -3), Point2D(1, -1), Point2D(4, -3), Point2D(4, -1),
+        Point2D(1, 0), Point2D(4, 1), Point2D(4, 3), Point2D(1, 1), Point2D(2, 3),
+        Point2D(0, 0), Point2D(3, 2), Point2D(3, 1),
+        Point2D(0, 0), Point2D(3, -1), Point2D(3, -2),
+    ),
+    (
+        Point2D(0, -4), Point2D(4, -4), Point2D(4, 4), Point2D(-4, 4), Point2D(-4, -4), Point2D(0, -4), Point2D(0, 0),
+        Point2D(-1, -2), Point2D(-2, -1), Point2D(0, 0),
+        Point2D(-3, -1), Point2D(-3, 1), Point2D(0, 0),
+        Point2D(-2, 1), Point2D(-1, 2), Point2D(0, 0),
+        Point2D(-1, 3), Point2D(1, 3), Point2D(0, 0),
+        Point2D(1, 2), Point2D(2, 1), Point2D(0, 0),
+        Point2D(3, 1), Point2D(3, -1), Point2D(0, 0),
+        Point2D(2, -1), Point2D(1, -2), Point2D(0, 0),
+    ),
+)
+
+
+def _validate_partition(points, partition_indices):
+    # type: (Sequence[Point2D], tuple[tuple[int, ...], ...]) -> None
+    components = (
+        ConvexPolygon(points=tuple(points[i] for i in index))
+        for index in partition_indices
     )
     # initialize the segments with the _clockwise_ perimeter
     # which will be "canceled out" during the verification
@@ -148,24 +327,33 @@ def _test_triangulation(points):
         Segment(points[i], points[i - 1])
         for i in range(len(points))
     )
-    internal_segments = set()
-    # verify each triangle
-    for triangle in triangles:
-        # verify triangle is counter-clockwise
+    internal_segments = set() # type: set[Segment]
+    # verify each component
+    for component in components:
+        # verify component goes does not go clockwise
         assert all(
             Segment.orientation(
-                triangle.points[i - 1],
-                triangle.points[i],
-                triangle.points[i + 1],
-            ) == -1
-            for i in range(-1, 2)
+                component.points[i - 1],
+                component.points[i],
+                component.points[i + 1],
+            ) != 1
+            for i in range(-2, len(component.points) - 2)
         )
-        # verify triangle has non-zero area
-        assert triangle.area > 0
-        # verify that all triangle edges either:
-        # * have a twin that belongs to another triangle, or
+        # verify component angles are convex
+        assert all(
+            Segment.angle(
+                component.points[i - 1],
+                component.points[i],
+                component.points[i + 1],
+            ) <= 2 * PI
+            for i in range(-2, len(component.points) - 2)
+        )
+        # verify component has non-zero area
+        assert component.area > 0
+        # verify that all component edges either:
+        # * have a twin that belongs to another component, or
         # * is part of the perimeter of the polygon
-        for segment in triangle.segments:
+        for segment in component.segments:
             if segment.twin in boundary_segments:
                 boundary_segments.remove(segment.twin)
             elif segment.twin in internal_segments:
@@ -180,206 +368,37 @@ def _test_triangulation(points):
 def test_polygon_triangulation_good():
     # type: () -> None
     """Test successful polygon triangulations."""
-    shapes = (
-        # start, add, end
-        (
-            Point2D(4, 1), Point2D(2, 2), Point2D(-1, 2), Point2D(-3, 1),
-            Point2D(-4, -1), Point2D(-2, -2), Point2D(1, -2), Point2D(3, -1),
-        ),
-        (
-            Point2D(-8, 0), Point2D(-5, -1), Point2D(-3, -2),
-            Point2D(-2, -3), Point2D(-1, -5), Point2D(0, -8),
-            Point2D(1, 1),
-        ),
-        (
-            Point2D(-8, 0), Point2D(-5, -1), Point2D(-3, -2),
-            Point2D(-2, -3), Point2D(-1, -5), Point2D(0, -8),
-            Point2D(1, -4), Point2D(3, 0),
-        ),
-        (
-            Point2D(8, -4), Point2D(7, 4), Point2D(5, 4), Point2D(4, 1), Point2D(3, -1),
-            Point2D(2, -2), Point2D(0, -3), Point2D(-1, 4), Point2D(-8, 4), Point2D(-8, 1),
-            Point2D(-6, 2), Point2D(-5, 2), Point2D(-4, 1), Point2D(-3, -1), Point2D(-2, -4),
-        ),
-        (
-            Point2D(-2, 2), Point2D(-2, -2), Point2D(2, -2), Point2D(2, 2),
-        ),
-        (
-            Point2D(-2, 2), Point2D(-2, 0), Point2D(-2, -2), Point2D(0, -2),
-            Point2D(2, -2), Point2D(2, 0), Point2D(2, 2), Point2D(0, 2),
-        ),
-        # merge or split
-        (
-            Point2D(-1, 1), Point2D(0, 0), Point2D(-1, -1),
-            Point2D(2, -1), Point2D(1, 1),
-        ),
-        (
-            Point2D(-1, 1), Point2D(0, 0), Point2D(-1, -1),
-            Point2D(2, -1),
-        ),
-        (
-            Point2D(-1, 5), Point2D(0, 4), Point2D(-1, 3), Point2D(1, 2), Point2D(-1, 1), Point2D(0, 0),
-            Point2D(-1, -1), Point2D(1, -2), Point2D(-1, -3), Point2D(0, -4), Point2D(-1, -5), Point2D(8, 0),
-        ),
-        (
-            Point2D(-1, 2), Point2D(0, 0), Point2D(-2, 1),
-            Point2D(1, -2), Point2D(2, -1),
-        ),
-        (
-            Point2D(-1, 2), Point2D(0, 0), Point2D(-2, 1),
-            Point2D(2, -2), Point2D(1, 3),
-        ),
-        (
-            Point2D(-1, 3), Point2D(-2, 2), Point2D(0, 0),
-            Point2D(-2, 1), Point2D(1, -1),
-        ),
-        (
-            Point2D(0, 3), Point2D(-1, 2), Point2D(0, 1),
-            Point2D(0, -1), Point2D(-1, -2), Point2D(0, -3),
-            Point2D(2, 0),
-        ),
-        (
-            Point2D(1, 3), Point2D(-2, 2), Point2D(-1, 1), Point2D(0, 1),
-            Point2D(0, -1), Point2D(-1, -2), Point2D(1, -3), Point2D(2, 0),
-        ),
-        (
-            Point2D(3, 0), Point2D(2, 4), Point2D(-3, 4), Point2D(1, -1), Point2D(-1, 1),
-            Point2D(-3, 1), Point2D(-2, 0), Point2D(-3, -1), Point2D(-3, -4), Point2D(2, -4),
-        ),
-        (
-            Point2D(3, 0), Point2D(2, 4), Point2D(-3, 4), Point2D(1, -1), Point2D(-1, 1),
-            Point2D(-3, 1), Point2D(-2, 0), Point2D(-6, -4), Point2D(2, -4),
-        ),
-        (
-            Point2D(-2, 2),
-            Point2D(0, -1),
-            Point2D(-2, -2),
-            Point2D(1, -2),
-            Point2D(1, 1),
-            Point2D(2, 2),
-        ),
-        (
-            Point2D(-2, 2),
-            Point2D(0, -1),
-            Point2D(-2, -2),
-            Point2D(0, -2),
-            Point2D(1, 1),
-            Point2D(2, 2),
-        ),
-        (
-            Point2D(0, 0), Point2D(8, 2), Point2D(7, 4),
-            Point2D(8, 6), Point2D(7, 5), Point2D(6, 3), Point2D(5, 2), Point2D(3, 1),
-        ),
-        # merge and split
-        (
-            Point2D(0, 2), Point2D(-2, 1), Point2D(-1, 0), Point2D(-2, -1),
-            Point2D(0, -2), Point2D(2, -1), Point2D(1, 0), Point2D(2, 1),
-        ),
-        (
-            Point2D(-2, 1), Point2D(-1, 0), Point2D(-2, -1),
-            Point2D(2, -1), Point2D(1, 0), Point2D(2, 1),
-        ),
-        (
-            Point2D(-2, 4), Point2D(0, 3), Point2D(-2, 2), Point2D(0, 1),
-            Point2D(-2, -1), Point2D(0, -2), Point2D(-2, -3), Point2D(-1, -4),
-            Point2D(2, -4), Point2D(0, -3), Point2D(2, -2), Point2D(0, -1),
-            Point2D(2, 1), Point2D(0, 2), Point2D(2, 3), Point2D(1, 4),
-        ),
-        (
-            Point2D(3, 0),
-            Point2D(1, 2), Point2D(3, 4),
-            Point2D(-2, 4), Point2D(-1, 3), Point2D(-2, 2), Point2D(-1, 1),
-            Point2D(-2, 0),
-            Point2D(-1, -1), Point2D(-2, -2), Point2D(-1, -3), Point2D(-2, -4),
-            Point2D(3, -4), Point2D(1, -2),
-        ),
-        (
-            Point2D(3, 0),
-            Point2D(1, 2), Point2D(3, 4),
-            Point2D(-4, 4), Point2D(-1, 3), Point2D(-2, 2), Point2D(-1, 1),
-            Point2D(-2, 0),
-            Point2D(-1, -1), Point2D(-2, -2), Point2D(-1, -3), Point2D(-4, -4),
-            Point2D(3, -4), Point2D(1, -2),
-        ),
-        (
-            Point2D(1, 0), Point2D(2, 5), Point2D(-4, 1), Point2D(-2, 2), Point2D(-1, 2),
-            Point2D(0, 0), Point2D(-1, -2), Point2D(-2, -2), Point2D(-4, -1), Point2D(2, -5),
-        ),
-        (
-            Point2D(1, 0), Point2D(2, 5), Point2D(-4, 1), Point2D(-2, 2), Point2D(-1, 2),
-            Point2D(-1, -2), Point2D(-2, -2), Point2D(-4, -1), Point2D(2, -5),
-        ),
-        (
-            Point2D(-2, 2),
-            Point2D(-1, 1),
-            Point2D(-2, -2),
-            Point2D(2, -2),
-            Point2D(0, -1),
-            Point2D(2, 2),
-        ),
-        (
-            Point2D(0, -5), Point2D(10, -3), Point2D(9, 0), Point2D(10, 3),
-            Point2D(0, 5), Point2D(3, 4), Point2D(5, 3), Point2D(6, 2),
-            Point2D(7, 0), Point2D(6, -2), Point2D(5, -3), Point2D(3, -4),
-        ),
-        (
-            Point2D(-2, 4),
-            Point2D(-2, -4),
-            Point2D(0, -1),
-            Point2D(2, -4),
-            Point2D(2, -3),
-            Point2D(-1, 2),
-            Point2D(2, -2),
-            Point2D(2, 4),
-            Point2D(0, 1),
-        ),
-        # repeated points and opposite colinear segments
-        (
-            Point2D(0, 0), Point2D(1, 1), Point2D(2, 0), Point2D(1, -1),
-            Point2D(0, 0), Point2D(2, -3), Point2D(4, 0), Point2D(2, 3),
-        ),
-        (
-            Point2D(2, 0), Point2D(0, 2), Point2D(-2, 0), Point2D(0, -2), Point2D(2, 0),
-            Point2D(1, 0), Point2D(0, -1), Point2D(-1, 0), Point2D(0, 1), Point2D(1, 0),
-        ),
-        (
-            Point2D(0, 0), Point2D(2, -3), Point2D(1, -1), Point2D(4, -3), Point2D(4, -1),
-            Point2D(1, 0), Point2D(4, 1), Point2D(4, 3), Point2D(1, 1), Point2D(2, 3),
-            Point2D(0, 0), Point2D(3, 2), Point2D(3, 1),
-            Point2D(0, 0), Point2D(3, -1), Point2D(3, -2),
-        ),
-        (
-            Point2D(0, -4), Point2D(4, -4), Point2D(4, 4), Point2D(-4, 4), Point2D(-4, -4), Point2D(0, -4), Point2D(0, 0),
-            Point2D(-1, -2), Point2D(-2, -1), Point2D(0, 0),
-            Point2D(-3, -1), Point2D(-3, 1), Point2D(0, 0),
-            Point2D(-2, 1), Point2D(-1, 2), Point2D(0, 0),
-            Point2D(-1, 3), Point2D(1, 3), Point2D(0, 0),
-            Point2D(1, 2), Point2D(2, 1), Point2D(0, 0),
-            Point2D(3, 1), Point2D(3, -1), Point2D(0, 0),
-            Point2D(2, -1), Point2D(1, -2), Point2D(0, 0),
-        ),
-    )
-    for index, polygon in enumerate(shapes):
-        print(f'POLYGON {index}')
-        _test_triangulation(polygon)
-        print(f'POLYGON {index}y')
-        _test_triangulation(list(reversed([
-            Point2D.from_matrix(point.matrix.y_reflection) for point in polygon
-        ])))
-        print(f'POLYGON {index}x')
-        _test_triangulation(list(reversed([
-            Point2D.from_matrix(point.matrix.x_reflection) for point in polygon
-        ])))
-        print(f'POLYGON {index}xy')
-        _test_triangulation([
-            Point2D.from_matrix(point.matrix.x_reflection.y_reflection) for point in polygon
-        ])
+    for index, points in enumerate(POLYGON_PARTITION_DATASET):
+        variants = (
+            ('', points),
+            (
+                'y',
+                list(reversed([
+                    Point2D.from_matrix(point.matrix.y_reflection) for point in points
+                ])),
+            ),
+            (
+                'x',
+                list(reversed([
+                    Point2D.from_matrix(point.matrix.x_reflection) for point in points
+                ])),
+            ),
+            (
+                'xy',
+                [
+                    Point2D.from_matrix(point.matrix.x_reflection.y_reflection) for point in points
+                ],
+            ),
+        )
+        for marker, variant_points in variants:
+            print(f'POLYGON {index}{marker}')
+            _validate_partition(variant_points, triangulate_polygon(variant_points))
 
 
 def test_polygon_triangulation_bad():
     # type: () -> None
     shapes = (
-        # shrink to a point 
+        # shrink to a point
         (
             Point2D(-1, 1), Point2D(-1, -1), Point2D(0, 0),
             Point2D(1, -1), Point2D(1, 1), Point2D(0, 0),
@@ -388,7 +407,7 @@ def test_polygon_triangulation_bad():
             Point2D(1, 1), Point2D(-1, 1), Point2D(0, 0),
             Point2D(-1, -1), Point2D(1, -1), Point2D(0, 0),
         ),
-        # squeezed to a line 
+        # squeezed to a line
         (
             Point2D(-2, 1), Point2D(-2, -1), Point2D(-1, 0), Point2D(1, 0),
             Point2D(2, -1), Point2D(2, 1), Point2D(1, 0),  Point2D(-1, 0),
@@ -404,6 +423,7 @@ def test_polygon_triangulation_bad():
     )
     for index, polygon in enumerate(shapes):
         try:
+            print(f'POLYGON {index}')
             triangulate_polygon(polygon)
             assert False
         except (ValueError, AssertionError):
