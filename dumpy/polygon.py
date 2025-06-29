@@ -4,7 +4,7 @@ from functools import cached_property
 from math import sin, cos, pi as PI
 from typing import Self, Sequence
 
-from .algorithms import triangulate_polygon
+from .algorithms import convex_partition
 from .matrix import Matrix
 from .metaprogramming import CachedMetaclass
 from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
@@ -97,7 +97,7 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
         # type: () -> tuple[ConvexPolygon, ...]
         """Return a convex partition of the polygon."""
         if not self._convex_index:
-            self._convex_index = triangulate_polygon(self.points)
+            self._convex_index = convex_partition(self.points)
         return tuple(
             ConvexPolygon(tuple(self.points[i] for i in indices))
             for indices in self._convex_index
