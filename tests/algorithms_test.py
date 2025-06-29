@@ -428,3 +428,33 @@ def test_polygon_triangulation_bad():
             assert False
         except (ValueError, AssertionError):
             pass
+
+
+def test_convex_partition():
+    # type: () -> None
+    """Test successful polygon convex partitions."""
+    for index, points in enumerate(POLYGON_PARTITION_DATASET):
+        variants = (
+            ('', points),
+            (
+                'y',
+                list(reversed([
+                    Point2D.from_matrix(point.matrix.y_reflection) for point in points
+                ])),
+            ),
+            (
+                'x',
+                list(reversed([
+                    Point2D.from_matrix(point.matrix.x_reflection) for point in points
+                ])),
+            ),
+            (
+                'xy',
+                [
+                    Point2D.from_matrix(point.matrix.x_reflection.y_reflection) for point in points
+                ],
+            ),
+        )
+        for marker, variant_points in variants:
+            print(f'POLYGON {index}{marker}')
+            _validate_partition(variant_points, convex_partition(variant_points))

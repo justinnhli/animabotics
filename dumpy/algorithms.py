@@ -1074,3 +1074,115 @@ def triangulate_polygon(points):
             priority_queue.push(point.widder_point)
         #chains.validate()
     return tuple(chains.triangles)
+
+
+BearingInfo = namedtuple('BearingInfo', 'prev_index, bearing, next_index')
+
+
+def convex_partition(points, triangle_indices=None):
+    # type: (Sequence[Point2D], Sequence[tuple[int, int, int]]) -> tuple[tuple[int, ...], ...]
+    """Partition a simple polygon into component convex polygons."""
+    # get triangulation indices
+    if triangle_indices is None:
+        triangle_indices = triangulate_polygon(points)
+    # set up data structures
+    point_bearings_map = defaultdict(dict) # type: dict[int, dict[int, BearingInfo]]
+    bearings = {} # type: dict[tuple[int, int], float]
+    interior_segments = set() # type: set[tuple[int, int]]
+    for triangle_index in triangle_indices:
+        shifted_index = triangle_index[1:] + (triangle_index[0],)
+        for index1, index2 in zip(triangle_index, shifted_index):
+            point_bearings_map[index1][index2] = None
+            point_bearings_map[index2][index1] = None
+            segment = Segment(points[index1], points[index2])
+            bearings[(index1, index2)] = segment.bearing
+            if segment.bearing > PI:
+                bearings[(index2, index1)] = segment.bearing - PI
+            else:
+                bearings[(index2, index1)] = segment.bearing + PI
+            if abs(index1 - index2) not in (1, len(points) - 1):
+                if index1 < index2:
+                    interior_segments.add((index1, index2))
+                else:
+                    interior_segments.add((index2, index1))
+    # for every point, create a linked list of neighbors ordered by bearing
+    for index1 in range(len(points)):
+        # store bearings of all connected points as a linked structure
+        point_bearings = sorted(
+            (bearings[(index1, index2)], index2)
+            for index2 in point_bearings_map[index1]
+        )
+        point_bearings_map[index1] = {}
+        for i, (bearing, index2) in enumerate(point_bearings):
+            point_bearings_map[index1][index2] = BearingInfo(
+                point_bearings[(i - 1) % len(point_bearings)][1],
+                bearing,
+                point_bearings[(i + 1) % len(point_bearings)][1],
+            )
+    # repeatedly remove non-essential segments until there are no more changes
+    changed_segments = set(interior_segments)
+    while changed_segments:
+        new_changed_segments = set()
+        for index1, index2 in changed_segments:
+            if index2 not in point_bearings_map[index1]:
+                continue
+            # segment is essential if at least one end is dividing a reflex angle
+            essential = False
+            for src_index, dst_index in ((index1, index2), (index2, index1)):
+                point_info = point_bearings_map[src_index]
+                angle_info = point_info[dst_index]
+                angle = (
+                    point_info[angle_info.next_index].bearing
+                    - point_info[angle_info.prev_index].bearing
+                ) % (2 * PI)
+                if angle >= PI:
+                    essential = True
+                    break
+            if essential:
+                continue
+            # update the bearings data structure
+            for src_index, dst_index in ((index1, index2), (index2, index1)):
+                point_info = point_bearings_map[src_index]
+                # remove the segment from the chain
+                bearing_info = point_info[dst_index]
+                prev_index = bearing_info.prev_index
+                next_index = bearing_info.next_index
+                point_info[prev_index] = point_info[prev_index]._replace(
+                    next_index=next_index,
+                )
+                point_info[next_index] = point_info[next_index]._replace(
+                    prev_index=prev_index,
+                )
+                # add adjacent segments as having changed
+                for other_index in (prev_index, next_index):
+                    key = (src_index, other_index)
+                    if key in interior_segments:
+                        new_changed_segments.add(key)
+            del point_bearings_map[index1][index2]
+            del point_bearings_map[index2][index1]
+        changed_segments = new_changed_segments
+    # create the index lists of convex partitions via breadth-first search
+    frontier = [(0, 1),]
+    visited = set()
+    convex_indices = []
+    while frontier:
+        curr_index, next_index = frontier.pop(0)
+        init_index = curr_index
+        if (curr_index, next_index) in visited:
+            continue
+        visited.add((curr_index, next_index))
+        face_indices = [curr_index]
+        while next_index != init_index:
+            next_next_index = point_bearings_map[next_index][curr_index].prev_index
+            curr_index = next_index
+            next_index = next_next_index
+            face_indices.append(curr_index)
+            visited.add((curr_index, next_index))
+            add_twin = (
+                (next_index, curr_index) not in visited
+                and abs(next_index - curr_index) not in (1, len(points) - 1)
+            )
+            if add_twin:
+                frontier.append((next_index, curr_index))
+        convex_indices.append(tuple(face_indices))
+    return tuple(convex_indices)
