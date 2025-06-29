@@ -154,11 +154,11 @@ class Bouncy(Game):
         )
 
 
-def main():
+def main(): # pragma: no cover
     # type: () -> None
     """Provide a CLI entry point."""
     Bouncy().start()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     main()

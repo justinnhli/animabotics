@@ -10,7 +10,7 @@ try:
     from PIL.Image import Image, new as new_image
     from PIL.ImageDraw import Draw
     from PIL.ImageTk import PhotoImage
-except (ModuleNotFoundError, ImportError):
+except (ModuleNotFoundError, ImportError): # pragma: no cover
 
     def import_error_factory(module_name):
         # type: (str) -> Callable[[], None]
