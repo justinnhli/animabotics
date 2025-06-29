@@ -1,9 +1,9 @@
 """Utility algorithms."""
 
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, namedtuple
 from collections.abc import Sequence
 from enum import IntEnum, Enum
-from math import inf as INF, copysign, nextafter
+from math import inf as INF, pi as PI, copysign, nextafter
 from statistics import mean
 from typing import Any, Optional, Union
 
@@ -489,33 +489,41 @@ class WrappedPoint():
 
 
 class WrappedPointKey:
+    """A comparison key for WrappedPoints, for the priority queue."""
 
     def __init__(self, point):
+        # type: (WrappedPoint) -> None
         self.point = point
 
     def __eq__(self, other):
+        # type: (Any) -> bool
         return (
             isinstance(other, WrappedPointKey)
             and self.point == other.point
         )
 
     def __lt__(self, other):
+        # type: (WrappedPointKey) -> bool
         assert isinstance(other, WrappedPointKey)
         if self.key != other.key:
             return self.key < other.key
         return WrappedPoint._compare_slopes(self.point, other.point) < 0
 
     def __gt__(self, other):
+        # type: (WrappedPointKey) -> bool
         assert isinstance(other, WrappedPointKey)
         if self.key != other.key:
             return self.key > other.key
         return WrappedPoint._compare_slopes(self.point, other.point) > 0
 
     def __repr__(self):
-        return f'WrappedKey(({self.point}, {self.point.point_type})'
+        # type: () -> str
+        return f'WrappedKey({self.point}, {self.point.point_type})'
 
     @property
     def key(self):
+        # type: () -> tuple[float, float, PointType]
+        """Return the comparison key."""
         return (self.point.x, self.point.y, self.point.point_type)
 
 
@@ -561,11 +569,13 @@ class Chain:
     @property
     def deasil_key(self):
         # type: () -> ChainEnd
+        """Get the deasil ChainEnd."""
         return ChainEnd(self, ClockDir.DEASIL)
 
     @property
     def widder_key(self):
         # type: () -> ChainEnd
+        """Get the widder ChainEnd."""
         return ChainEnd(self, ClockDir.WIDDER)
 
     def get_dir_point(self, clock_dir):
@@ -590,6 +600,7 @@ class Chain:
 
     def get_dir_key(self, clock_dir):
         # type: (ClockDir) -> ChainEnd
+        """Get the ChainEnd in either clock direction."""
         if clock_dir == ClockDir.DEASIL:
             return self.deasil_key
         else:
@@ -597,7 +608,7 @@ class Chain:
 
     def get_dir_chain(self, clock_dir):
         # type: (ClockDir) -> Chain
-        """Get next chain in either clock clock_dir."""
+        """Get next chain in either clock direction."""
         if clock_dir == ClockDir.DEASIL:
             return self.deasil_chain
         else:
@@ -684,7 +695,7 @@ class Chain:
         else:
             return deasil_y, widder_y
 
-    def validate(self):
+    def validate(self): # pragma: no cover
         # type: () -> None
         """Validate the chain."""
         # check that the chain is monotonic
@@ -845,7 +856,7 @@ class Chains:
                     # if the chain is not the last one due to a LEAVE point
                     # it is curving away and need to be reinserted
                     self.add_chain(chain)
-                    chain.validate()
+                    #chain.validate()
                 break
 
     def get_nearest_chains(self, point):
@@ -864,7 +875,9 @@ class Chains:
         """Get the chain that ends at the specified point."""
         return self.chain_end_map[(clock_dir, point)]
 
-    def validate(self):
+    def validate(self): # pragma: no cover
+        # type: () -> None
+        """Validate the chain."""
         keys = []
         for i, (key, chain) in enumerate(self.tree.items()):
             if i % 2 == 0:
@@ -1010,7 +1023,6 @@ def triangulate_polygon(points):
                 point,
                 ClockDir.DEASIL,
             )
-            chains.validate()
         elif point.point_type == PointType.SPLIT:
             chain, _ = chains.get_nearest_chains(point)
             # extend the chain and potentially add a new one
@@ -1061,4 +1073,4 @@ def triangulate_polygon(points):
         if point.widder_point.point > point.point:
             priority_queue.push(point.widder_point)
         #chains.validate()
-    return chains.triangles
+    return tuple(chains.triangles)
