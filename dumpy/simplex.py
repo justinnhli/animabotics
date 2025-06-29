@@ -348,6 +348,19 @@ class Segment(Geometry, metaclass=CachedMetaclass):
             return (self.point2.y - self.point1.y) / denominator
 
     @cached_property
+    def bearing(self):
+        """The bearing of the segment.
+
+        Calculated as the angle counterclockwise angle from the positive x-axis.
+        """
+        dx = self.point2.x - self.point1.x
+        dy = self.point2.y - self.point1.y
+        result = atan2(dy, dx)
+        if result < 0:
+            result += 2 * PI
+        return result
+
+    @cached_property
     def length(self):
         # type: () -> float
         """The length of the segment."""
