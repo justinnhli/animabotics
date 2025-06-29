@@ -2,8 +2,8 @@
 
 from itertools import product
 
-from dumpy.canvas import Canvas
-from dumpy.color import Color
+from animabotics.canvas import Canvas
+from animabotics.color import Color
 
 from image_test_utils import grab_screen, check_image
 

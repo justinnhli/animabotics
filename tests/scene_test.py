@@ -2,10 +2,10 @@
 
 from collections import Counter
 
-from dumpy.game_object import GameObject
-from dumpy.polygon import Polygon
-from dumpy.scene import HierarchicalHashGrid
-from dumpy.simplex import Point2D
+from animabotics.game_object import GameObject
+from animabotics.polygon import Polygon
+from animabotics.scene import HierarchicalHashGrid
+from animabotics.simplex import Point2D
 
 
 def test_hierarchical_hash_grid():

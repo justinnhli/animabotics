@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-SOURCE_PATH = Path(__file__).parent / 'dumpy'
+SOURCE_PATH = Path(__file__).parent / 'animabotics'
 
 
 def pytest_collection_modifyitems(session, config, items): # pylint: disable = unused-argument

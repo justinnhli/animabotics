@@ -1,9 +1,9 @@
 """Tests for camera.py."""
 
-from dumpy.camera import Camera
-from dumpy.canvas import Canvas
-from dumpy.polygon import Polygon
-from dumpy.simplex import Point2D
+from animabotics.camera import Camera
+from animabotics.canvas import Canvas
+from animabotics.polygon import Polygon
+from animabotics.simplex import Point2D
 
 from image_test_utils import check_image
 

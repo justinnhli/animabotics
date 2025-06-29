@@ -2,12 +2,12 @@
 
 from math import sqrt
 
-from dumpy.basic_window import BasicWindow
-from dumpy.canvas import Input
-from dumpy.color import Color
-from dumpy.polygon import Polygon
-from dumpy.simplex import Point2D
-from dumpy.transform import Transform
+from animabotics.basic_window import BasicWindow
+from animabotics.canvas import Input
+from animabotics.color import Color
+from animabotics.polygon import Polygon
+from animabotics.simplex import Point2D
+from animabotics.transform import Transform
 
 from image_test_utils import check_image
 

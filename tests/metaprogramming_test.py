@@ -3,7 +3,7 @@
 from functools import cached_property
 from typing import Self
 
-from dumpy.metaprogramming import CachedMetaclass
+from animabotics.metaprogramming import CachedMetaclass
 
 
 class CachedClassDummy(metaclass=CachedMetaclass):

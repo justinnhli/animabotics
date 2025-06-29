@@ -5,9 +5,9 @@ from itertools import product
 from math import pi as PI
 from typing import Iterator
 
-from dumpy.algorithms import bentley_ottmann, triangulate_polygon, convex_partition
-from dumpy.simplex import Point2D, Segment
-from dumpy.polygon import ConvexPolygon
+from animabotics.algorithms import bentley_ottmann, triangulate_polygon, convex_partition
+from animabotics.simplex import Point2D, Segment
+from animabotics.polygon import ConvexPolygon
 
 
 def _no_duplicates_coord_segments(num_segments):

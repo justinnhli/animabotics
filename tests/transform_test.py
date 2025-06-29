@@ -2,8 +2,8 @@
 
 from math import pi as PI
 
-from dumpy.matrix import Matrix, identity
-from dumpy.transform import Transform
+from animabotics.matrix import Matrix, identity
+from animabotics.transform import Transform
 
 
 def test_transform():

@@ -4,7 +4,7 @@ set -euo pipefail
 
 
 # set python3 executable
-PYTHON3=$HOME/.local/share/venv/dumpy/bin/python3
+PYTHON3=$HOME/.local/share/venv/animabotics/bin/python3
 # change to root directory
 ROOT="$(realpath "$(dirname "$(realpath $0)")/..")"
 cd "$ROOT"

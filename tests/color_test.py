@@ -1,6 +1,6 @@
 """Tests for color.py."""
 
-from dumpy.color import Color
+from animabotics.color import Color
 
 
 def test_color():

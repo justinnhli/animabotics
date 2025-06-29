@@ -2,7 +2,7 @@
 
 from itertools import permutations
 
-from dumpy.data_structures import UnionFind, SortedDict, SortedSet, PriorityQueue
+from animabotics.data_structures import UnionFind, SortedDict, SortedSet, PriorityQueue
 
 
 def test_unionfind():

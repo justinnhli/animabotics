@@ -6,7 +6,7 @@ from typing import Iterator
 
 from PIL import Image, ImageGrab
 
-from dumpy.canvas import Canvas
+from animabotics.canvas import Canvas
 
 
 def ppm_value_generator(path):

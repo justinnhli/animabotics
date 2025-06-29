@@ -1,6 +1,6 @@
 """Tests for matrix.py."""
 
-from dumpy.matrix import Matrix, identity
+from animabotics.matrix import Matrix, identity
 
 
 def test_matrix():

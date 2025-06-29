@@ -1,7 +1,7 @@
 """Tests for simplex.py."""
 
-from dumpy.simplex import Point2D, Vector2D, Segment, Triangle
-from dumpy.transform import Transform
+from animabotics.simplex import Point2D, Vector2D, Segment, Triangle
+from animabotics.transform import Transform
 
 
 def test_point():

@@ -1,4 +1,4 @@
-#!/home/justinnhli/.local/share/venv/dumpy/bin/python3
+#!/home/justinnhli/.local/share/venv/animabotics/bin/python3
 
 import sys
 from random import Random
@@ -6,11 +6,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from dumpy.game import Game
-from dumpy.game_object import GameObject, PhysicsObject
-from dumpy.polygon import Polygon
-from dumpy.simplex import Point2D, Vector2D
-from dumpy.animation import Animation, Sprite, Shape
+from animabotics.game import Game
+from animabotics.game_object import GameObject, PhysicsObject
+from animabotics.polygon import Polygon
+from animabotics.simplex import Point2D, Vector2D
+from animabotics.animation import Animation, Sprite, Shape
 
 
 class Ball(PhysicsObject):

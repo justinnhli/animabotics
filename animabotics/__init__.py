@@ -1,4 +1,4 @@
-"""A dumpy of code that may eventually resemble a game engine."""
+"""A animabotics of code that may eventually resemble a game engine."""
 
 from .algorithms import bentley_ottmann, triangulate_polygon
 from .animation import Animation, Sprite, Shape

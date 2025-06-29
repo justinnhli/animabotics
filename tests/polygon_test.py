@@ -1,7 +1,7 @@
 """Tests for polygon.py."""
 
-from dumpy.polygon import Polygon, _simplify_perimeter
-from dumpy.simplex import Point2D, Segment
+from animabotics.polygon import Polygon, _simplify_perimeter
+from animabotics.simplex import Point2D, Segment
 
 
 def test_polygon():
