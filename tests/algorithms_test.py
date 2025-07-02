@@ -154,7 +154,6 @@ def _test_triangulation(points):
         )
         # verify triangle has non-zero area
         assert triangle.area > 0
-        # FIXME
         # verify that all triangle edges either:
         # * have a twin that belongs to another triangle, or
         # * is part of the perimeter of the polygon
