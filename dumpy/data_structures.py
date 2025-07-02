@@ -716,11 +716,12 @@ class SortedSet(MutableSet[KT]):
 class PriorityQueue(Generic[KT, VT]):
     """A priory queue."""
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(self, key=None):
+        # type: (Callable[[VT], KT]) -> None
         """Initialize the PriorityQueue."""
         self.tree = SortedDict(list) # type: SortedDict[KT, list[VT]]
         self.size = 0
+        self.key = key
 
     def __len__(self):
         # type: () -> int
@@ -741,7 +742,10 @@ class PriorityQueue(Generic[KT, VT]):
         # type: (VT, KT) -> None
         """Put an item into the queue."""
         if priority is None:
-            priority = value
+            if self.key is not None:
+                priority = self.key(value)
+            else:
+                priority = value
         self.tree[priority].append(value)
         self.size += 1
 
