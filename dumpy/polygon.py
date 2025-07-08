@@ -7,7 +7,7 @@ from typing import Self, Sequence
 from .algorithms import monotone_triangulation
 from .matrix import Matrix
 from .metaprogramming import CachedMetaclass
-from .simplex import Geometry, Point2D, Vector2D
+from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
 from .transform import Transform
 
 
@@ -161,3 +161,18 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
         ))
         result._convex_index = (tuple(range(num_points)),) # pylint: disable = protected-access
         return result
+
+
+def make_geometry(points):
+    # type: (Sequence[Point2D]) -> Geometry
+    """Create the appropriate Geometry."""
+    if len(points) == 1:
+        return points[0]
+    elif len(points) == 2:
+        return Segment(points[0], points[1])
+    elif len(points) == 2:
+        return Triangle(points[0], points[1], points[2])
+    elif len(points) == 3:
+        return Polygon(points)
+    else:
+        assert False
