@@ -94,27 +94,14 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
 
     @cached_property
     def convex_partitions(self):
-        # type: () -> tuple[Geometry, ...]
+        # type: () -> tuple[ConvexPolygon, ...]
         """Return a convex partition of the polygon."""
-        # FIXME be consistent in using ConvexPolygon or Triangle
-        if self._convex_index:
-            partitions = tuple(
-                ConvexPolygon(self.points[i] for i in indices)
-                for indices in self._convex_index
-            )
-        else:
-            triangles = tuple(triangulate_polygon(self.points))
-            points_map = {point: index for index, point in enumerate(self.points)}
-            self._convex_index = tuple(
-                (
-                    points_map[triangle.point1],
-                    points_map[triangle.point2],
-                    points_map[triangle.point3],
-                )
-                for triangle in triangles
-            )
-            partitions = triangles
-        return partitions
+        if not self._convex_index:
+            self._convex_index = triangulate_polygon(self.points)
+        return tuple(
+            ConvexPolygon(tuple(self.points[i] for i in indices))
+            for indices in self._convex_index
+        )
 
     def union(self, *polygons):
         # type: (*Polygon) -> Polygon

@@ -5,7 +5,7 @@ from itertools import product
 from typing import Iterator
 
 from dumpy.algorithms import bentley_ottmann, triangulate_polygon
-from dumpy.simplex import Point2D, Segment
+from dumpy.simplex import Point2D, Segment, Triangle
 
 
 def _no_duplicates_coord_segments(num_segments):
@@ -134,7 +134,15 @@ def test_bentley_ottmann():
 
 def _test_triangulation(points):
     # type: (Sequence[Point2D]) -> None
-    triangles = triangulate_polygon(points)
+    triangle_indices = triangulate_polygon(points)
+    triangles = (
+        Triangle(
+            points[triangle_index[0]],
+            points[triangle_index[1]],
+            points[triangle_index[2]],
+        )
+        for triangle_index in triangle_indices
+    )
     # initialize the segments with the _clockwise_ perimeter
     # which will be "canceled out" during the verification
     segments = set(

@@ -420,7 +420,7 @@ class Chain:
 
 
 def triangulate_polygon(points):
-    # type: (Sequence[Point2D]) -> list[Triangle]
+    # type: (Sequence[Point2D]) -> tuple[tuple[int, int, int], ...]
     """Triangulate a simple polygon.
 
     This is an overly-complicated implementation of monotone polygon
@@ -714,4 +714,13 @@ def triangulate_polygon(points):
         counter = Counter((chain.prev(), chain.next()) for chain in open_chains.values())
         assert all(count == 2 for _, count in counter.most_common()), counter.most_common()
     assert len(open_chains) == len(partitions) == 0
-    return results
+    # convert the points to indices
+    points_map = {point: index for index, point in enumerate(points)}
+    return tuple(
+        (
+            points_map[triangle.point1],
+            points_map[triangle.point2],
+            points_map[triangle.point3],
+        )
+        for triangle in results
+    )
