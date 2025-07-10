@@ -134,21 +134,21 @@ def test_bentley_ottmann():
 
 def _test_triangulation(points):
     # type: (Sequence[Point2D]) -> None
-    triangle_indices = triangulate_polygon(points)
     triangles = (
         Triangle(
             points[triangle_index[0]],
             points[triangle_index[1]],
             points[triangle_index[2]],
         )
-        for triangle_index in triangle_indices
+        for triangle_index in triangulate_polygon(points)
     )
     # initialize the segments with the _clockwise_ perimeter
     # which will be "canceled out" during the verification
-    segments = set(
+    boundary_segments = set(
         Segment(points[i], points[i - 1])
         for i in range(len(points))
     )
+    internal_segments = set()
     # verify each triangle
     for triangle in triangles:
         # verify triangle is counter-clockwise
@@ -166,17 +166,20 @@ def _test_triangulation(points):
         # * have a twin that belongs to another triangle, or
         # * is part of the perimeter of the polygon
         for segment in triangle.segments:
-            assert segment not in segments, segment
-            if segment.twin in segments:
-                segments.remove(segment.twin)
+            if segment.twin in boundary_segments:
+                boundary_segments.remove(segment.twin)
+            elif segment.twin in internal_segments:
+                internal_segments.remove(segment.twin)
             else:
-                segments.add(segment)
-    assert not segments, segments
+                assert segment not in internal_segments
+                internal_segments.add(segment)
+    assert not boundary_segments, boundary_segments
+    assert not internal_segments, internal_segments
 
 
-def test_monotone_triangulation():
+def test_polygon_triangulation_good():
     # type: () -> None
-    """Test monotone triangulation."""
+    """Test successful polygon triangulations."""
     shapes = (
         # start, add, end
         (
@@ -211,7 +214,7 @@ def test_monotone_triangulation():
             Point2D(2, -1), Point2D(1, 1),
         ),
         (
-            Point2D(-1, 1), Point2D(-0, 0), Point2D(-1, -1),
+            Point2D(-1, 1), Point2D(0, 0), Point2D(-1, -1),
             Point2D(2, -1),
         ),
         (
@@ -263,6 +266,10 @@ def test_monotone_triangulation():
             Point2D(1, 1),
             Point2D(2, 2),
         ),
+        (
+            Point2D(0, 0), Point2D(8, 2), Point2D(7, 4),
+            Point2D(8, 6), Point2D(7, 5), Point2D(6, 3), Point2D(5, 2), Point2D(3, 1),
+        ),
         # merge and split
         (
             Point2D(0, 2), Point2D(-2, 1), Point2D(-1, 0), Point2D(-2, -1),
@@ -310,6 +317,47 @@ def test_monotone_triangulation():
             Point2D(0, -1),
             Point2D(2, 2),
         ),
+        (
+            Point2D(0, -5), Point2D(10, -3), Point2D(9, 0), Point2D(10, 3),
+            Point2D(0, 5), Point2D(3, 4), Point2D(5, 3), Point2D(6, 2),
+            Point2D(7, 0), Point2D(6, -2), Point2D(5, -3), Point2D(3, -4),
+        ),
+        (
+            Point2D(-2, 4),
+            Point2D(-2, -4),
+            Point2D(0, -1),
+            Point2D(2, -4),
+            Point2D(2, -3),
+            Point2D(-1, 2),
+            Point2D(2, -2),
+            Point2D(2, 4),
+            Point2D(0, 1),
+        ),
+        # repeated points and opposite colinear segments
+        (
+            Point2D(0, 0), Point2D(1, 1), Point2D(2, 0), Point2D(1, -1),
+            Point2D(0, 0), Point2D(2, -3), Point2D(4, 0), Point2D(2, 3),
+        ),
+        (
+            Point2D(2, 0), Point2D(0, 2), Point2D(-2, 0), Point2D(0, -2), Point2D(2, 0),
+            Point2D(1, 0), Point2D(0, -1), Point2D(-1, 0), Point2D(0, 1), Point2D(1, 0),
+        ),
+        (
+            Point2D(0, 0), Point2D(2, -3), Point2D(1, -1), Point2D(4, -3), Point2D(4, -1),
+            Point2D(1, 0), Point2D(4, 1), Point2D(4, 3), Point2D(1, 1), Point2D(2, 3),
+            Point2D(0, 0), Point2D(3, 2), Point2D(3, 1),
+            Point2D(0, 0), Point2D(3, -1), Point2D(3, -2),
+        ),
+        (
+            Point2D(0, -4), Point2D(4, -4), Point2D(4, 4), Point2D(-4, 4), Point2D(-4, -4), Point2D(0, -4), Point2D(0, 0),
+            Point2D(-1, -2), Point2D(-2, -1), Point2D(0, 0),
+            Point2D(-3, -1), Point2D(-3, 1), Point2D(0, 0),
+            Point2D(-2, 1), Point2D(-1, 2), Point2D(0, 0),
+            Point2D(-1, 3), Point2D(1, 3), Point2D(0, 0),
+            Point2D(1, 2), Point2D(2, 1), Point2D(0, 0),
+            Point2D(3, 1), Point2D(3, -1), Point2D(0, 0),
+            Point2D(2, -1), Point2D(1, -2), Point2D(0, 0),
+        ),
     )
     for index, polygon in enumerate(shapes):
         print(f'POLYGON {index}')
@@ -326,3 +374,37 @@ def test_monotone_triangulation():
         _test_triangulation([
             Point2D.from_matrix(point.matrix.x_reflection.y_reflection) for point in polygon
         ])
+
+
+def test_polygon_triangulation_bad():
+    # type: () -> None
+    shapes = (
+        # shrink to a point 
+        (
+            Point2D(-1, 1), Point2D(-1, -1), Point2D(0, 0),
+            Point2D(1, -1), Point2D(1, 1), Point2D(0, 0),
+        ),
+        (
+            Point2D(1, 1), Point2D(-1, 1), Point2D(0, 0),
+            Point2D(-1, -1), Point2D(1, -1), Point2D(0, 0),
+        ),
+        # squeezed to a line 
+        (
+            Point2D(-2, 1), Point2D(-2, -1), Point2D(-1, 0), Point2D(1, 0),
+            Point2D(2, -1), Point2D(2, 1), Point2D(1, 0),  Point2D(-1, 0),
+        ),
+        (
+            Point2D(1, 2), Point2D(-1, 2), Point2D(0, 1), Point2D(0, -1),
+            Point2D(-1, -2), Point2D(1, -2), Point2D(0, -1),  Point2D(0, 1),
+        ),
+        (
+            Point2D(-3, 1), Point2D(-3, -1), Point2D(-2, 0), Point2D(2, 0),
+            Point2D(3, -1), Point2D(3, 1), Point2D(1, 0), Point2D(-1, 0),
+        ),
+    )
+    for index, polygon in enumerate(shapes):
+        try:
+            triangulate_polygon(polygon)
+            assert False
+        except (ValueError, AssertionError):
+            pass
