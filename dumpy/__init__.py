@@ -1,6 +1,6 @@
 """A dumpy of code that may eventually resemble a game engine."""
 
-from .algorithms import bentley_ottmann, monotone_triangulation
+from .algorithms import bentley_ottmann, triangulate_polygon
 from .animation import Animation, Sprite, Shape
 from .basic_window import BasicWindow
 from .camera import Camera
@@ -19,8 +19,7 @@ from .transformable import Transformable
 
 
 __all__ = [
-    'bentley_ottmann', 'monotone_triangulation',
-    'monotone_triangulation',
+    'bentley_ottmann', 'triangulate_polygon',
     'Animation', 'Sprite', 'Shape',
     'BasicWindow',
     'Camera',

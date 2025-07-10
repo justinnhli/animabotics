@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from itertools import product
 from typing import Iterator
 
-from dumpy.algorithms import bentley_ottmann, monotone_triangulation
+from dumpy.algorithms import bentley_ottmann, triangulate_polygon
 from dumpy.simplex import Point2D, Segment
 
 
@@ -134,7 +134,7 @@ def test_bentley_ottmann():
 
 def _test_triangulation(points):
     # type: (Sequence[Point2D]) -> None
-    triangles = monotone_triangulation(points)
+    triangles = triangulate_polygon(points)
     # initialize the segments with the _clockwise_ perimeter
     # which will be "canceled out" during the verification
     segments = set(

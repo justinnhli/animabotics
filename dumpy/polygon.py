@@ -4,7 +4,7 @@ from functools import cached_property
 from math import sin, cos, pi as PI
 from typing import Self, Sequence
 
-from .algorithms import monotone_triangulation
+from .algorithms import triangulate_polygon
 from .matrix import Matrix
 from .metaprogramming import CachedMetaclass
 from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
@@ -103,7 +103,7 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
                 for indices in self._convex_index
             )
         else:
-            triangles = tuple(monotone_triangulation(self.points))
+            triangles = tuple(triangulate_polygon(self.points))
             points_map = {point: index for index, point in enumerate(self.points)}
             self._convex_index = tuple(
                 (

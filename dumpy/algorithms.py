@@ -419,7 +419,7 @@ class Chain:
         return result
 
 
-def monotone_triangulation(points):
+def triangulate_polygon(points):
     # type: (Sequence[Point2D]) -> list[Triangle]
     """Triangulate a simple polygon.
 
