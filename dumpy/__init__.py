@@ -4,7 +4,7 @@ from .algorithms import bentley_ottmann, triangulate_polygon
 from .animation import Animation, Sprite, Shape
 from .basic_window import BasicWindow
 from .camera import Camera
-from .canvas import Canvas, Input, EventCallback, Canvas
+from .canvas import Input, EventCallback, Canvas
 from .color import Color
 from .data_structures import SortedDict, SortedSet, PriorityQueue
 from .game import Game
