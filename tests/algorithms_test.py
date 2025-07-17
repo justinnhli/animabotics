@@ -297,6 +297,10 @@ POLYGON_PARTITION_DATASET = (
         Point2D(1, 0), Point2D(0, -1), Point2D(-1, 0), Point2D(0, 1), Point2D(1, 0),
     ),
     (
+        Point2D(2, 0), Point2D(0, 2), Point2D(-3, 1), Point2D(0, -2), Point2D(2, 0),
+        Point2D(1, 0), Point2D(0, -1), Point2D(-1, 0), Point2D(0, 1), Point2D(1, 0),
+    ),
+    (
         Point2D(0, 0), Point2D(2, -3), Point2D(1, -1), Point2D(4, -3), Point2D(4, -1),
         Point2D(1, 0), Point2D(4, 1), Point2D(4, 3), Point2D(1, 1), Point2D(2, 3),
         Point2D(0, 0), Point2D(3, 2), Point2D(3, 1),
@@ -311,6 +315,11 @@ POLYGON_PARTITION_DATASET = (
         Point2D(1, 2), Point2D(2, 1), Point2D(0, 0),
         Point2D(3, 1), Point2D(3, -1), Point2D(0, 0),
         Point2D(2, -1), Point2D(1, -2), Point2D(0, 0),
+    ),
+    # 2025-07-22
+    (
+        Point2D(-100, 100), Point2D(-100, -100), Point2D(100, -100), Point2D(100, 100), Point2D(-100, 100),
+        Point2D(-75, 75), Point2D(75, 75), Point2D(75, -75), Point2D(-75, -75), Point2D(-75, 75),
     ),
 )
 

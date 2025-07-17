@@ -14,7 +14,7 @@ from .simplex import Point2D, Segment
 class _SegmentWrapper:
     """A wrapper class for ordering Segments in sweep line algorithms."""
 
-    sweep_x = -float('Inf')
+    sweep_x = -INF
 
     def __init__(self, segment):
         # type: (Segment) -> None
@@ -45,7 +45,7 @@ class _SegmentWrapper:
         else:
             raise TypeError(f"'>' not supported between instances of 'Segment' and '{type(other)}'")
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         # type: () -> str
         return f'{type(self).__name__}@{self.sweep_x}({self.segment.point1}, {self.segment.point2})'
 
@@ -357,7 +357,7 @@ class PointType(Enum):
         assert isinstance(other, PointType)
         return self.value > other.value
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         # type: () -> str
         return self.name
 
@@ -367,21 +367,12 @@ class ClockDir(Enum):
     DEASIL = -1
     WIDDER = 1
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         # type: () -> str
         if self == ClockDir.DEASIL:
             return 'DEASIL'
         else:
             return 'WIDDER'
-
-    @property
-    def opposite(self):
-        # type: () -> ClockDir
-        """The opposite direction."""
-        if self == ClockDir.DEASIL:
-            return ClockDir.WIDDER
-        else:
-            return ClockDir.DEASIL
 
 
 class WrappedPoint():
@@ -403,7 +394,7 @@ class WrappedPoint():
         self.negx_slope = 0.0
         self.posx_slope = 0.0
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         # type: () -> str
         return f'{self.polygon_index}:{self.point_index}:({self.point.x}, {self.point.y})'
 
@@ -420,24 +411,52 @@ class WrappedPoint():
         return self.point.y
 
     @property
-    def mean_slopes(self):
+    def mean_bearings(self):
         # type: () -> tuple[float, float]
-        """Calculate the mean slope in the neg-x and pos-x directions."""
-        negx_slopes = []
-        posx_slopes = []
-        point_slopes = [
-            (self.deasil_point.point, self.deasil_segment.slope),
-            (self.widder_point.point, self.widder_segment.slope),
-        ]
-        for other_point, slope in point_slopes:
-            if self.point < other_point:
-                posx_slopes.append(slope)
-            else:
-                negx_slopes.append(-slope)
+        """Calculate the mean "bearing" in the neg-x and pos-x directions."""
+        # calculate segment bearings; flip the deasil segment so it's outwards from self
+        deasil_bearing = self.deasil_segment.twin.bearing
+        widder_bearing = self.widder_segment.bearing
+        # calculate the mean bearing while dealing with the discontinuity
+        mean_bearing = (deasil_bearing + widder_bearing) / 2
+        if abs(deasil_bearing - widder_bearing) > PI:
+            mean_bearing = mean_bearing - PI
+        # set the result depending on which way the segments point
+        if self.deasil_point.x < self.x and self.widder_point.x < self.x:
+            result = (mean_bearing, None)
+        elif self.deasil_point.x < self.x and self.x == self.widder_point.x: 
+            result = (mean_bearing, None)
+        elif self.deasil_point.x < self.x and self.x < self.widder_point.x: 
+            result = (deasil_bearing, widder_bearing)
+        elif self.x == self.deasil_point.x and self.widder_point.x < self.x: 
+            result = (mean_bearing, None)
+        elif self.x == self.deasil_point.x and self.x == self.widder_point.x: 
+            assert False
+            pass # FIXME
+        elif self.x == self.deasil_point.x and self.x < self.widder_point.x: 
+            result = (None, mean_bearing)
+        elif self.x < self.deasil_point.x and self.widder_point.x < self.x: 
+            result = (widder_bearing, deasil_bearing)
+        elif self.x < self.deasil_point.x and self.x == self.widder_point.x: 
+            result = (None, mean_bearing)
+        elif self.x < self.deasil_point.x and self.x < self.widder_point.x: 
+            result = (None, mean_bearing)
+        else:
+            assert False
+        # convert results be smaller if neg-y and larger if pos-y
+        assert result[0] is None or PI / 2 < result[0] < 3 * PI / 2, result
+        assert result[1] is None or result[1] < PI / 2 or result[1] > 3 * PI / 2, result
         return (
-            (mean(negx_slopes) if negx_slopes else None),
-            (mean(posx_slopes) if posx_slopes else None),
+            (None if result[0] is None else 3 * PI / 2 - result[0]),
+            (None if result[1] is None else (result[1] + PI / 2) % (2 * PI)),
         )
+
+    def get_dir_segment(self, clock_dir):
+        # type: (ClockDir) -> Segment
+        if clock_dir == ClockDir.DEASIL:
+            return self.deasil_segment
+        else:
+            return self.widder_segment
 
     @staticmethod
     def _compare_slopes(point1, point2):
@@ -445,8 +464,8 @@ class WrappedPoint():
         """Compare the mean slopes of two points."""
         assert isinstance(point1, WrappedPoint)
         assert isinstance(point2, WrappedPoint)
-        negx_mean_1, posx_mean_1 = point1.mean_slopes
-        negx_mean_2, posx_mean_2 = point2.mean_slopes
+        negx_mean_1, posx_mean_1 = point1.mean_bearings
+        negx_mean_2, posx_mean_2 = point2.mean_bearings
         means = (negx_mean_1, posx_mean_1, negx_mean_2, posx_mean_2)
         if None not in means:
             assert (
@@ -457,8 +476,6 @@ class WrappedPoint():
                     and (negx_mean_1 > negx_mean_2) == (posx_mean_1 > posx_mean_2)
                 )
             ), means
-            #assert (negx_mean_1 <= negx_mean_2) == (posx_mean_1 <= posx_mean_2), means
-            #assert (negx_mean_2 <= negx_mean_1) == (posx_mean_2 <= posx_mean_1), means
             if negx_mean_1 < negx_mean_2 and posx_mean_1 <= posx_mean_2:
                 return -1
             if negx_mean_1 <= negx_mean_2 and posx_mean_1 < posx_mean_2:
@@ -486,10 +503,18 @@ class WrappedPoint():
             else:
                 return 0
         else:
+            assert negx_mean_1 is not None or posx_mean_1 is not None
+            assert negx_mean_2 is not None or posx_mean_2 is not None
+            # the two points are an ENTER and a LEAVE (or similar)
+            # put the LEAVE second, which will have None as the posx_mean
+            if posx_mean_1 is None:
+                return 1
+            if posx_mean_2 is None:
+                return -1
             assert False, (point1, point2, means)
 
 
-class WrappedPointKey:
+class WrappedPointPriority:
     """A comparison key for WrappedPoints, for the priority queue."""
 
     def __init__(self, point):
@@ -499,25 +524,29 @@ class WrappedPointKey:
     def __eq__(self, other):
         # type: (Any) -> bool
         return (
-            isinstance(other, WrappedPointKey)
+            isinstance(other, WrappedPointPriority)
             and self.point == other.point
         )
 
     def __lt__(self, other):
-        # type: (WrappedPointKey) -> bool
-        assert isinstance(other, WrappedPointKey)
+        # type: (WrappedPointPriority) -> bool
+        assert isinstance(other, WrappedPointPriority)
+        if self == other:
+            return False
         if self.key != other.key:
             return self.key < other.key
         return WrappedPoint._compare_slopes(self.point, other.point) < 0
 
     def __gt__(self, other):
-        # type: (WrappedPointKey) -> bool
-        assert isinstance(other, WrappedPointKey)
+        # type: (WrappedPointPriority) -> bool
+        assert isinstance(other, WrappedPointPriority)
+        if self == other:
+            return False
         if self.key != other.key:
             return self.key > other.key
         return WrappedPoint._compare_slopes(self.point, other.point) > 0
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         # type: () -> str
         return f'WrappedKey({self.point}, {self.point.point_type})'
 
@@ -538,19 +567,19 @@ class Chain:
     * or p.x < q.x
     """
 
-    def __init__(self, wrapped_point):
-        # type: (WrappedPoint) -> None
-        self.points = [wrapped_point]
-        self.negx_point = wrapped_point
-        self.posx_point = wrapped_point
-        self.deasil_chain = None # type: Chain
-        self.widder_chain = None # type: Chain
+    def __init__(self, wrapped_points):
+        # type: (WrappedPoint|Sequence[WrappedPoint]) -> None
+        if isinstance(wrapped_points, WrappedPoint):
+            self.points = [wrapped_points]
+        else:
+            self.points = list(wrapped_points)
+        self.posx_index = 0
 
     def __len__(self):
         # type: () -> int
         return len(self.points)
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         # type: () -> str
         args = ', '.join(repr(point) for point in self.points)
         return f'Chain({args})'
@@ -579,6 +608,11 @@ class Chain:
         """Get the widder ChainEnd."""
         return ChainEnd(self, ClockDir.WIDDER)
 
+    @property
+    def posx_point(self):
+        # type: () -> WrappedPoint
+        return self.points[self.posx_index]
+
     def get_dir_point(self, clock_dir):
         # type: (ClockDir) -> WrappedPoint
         """Get the end point in either clock direction."""
@@ -586,6 +620,13 @@ class Chain:
             return self.deasil_point
         else:
             return self.widder_point
+
+    def get_dir_dir_point(self, clock_dir):
+        # type: (ClockDir) -> WrappedPoint
+        if clock_dir == ClockDir.DEASIL:
+            return self.deasil_point.deasil_point
+        else:
+            return self.widder_point.widder_point
 
     def get_dir_pair(self, clock_dir):
         # type: (ClockDir) -> tuple[WrappedPoint, WrappedPoint]
@@ -599,6 +640,10 @@ class Chain:
         else:
             return self.points[-2], self.points[-1]
 
+    def get_dir_segment(self, clock_dir):
+        # type: (ClockDir) -> Segment
+        return self.get_dir_point(clock_dir).get_dir_segment(clock_dir)
+
     def get_dir_key(self, clock_dir):
         # type: (ClockDir) -> ChainEnd
         """Get the ChainEnd in either clock direction."""
@@ -606,14 +651,6 @@ class Chain:
             return self.deasil_key
         else:
             return self.widder_key
-
-    def get_dir_chain(self, clock_dir):
-        # type: (ClockDir) -> Chain
-        """Get next chain in either clock direction."""
-        if clock_dir == ClockDir.DEASIL:
-            return self.deasil_chain
-        else:
-            return self.widder_chain
 
     def add_point(self, point, clock_dir):
         # type: (Chain, WrappedPoint, ClockDir) -> list[tuple[int, int, int]]
@@ -623,7 +660,6 @@ class Chain:
             end_index = 0
         else:
             end_index = -1
-        orig_end = self.points[end_index]
         # form all triangles possible
         triangles = []
         while len(self.points) > 1:
@@ -634,44 +670,13 @@ class Chain:
             assert len(set([point1.point_index, point2.point_index, point.point_index])) == 3
             triangles.append((point1.point_index, point2.point_index, point.point_index))
             self.points.pop(end_index)
-        # update the pos-x and neg-x pointers
-        if orig_end == self.posx_point:
-            self.posx_point = self.points[end_index]
-        else:
-            self.negx_point = self.points[end_index]
         # add the new point to the chain
         if clock_dir == ClockDir.DEASIL:
             self.points.insert(0, point)
-            if self.deasil_chain:
-                self.deasil_chain.widder_chain = None
-                self.deasil_chain = None
+            self.posx_index = 0
         else:
             self.points.append(point)
-            if self.widder_chain:
-                self.widder_chain.deasil_chain = None
-                self.widder_chain = None
-        self.posx_point = point
-        # Check the monotonicity invariant. This is necessary to ensure that
-        # degenerate triangles (with area = 0) will not be created.
-        if len(self.points) > 1:
-            point1 = self.points[0]
-            point2 = self.points[1]
-            if point1.point > point2.point:
-                for point1, point2 in zip(self.points[:-1], self.points[1:]):
-                    if not point1.point > point2.point:
-                        raise ValueError(' '.join((
-                            'cannot triangulate;',
-                            'perhaps the polygon is not simple or is disconnected?',
-                        )))
-            elif point1.point.x < point2.point.x:
-                for point1, point2 in zip(self.points[:-1], self.points[1:]):
-                    if not point1.point.x < point2.point.x:
-                        raise ValueError(' '.join((
-                            'cannot triangulate;',
-                            'perhaps the polygon is not simple or is disconnected?',
-                        )))
-            else:
-                assert False
+            self.posx_index = len(self.points) - 1
         #self.validate()
         return triangles
 
@@ -679,52 +684,35 @@ class Chain:
         # type: (float) -> tuple[float, float]
         """Get the upper and lower bounds of the chain at the given x-value."""
         # calculate the slope of the adjacent segments, if not boxed in by other chains
-        if self.deasil_chain is None and self.deasil_point.deasil_point.x > self.deasil_point.x:
+        if self.deasil_point.deasil_point.x == self.deasil_point.x:
+            deasil_slope = INF
+            deasil_y = max(
+                self.deasil_point.y,
+                self.deasil_point.deasil_point.y,
+            )
+        else:
             deasil_slope = self.deasil_point.deasil_segment.slope
+            deasil_y = self.deasil_point.y + deasil_slope * (x - self.deasil_point.x)
+        if self.widder_point.widder_point.x == self.widder_point.x:
+            widder_slope = INF
+            widder_y = min(
+                self.widder_point.y,
+                self.widder_point.widder_point.y,
+            )
         else:
-            deasil_slope = 0
-        if self.widder_chain is None and self.widder_point.widder_point.x > self.widder_point.x:
             widder_slope = self.widder_point.widder_segment.slope
-        else:
-            widder_slope = 0
-        deasil_y = self.deasil_point.y + deasil_slope * (x - self.deasil_point.x)
-        widder_y = self.widder_point.y + widder_slope * (x - self.widder_point.x)
-        # if deasil_y < widder_y, the two lines intersect before x
-        # we can just use the y-values in that case
-        if deasil_y < widder_y:
-            return self.deasil_point.y, self.widder_point.y
-        else:
-            return deasil_y, widder_y
+            widder_y = self.widder_point.y + widder_slope * (x - self.widder_point.x)
+        assert deasil_y >= widder_y
+        return deasil_y, widder_y
 
     def validate(self): # pragma: no cover
         # type: () -> None
         """Validate the chain."""
-        # check that the chain is monotonic
-        if len(self.points) > 1:
-            point1 = self.points[0]
-            point2 = self.points[1]
-            if point1.point > point2.point:
-                for point1, point2 in zip(self.points[:-1], self.points[1:]):
-                    assert point1.point > point2.point, self.points
-            elif point1.point.x < point2.point.x:
-                for point1, point2 in zip(self.points[:-1], self.points[1:]):
-                    assert point1.point.x < point2.point.x
-            else:
-                assert False, self.points
         # check the neg-x and pos-x pointers
         assert self.posx_point == max(
             self.points,
             key=(lambda point: point.point),
         )
-        assert self.negx_point == min(
-            self.points,
-            key=(lambda point: point.point),
-        )
-        # check the deasil and widder chain pointers
-        if self.deasil_chain:
-            assert self.deasil_chain.widder_point == self.deasil_point
-        if self.widder_chain:
-            assert self.widder_chain.deasil_point == self.widder_point
 
 
 class ChainEnd:
@@ -748,8 +736,10 @@ class ChainEnd:
     def __lt__(self, other):
         # type: (Union[ChainEnd, WrappedPoint]) -> bool
         assert isinstance(other, (ChainEnd, WrappedPoint))
+        #print('lt', self, other)
         if isinstance(other, ChainEnd):
             if self.chain == other.chain:
+                #print('    lt 0.0', self.clock_dir == ClockDir.WIDDER and other.clock_dir == ClockDir.DEASIL)
                 return self.clock_dir == ClockDir.WIDDER and other.clock_dir == ClockDir.DEASIL
             x = max(
                 self.chain.deasil_point.x,
@@ -759,22 +749,53 @@ class ChainEnd:
             )
             self_interval = self.chain.interval_at(x)
             other_interval = other.chain.interval_at(x)
+            #print(x, self_interval, other_interval)
             if self_interval != other_interval:
+                #print('    lt 0.1', self_interval < other_interval)
                 return self_interval < other_interval
             comparison = WrappedPoint._compare_slopes(self.point, other.point)
+            #print('    lt 0.2', comparison < 0)
             return comparison < 0
         else:
-            interval = self.chain.interval_at(other.x)
-            if self.clock_dir == ClockDir.DEASIL:
-                return interval[0] <= other.y
+            leaving = (
+                self.chain.get_dir_dir_point(ClockDir.DEASIL) == other
+                and self.chain.get_dir_dir_point(ClockDir.WIDDER) == other
+            )
+            if leaving:
+                #print('    lt 0', self.clock_dir == ClockDir.WIDDER)
+                return self.clock_dir == ClockDir.WIDDER
+            if other == self.chain.get_dir_dir_point(self.clock_dir):
+                #print('    lt 1', self.clock_dir == ClockDir.DEASIL)
+                return self.clock_dir == ClockDir.DEASIL
+            if other.point == self.chain.get_dir_point(self.clock_dir).point:
+                comparison = WrappedPoint._compare_slopes(
+                    self.chain.get_dir_point(self.clock_dir),
+                    other,
+                )
+                #print('    lt 2', comparison < 0)
+                return comparison < 0
+            if other.point == self.chain.get_dir_dir_point(self.clock_dir).point:
+                comparison = WrappedPoint._compare_slopes(
+                    self.chain.get_dir_dir_point(self.clock_dir),
+                    other,
+                )
+                #print('    lt 3', comparison < 0)
+                return comparison < 0
+            segment = self.chain.get_dir_segment(self.clock_dir)
+            if segment.point1.x == segment.point2.x:
+                #print('    lt 4', max(segment.point1.y, segment.point2.y) < other.y)
+                return max(segment.point1.y, segment.point2.y) < other.y
             else:
-                return interval[1] < other.y
+                #print('    lt 5', segment.point_at(other.x).y < other.y)
+                return segment.point_at(other.x).y < other.y
 
     def __gt__(self, other):
         # type: (Union[ChainEnd, WrappedPoint]) -> bool
         assert isinstance(other, (ChainEnd, WrappedPoint))
+        #print('gt', self, other)
         if isinstance(other, ChainEnd):
             if self.chain == other.chain:
+                #print('    gt 0.0', other.clock_dir == ClockDir.WIDDER and self.clock_dir == ClockDir.DEASIL)
                 return other.clock_dir == ClockDir.WIDDER and self.clock_dir == ClockDir.DEASIL
             x = max(
                 self.chain.deasil_point.x,
@@ -784,18 +805,47 @@ class ChainEnd:
             )
             self_interval = self.chain.interval_at(x)
             other_interval = other.chain.interval_at(x)
+            #print(x, self_interval, other_interval)
             if self_interval != other_interval:
+                #print('    gt 0.1', self_interval > other_interval)
                 return self_interval > other_interval
             comparison = WrappedPoint._compare_slopes(self.point, other.point)
+            #print('    gt 0.2', comparison > 0)
             return comparison > 0
         else:
-            interval = self.chain.interval_at(other.x)
-            if self.clock_dir == ClockDir.DEASIL:
-                return interval[0] > other.y
+            leaving = (
+                self.chain.get_dir_dir_point(ClockDir.DEASIL) == other
+                and self.chain.get_dir_dir_point(ClockDir.WIDDER) == other
+            )
+            if leaving:
+                #print('    gt 0', self.clock_dir == ClockDir.DEASIL)
+                return self.clock_dir == ClockDir.DEASIL
+            if other == self.chain.get_dir_dir_point(self.clock_dir):
+                #print('    gt 1', self.clock_dir == ClockDir.WIDDER)
+                return self.clock_dir == ClockDir.WIDDER
+            if other.point == self.chain.get_dir_point(self.clock_dir).point:
+                comparison = WrappedPoint._compare_slopes(
+                    self.chain.get_dir_point(self.clock_dir),
+                    other,
+                )
+                #print('    gt 2', comparison > 0)
+                return comparison > 0
+            if other.point == self.chain.get_dir_dir_point(self.clock_dir).point:
+                comparison = WrappedPoint._compare_slopes(
+                    self.chain.get_dir_dir_point(self.clock_dir),
+                    other,
+                )
+                #print('    gt 3', comparison > 0)
+                return comparison > 0
+            segment = self.chain.get_dir_segment(self.clock_dir)
+            if segment.point1.x == segment.point2.x:
+                #print('    gt 4', max(segment.point1.y, segment.point2.y) > other.y)
+                return max(segment.point1.y, segment.point2.y) > other.y
             else:
-                return interval[1] >= other.y
+                #print('    gt 5', segment.point_at(other.x).y > other.y)
+                return segment.point_at(other.x).y > other.y
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         # type: () -> str
         return f'ChainEnd({self.point} {self.clock_dir} {self.chain})'
 
@@ -811,8 +861,6 @@ class Chains:
 
     def __init__(self):
         # type: () -> None
-        # FIXME still dislike the fact that two structures are needed here
-        self.chain_end_map = {} # type: dict[tuple[ClockDir, WrappedPoint], Chain]
         self.tree = SortedDict() # type: SortedDict[ChainEnd, Chain]
         self.triangles = [] # type: list[tuple[int, int, int]]
 
@@ -826,10 +874,6 @@ class Chains:
     def add_chain(self, chain):
         # type: (Chain) -> None
         """Add a chain to the data structures."""
-        assert (ClockDir.DEASIL, chain.deasil_point) not in self.chain_end_map
-        self.chain_end_map[(ClockDir.DEASIL, chain.deasil_point)] = chain
-        assert (ClockDir.WIDDER, chain.widder_point) not in self.chain_end_map
-        self.chain_end_map[(ClockDir.WIDDER, chain.widder_point)] = chain
         self.tree[chain.deasil_key] = chain
         self.tree[chain.widder_key] = chain
 
@@ -840,25 +884,34 @@ class Chains:
         This function will continue down adjacent chains if appropriate.
         """
         assert chain is not None
-        while True:
-            # FIXME it should be possible to do this without removing and re-adding the chain
-            del self.chain_end_map[(clock_dir, chain.get_dir_point(clock_dir))]
-            del self.chain_end_map[(clock_dir.opposite, chain.get_dir_point(clock_dir.opposite))]
-            del self.tree[chain.get_dir_key(clock_dir)]
-            del self.tree[chain.get_dir_key(clock_dir.opposite)]
-            self.triangles.extend(chain.add_point(point, clock_dir))
-            next_chain = chain.get_dir_chain(clock_dir.opposite)
-            if len(chain) == 2 and next_chain and next_chain.get_dir_point(clock_dir).point_type != PointType.SPLIT:
-                # continue with the next chain
-                chain = next_chain
-            else:
-                # done loop, but need to decide whether to reinsert the chain
-                if not (len(chain) == 2 and chain.deasil_point.deasil_point == chain.widder_point):
-                    # if the chain is not the last one due to a LEAVE point
-                    # it is curving away and need to be reinserted
-                    self.add_chain(chain)
-                    #chain.validate()
-                break
+        self.remove_chain(chain)
+        self.triangles.extend(chain.add_point(point, clock_dir))
+        # decide whether to reinsert the chain
+        if not (len(chain) == 2 and chain.deasil_point.deasil_point == chain.widder_point):
+            # if the chain is not the last one due to a LEAVE point
+            # it is curving away and need to be reinserted
+            self.add_chain(chain)
+        #chain.validate()
+
+    def remove_chain(self, chain):
+        # type: (Chain) -> None
+        del self.tree[chain.get_dir_key(ClockDir.DEASIL)]
+        del self.tree[chain.get_dir_key(ClockDir.WIDDER)]
+
+    def merge_chains_at(self, point):
+        # type: (WrappedPoint) -> None
+        deasil_chain, widder_chain = self.get_nearest_chains(point)
+        assert deasil_chain.widder_point.widder_point == point
+        assert widder_chain.deasil_point.deasil_point == point
+        self.remove_chain(deasil_chain)
+        self.remove_chain(widder_chain)
+        deasil_chain_length = len(deasil_chain)
+        self.triangles.extend(deasil_chain.add_point(point, ClockDir.WIDDER))
+        self.triangles.extend(widder_chain.add_point(point, ClockDir.DEASIL))
+        deasil_chain.points.extend(widder_chain.points[1:])
+        if widder_chain.posx_point.point > deasil_chain.posx_point.point:
+            deasil_chain.posx_index = deasil_chain_length + widder_chain.posx_index
+        self.add_chain(deasil_chain)
 
     def get_nearest_chains(self, point):
         # type: (WrappedPoint) -> tuple[Optional[Chain], Optional[Chain]]
@@ -869,12 +922,10 @@ class Chains:
         """
         assert isinstance(point, WrappedPoint)
         prev_cursor, next_cursor = self.tree.bracket(point)
-        return (next_cursor.value, prev_cursor.value)
-
-    def get_chain_with_end(self, clock_dir, point):
-        # type: (ClockDir, WrappedPoint) -> Chain
-        """Get the chain that ends at the specified point."""
-        return self.chain_end_map[(clock_dir, point)]
+        return (
+            next_cursor.value if next_cursor else None,
+            prev_cursor.value if prev_cursor else None,
+        )
 
     def validate(self): # pragma: no cover
         # type: () -> None
@@ -889,8 +940,6 @@ class Chains:
             assert key in (chain.deasil_key, chain.widder_key), (key, chain.deasil_key, chain.widder_key)
             assert chain.deasil_key in self.tree, chain.deasil_key
             assert chain.widder_key in self.tree, chain.widder_key
-            assert (ClockDir.DEASIL, chain.deasil_point) in self.chain_end_map
-            assert (ClockDir.WIDDER, chain.widder_point) in self.chain_end_map
             chain.validate()
             keys.append(key)
         for i, key1 in enumerate(keys):
@@ -997,7 +1046,7 @@ def triangulate_polygon(points):
     """
 
     # initialize sweep line variables
-    priority_queue = PriorityQueue(key=WrappedPointKey) # type: PriorityQueue[WrappedPointKey, WrappedPoint]
+    priority_queue = PriorityQueue(key=WrappedPointPriority) # type: PriorityQueue[WrappedPointPriority, WrappedPoint]
     chains = Chains()
     for point in _preculculate_points_info(0, points):
         if point.point_type in (PointType.ENTER, PointType.SPLIT):
@@ -1013,57 +1062,42 @@ def triangulate_polygon(points):
         if point in visited:
             continue
         visited.add(point)
+        #print(f'\n{point} {point.point_type}')
+        #print(point.deasil_point, '->', point, '->', point.widder_point)
         # process the point
         if point.point_type == PointType.ENTER:
             chains.create_chain(point)
         elif point.point_type == PointType.LEAVE:
-            chains.extend_chain(
-                chains.get_chain_with_end(ClockDir.DEASIL, point.widder_point),
-                point,
-                ClockDir.DEASIL,
-            )
+            deasil_chain, widder_chain = chains.get_nearest_chains(point)
+            assert deasil_chain and widder_chain and deasil_chain == widder_chain
+            assert deasil_chain.widder_point.widder_point == point
+            assert widder_chain.deasil_point.deasil_point == point
+            chains.extend_chain(deasil_chain, point, ClockDir.WIDDER)
         elif point.point_type == PointType.SPLIT:
-            chain, _ = chains.get_nearest_chains(point)
-            # extend the chain and potentially add a new one
-            if chain.posx_point == chain.deasil_point:
-                clock_dir = ClockDir.DEASIL
-            else:
-                clock_dir = ClockDir.WIDDER
-            next_point = chain.get_dir_point(clock_dir)
-            next_chain = chain.get_dir_chain(clock_dir)
-            chains.extend_chain(chain, point, clock_dir)
-            if next_chain:
-                chains.extend_chain(next_chain, point, clock_dir.opposite)
-            else:
-                # need to be careful not to trigger the asserts
-                new_chain = Chain(next_point)
-                new_chain.add_point(point, clock_dir.opposite)
-                chains.add_chain(new_chain)
+            deasil_chain, widder_chain = chains.get_nearest_chains(point)
+            assert deasil_chain and widder_chain and deasil_chain == widder_chain
+            chain = deasil_chain
+            chains.remove_chain(chain)
+            new_deasil_chain = Chain(chain.points[:chain.posx_index+1])
+            new_widder_chain = Chain(chain.points[chain.posx_index:])
+            # need to add the chains carefully to trigger the asserts
+            chains.triangles.extend(new_deasil_chain.add_point(point, ClockDir.WIDDER))
+            chains.triangles.extend(new_widder_chain.add_point(point, ClockDir.DEASIL))
+            chains.add_chain(new_deasil_chain)
+            chains.add_chain(new_widder_chain)
         elif point.point_type == PointType.MERGE:
-            chains.extend_chain(
-                chains.get_chain_with_end(ClockDir.WIDDER, point.deasil_point),
-                point,
-                ClockDir.WIDDER,
-            )
-            chains.extend_chain(
-                chains.get_chain_with_end(ClockDir.DEASIL, point.widder_point),
-                point,
-                ClockDir.DEASIL,
-            )
-            deasil_chain = chains.get_chain_with_end(ClockDir.WIDDER, point)
-            widder_chain = chains.get_chain_with_end(ClockDir.DEASIL, point)
-            deasil_chain.widder_chain = widder_chain
-            widder_chain.deasil_chain = deasil_chain
+            chains.merge_chains_at(point)
         else:
+            deasil_chain, widder_chain = chains.get_nearest_chains(point)
             if point.negx_point == point.deasil_point:
                 chains.extend_chain(
-                    chains.get_chain_with_end(ClockDir.WIDDER, point.negx_point),
+                    deasil_chain,
                     point,
                     ClockDir.WIDDER,
                 )
             else:
                 chains.extend_chain(
-                    chains.get_chain_with_end(ClockDir.DEASIL, point.negx_point),
+                    widder_chain,
                     point,
                     ClockDir.DEASIL,
                 )
@@ -1072,6 +1106,8 @@ def triangulate_polygon(points):
         if point.widder_point.point > point.point:
             priority_queue.push(point.widder_point)
         #chains.validate()
+        #_print_chains(chains)
+        #_visualize_state(points, chains)
     return tuple(chains.triangles)
 
 
