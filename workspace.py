@@ -1,3 +1,5 @@
+#!/home/justinnhli/.local/share/venv/animabotics/bin/python3
+
 """Utility algorithms."""
 
 from collections import defaultdict, Counter, namedtuple
@@ -7,336 +9,9 @@ from math import inf as INF, pi as PI, copysign, nextafter
 from statistics import mean
 from typing import Any, Optional, Union
 
-from .data_structures import SortedDict, PriorityQueue
-from .simplex import Point2D, Segment
-
-
-class _SegmentWrapper:
-    """A wrapper class for ordering Segments in sweep line algorithms."""
-
-    sweep_x = -INF
-
-    def __init__(self, segment):
-        # type: (Segment) -> None
-        self.segment = segment
-        self._x = None # type: Optional[float]
-        self._y = None # type: Optional[float]
-
-    def __eq__(self, other):
-        # type: (Any) -> bool
-        assert isinstance(other, type(self))
-        return self.segment == other.segment
-
-    def __lt__(self, other):
-        # type: (Any) -> bool
-        if isinstance(other, type(self)):
-            return self.key < other.key
-        elif isinstance(other, (int, float)):
-            return self.y < other
-        else:
-            raise TypeError(f"'<' not supported between instances of 'Segment' and '{type(other)}'")
-
-    def __gt__(self, other):
-        # type: (Any) -> bool
-        if isinstance(other, type(self)):
-            return self.key > other.key
-        elif isinstance(other, (int, float)):
-            return self.y > other
-        else:
-            raise TypeError(f"'>' not supported between instances of 'Segment' and '{type(other)}'")
-
-    def __repr__(self): # pragma: no cover
-        # type: () -> str
-        return f'{type(self).__name__}@{self.sweep_x}({self.segment.point1}, {self.segment.point2})'
-
-    @property
-    def key(self):
-        # type: () -> Any
-        """Return the comparison key."""
-        raise NotImplementedError()
-
-    @property
-    def y(self):
-        # type: () -> float
-        """Return the correct y value at sweep_x."""
-        if self._x != self.sweep_x:
-            self._update_y()
-        return self._y
-
-    @y.setter
-    def y(self, value):
-        # type: (float) -> None
-        """Set the value of y forcefully."""
-        self._x = self.sweep_x
-        self._y = value
-
-    def _update_y(self):
-        # type: () -> None
-        self._x = self.sweep_x
-        if self.segment.point1.x == self.segment.point2.x:
-            if self._y is None:
-                self._y = self.segment.min_y
-        else:
-            self._y = self.segment.point_at(self._x).y
-
-
-def bentley_ottmann(segments, include_end=False, ndigits=9): # pylint: disable = too-many-statements
-    # type: (Sequence[Segment], bool, int) -> list[Point2D]
-    """Implement the Bentley-Ottmann all intersects algorithm.
-
-    The Bentley-Ottmann algorithm is a sweep line algorithm for finding all
-    intersects of given segments. Using a vertical sweep line over the
-    endpoints of the segments (in a priority queue), it additionally uses a
-    balanced binary search tree to track the y-values of each segment. Only
-    the intersects of adjacent segments are calculated and added to the
-    priority queue. At every endpoint and intersect, the tree is updated,
-    and the appropriate events added and  removed from the priority queue.
-    This allows the algorithm to have O((n + k)log(n)) complexity, where n
-    is the number of segments and k the number of intersects.
-
-    The heart of the algorithm is updating the tree to determine segments
-    are adjacent. This is complicated because every segment could have new
-    y-values, but the complexity requires only log(n) of them be updated at
-    every endpoint/intersect. The naive way of doing this - looping over all
-    segments in the tree - would require O(n^2) time. This can be seen in
-    the case of n parallel segments, as each new segment requires updating
-    all previous segments. Instead, the trick is to recognize that the order
-    of the segments cannot change during this update, as otherwise we would
-    have had a "meet" event first. The correct way to do this is therefore
-    to do update the keys ONLY OF SEGMENTS ON THE PATH DOWN FROM THE ROOT TO
-    THE NEW LEAF. The tree would lose the binary search tree property, but
-    that's okay, because:
-
-    * since the order doesn't change, updating the key would never point to
-      the incorrect child, even if the un-updated child ends up on the
-      "wrong" side of its parent
-    * the keys that are not updated are, by definition, irrelevant for the
-      purpose of determining the intersects of the new segment, although the
-      previous and next nodes may need to be updated as well
-    * when those un-updated keys are needed, it will either be due to a new
-      segment (dealt with above) or a crossing, at which point they can be
-      swapped without affecting the order of anything else in the tree
-    * when rotating on the way back up after insertion, some additional keys
-      may need to be updated, but only O(log n) keys in the worst case, and
-      again the order does not change
-
-    In other words, because the relevant keys are updated when necessary,
-    the tree can be considered "eventual consistent" (to borrow from
-    database terminology). This relaxation of the binary search tree
-    property allows for insertion, search, and removal to all remain
-    O(log n), and the overall Bentley-Ottmann algorithm to remain
-    O((n + k)log(n))
-
-    This implementation assumes that segments do not overlap, but otherwise
-    deals with intersections of endpoints, intersections of three of more
-    segments, vertical segments, and other edge cases. This is supported by
-    a two modifications to the basic algorithm:
-
-    * intersects also record which segments generated them, and intersects
-      of more than two segments are merged and dealt with simultaneously
-
-    * orderings of segments and intersects use additional properties to
-      accommodate kissing and vertical segments
-    """
-
-    class BOEvent(IntEnum):
-        """Enum for different Bentley-Ottmann events."""
-
-        START = 1
-        MEET = 2
-        END = 3
-
-    class BOSegmentWrapper(_SegmentWrapper):
-        """A wrapper class for ordering Segments."""
-
-        @property
-        def key(self):
-            # type: () -> tuple[float, float, Segment]
-            """Return the comparison key.
-
-            When the y-value is the same, this key sorts segments by the
-            vertical order on the left side.
-            """
-            return (self.y, -self.segment.slope, self.segment)
-
-    Priority = tuple[float, BOEvent, Union[float, Segment]]
-
-    # initialize the two main data structures
-    priority_queue = PriorityQueue() # type: PriorityQueue[Priority, tuple[BOEvent, Union[Point2D, Segment]]]
-    tree = SortedDict() # type: SortedDict[BOSegmentWrapper, Segment]
-    for segment in segments:
-        segment = min(segment, segment.twin)
-        priority_queue.push(
-            (BOEvent.START, segment),
-            (segment.min_x, BOEvent.START, segment),
-        )
-        priority_queue.push(
-            (BOEvent.END, segment),
-            (segment.max_x, BOEvent.END, segment),
-        )
-    # initialize additional state-keeping structures
-    segment_wrappers = {} # type: dict[Segment, BOSegmentWrapper]
-    intersect_cache = {} # type: dict[tuple[Segment, Segment], Point2D]
-    intersect_segment_counts = defaultdict(Counter) # type: dict[Point2D, Counter[Segment]]
-    segment_intersect_map = defaultdict(dict) # type: dict[Segment, dict[Point2D, bool]]
-
-    def get_intersect(segment1, segment2):
-        # type: (Segment, Segment) -> Point2D
-        # need to deal with all intersects, including ends, to keep tree in order
-        if segment1 < segment2:
-            intersect_key = (segment1, segment2)
-        else:
-            intersect_key = (segment2, segment1)
-        if intersect_key not in intersect_cache:
-            intersect = segment1.intersect(segment2, include_end=True)
-            if intersect is not None:
-                intersect = round(intersect, ndigits=ndigits)
-                segment_intersect_map[segment1][intersect] = (
-                    intersect not in (segment1.point1, segment1.point2)
-                )
-                segment_intersect_map[segment2][intersect] = (
-                    intersect not in (segment2.point1, segment2.point2)
-                )
-            intersect_cache[intersect_key] = intersect
-        return intersect_cache[intersect_key]
-
-    def get_tree_neighbors(segment):
-        # type: (Segment) -> list[Segment]
-        cursor = tree.cursor(segment_wrappers[segment])
-        neighbors = []
-        if cursor.has_prev:
-            neighbors.append(cursor.prev().value)
-        if cursor.has_next:
-            neighbors.append(cursor.next().value)
-        return neighbors
-
-    def schedule_intersect(segment1, segment2):
-        # type: (Segment, Segment) -> None
-        intersect = get_intersect(segment1, segment2)
-        if intersect is None:
-            return
-        # check that intersection is after sweep line
-        if intersect.x < BOSegmentWrapper.sweep_x:
-            return
-        if intersect_segment_counts[intersect].total() == 0:
-            priority_queue.push(
-                (BOEvent.MEET, intersect),
-                (intersect.x, BOEvent.MEET, intersect.y),
-            )
-        intersect_segment_counts[intersect][segment1] += 1
-        intersect_segment_counts[intersect][segment2] += 1
-
-    def unschedule_intersect(segment1, segment2):
-        # type: (Segment, Segment) -> None
-        intersect = get_intersect(segment1, segment2)
-        if intersect is None:
-            return
-        if intersect.x <= BOSegmentWrapper.sweep_x:
-            return
-        intersect_segment_counts[intersect][segment1] -= 1
-        intersect_segment_counts[intersect][segment2] -= 1
-        if intersect_segment_counts[intersect].total() == 0:
-            priority_queue.remove(
-                (BOEvent.MEET, intersect),
-                (intersect.x, BOEvent.MEET, intersect.y),
-            )
-
-    def insert_into_tree(segment):
-        # type: (Segment) -> None
-        segment_key = BOSegmentWrapper(segment)
-        segment_wrappers[segment] = segment_key
-        tree[segment_key] = segment
-        # get neighbors
-        neighbors = get_tree_neighbors(segment)
-        # remove old intersects from the priority queue
-        if len(neighbors) == 2:
-            unschedule_intersect(*neighbors) # pylint: disable = no-value-for-parameter
-        # insert new intersects into the priority queue (if not already inserted)
-        for neighbor in neighbors:
-            schedule_intersect(segment, neighbor)
-
-    def remove_from_tree(segment):
-        # type: (Segment) -> None
-        # get neighbors
-        neighbors = get_tree_neighbors(segment)
-        # remove intersects from the priority queue
-        for neighbor in neighbors:
-            unschedule_intersect(segment, neighbor)
-        # insert "uncovered" intersect from the priority queue
-        if len(neighbors) == 2:
-            schedule_intersect(*neighbors) # pylint: disable = no-value-for-parameter
-        # remove from tree
-        del tree[segment_wrappers[segment]]
-
-    def swap(*segments):
-        # type: (*Segment) -> None
-        # arrange segments by decreasing slope, which correspond to bottom to top
-        segments = tuple(sorted(
-            segments,
-            key=(lambda segment: (-segment.slope, segment)), # pylint: disable = superfluous-parens
-        ))
-        # manually update the SegmentWrappers to avoid floating point precision issues
-        intersect = get_intersect(*segments[:2])
-        steps = list(range(-len(segments) // 2, len(segments) // 2 + 1))
-        if len(segments) % 2 == 0:
-            steps.remove(0)
-        for segment, step in zip(segments, steps):
-            segment_wrappers[segment].y = nextafter(
-                intersect.y,
-                copysign(INF, step),
-                steps=abs(step),
-            )
-        # update intersects with surrounding segments
-        cursor_bot = tree.cursor(segment_wrappers[segments[0]])
-        if cursor_bot.has_prev:
-            segment_prev = cursor_bot.prev().value
-            unschedule_intersect(segment_prev, segments[0])
-            schedule_intersect(segment_prev, segments[-1])
-        cursor_top = tree.cursor(segment_wrappers[segments[-1]])
-        if cursor_top.has_next:
-            segment_next = cursor_top.next().value
-            unschedule_intersect(segments[-1], segment_next)
-            schedule_intersect(segments[0], segment_next)
-        # reverse the segments in the tree
-        curr_cursor = cursor_bot
-        for segment, step in zip(reversed(segments), steps):
-            segment_wrappers[segment].y = nextafter(
-                intersect.y,
-                copysign(INF, step),
-                steps=abs(step),
-            )
-            curr_cursor.node.key = segment_wrappers[segment]
-            curr_cursor.node.value = segment
-            if curr_cursor.has_next:
-                curr_cursor = curr_cursor.next()
-
-    def non_endpoint_intersect(intersect):
-        # type: (Point2D) -> bool
-        count = 0
-        for segment in intersect_segment_counts[intersect]:
-            if segment_intersect_map[segment][intersect]:
-                count += 1
-                if count == 2:
-                    return True
-        return False
-
-    results = [] # type: list[Point2D]
-    while priority_queue:
-        (sweep_x, *_), (event_type, data) = priority_queue.pop()
-        BOSegmentWrapper.sweep_x = sweep_x
-        if event_type == BOEvent.START:
-            assert isinstance(data, Segment)
-            insert_into_tree(data)
-        elif event_type == BOEvent.END:
-            assert isinstance(data, Segment)
-            remove_from_tree(data)
-        elif event_type == BOEvent.MEET:
-            assert isinstance(data, Point2D)
-            intersect = data
-            if include_end or non_endpoint_intersect(intersect):
-                results.append(intersect)
-            swap(*intersect_segment_counts[intersect])
-    return results
+from animabotics import SortedDict, PriorityQueue
+from animabotics import Point2D, Segment, ConvexPolygon
+from animabotics import BasicWindow, Color
 
 
 class PointType(Enum):
@@ -357,7 +32,7 @@ class PointType(Enum):
         assert isinstance(other, PointType)
         return self.value > other.value
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         # type: () -> str
         return self.name
 
@@ -367,12 +42,21 @@ class ClockDir(Enum):
     DEASIL = -1
     WIDDER = 1
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         # type: () -> str
         if self == ClockDir.DEASIL:
             return 'DEASIL'
         else:
             return 'WIDDER'
+
+    @property
+    def opposite(self):
+        # type: () -> ClockDir
+        """The opposite direction."""
+        if self == ClockDir.DEASIL:
+            return ClockDir.WIDDER
+        else:
+            return ClockDir.DEASIL
 
 
 class WrappedPoint():
@@ -394,7 +78,7 @@ class WrappedPoint():
         self.negx_slope = 0.0
         self.posx_slope = 0.0
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         # type: () -> str
         return f'{self.polygon_index}:{self.point_index}:({self.point.x}, {self.point.y})'
 
@@ -411,48 +95,34 @@ class WrappedPoint():
         return self.point.y
 
     @property
-    def mean_bearings(self):
+    def mean_slopes(self):
         # type: () -> tuple[float, float]
-        """Calculate the mean "bearing" in the neg-x and pos-x directions."""
-        # calculate segment bearings; flip the deasil segment so it's outwards from self
-        deasil_bearing = self.deasil_segment.twin.bearing
-        widder_bearing = self.widder_segment.bearing
-        # calculate the mean bearing while dealing with the discontinuity
-        mean_bearing = (deasil_bearing + widder_bearing) / 2
-        if abs(deasil_bearing - widder_bearing) > PI:
-            mean_bearing = mean_bearing - PI
-        # set the result depending on which way the segments point
-        if self.deasil_point.x < self.x and self.widder_point.x < self.x:
-            result = (mean_bearing, None)
-        elif self.deasil_point.x < self.x and self.x == self.widder_point.x: 
-            result = (mean_bearing, None)
-        elif self.deasil_point.x < self.x and self.x < self.widder_point.x: 
-            result = (deasil_bearing, widder_bearing)
-        elif self.x == self.deasil_point.x and self.widder_point.x < self.x: 
-            result = (mean_bearing, None)
-        elif self.x == self.deasil_point.x and self.x == self.widder_point.x: 
-            assert False
-            pass # FIXME
-        elif self.x == self.deasil_point.x and self.x < self.widder_point.x: 
-            result = (None, mean_bearing)
-        elif self.x < self.deasil_point.x and self.widder_point.x < self.x: 
-            result = (widder_bearing, deasil_bearing)
-        elif self.x < self.deasil_point.x and self.x == self.widder_point.x: 
-            result = (None, mean_bearing)
-        elif self.x < self.deasil_point.x and self.x < self.widder_point.x: 
-            result = (None, mean_bearing)
-        else:
-            assert False
-        # convert results be smaller if neg-y and larger if pos-y
-        assert result[0] is None or PI / 2 < result[0] < 3 * PI / 2, result
-        assert result[1] is None or result[1] < PI / 2 or result[1] > 3 * PI / 2, result
+        """Calculate the mean slope in the neg-x and pos-x directions."""
+        negx_slopes = []
+        posx_slopes = []
+        point_slopes = [
+            (self.deasil_point.point, self.deasil_segment.slope),
+            (self.widder_point.point, self.widder_segment.slope),
+        ]
+        for other_point, slope in point_slopes:
+            if abs(slope) == float('inf'):
+                continue
+            if self.point < other_point:
+                posx_slopes.append(slope)
+            else:
+                negx_slopes.append(-slope)
         return (
-            (None if result[0] is None else 3 * PI / 2 - result[0]),
-            (None if result[1] is None else (result[1] + PI / 2) % (2 * PI)),
+            (mean(negx_slopes) if negx_slopes else None),
+            (mean(posx_slopes) if posx_slopes else None),
         )
 
+    def get_dir_point(self, clock_dir):
+        if clock_dir == ClockDir.DEASIL:
+            return self.deasil_point
+        else:
+            return self.widder_point
+
     def get_dir_segment(self, clock_dir):
-        # type: (ClockDir) -> Segment
         if clock_dir == ClockDir.DEASIL:
             return self.deasil_segment
         else:
@@ -464,8 +134,8 @@ class WrappedPoint():
         """Compare the mean slopes of two points."""
         assert isinstance(point1, WrappedPoint)
         assert isinstance(point2, WrappedPoint)
-        negx_mean_1, posx_mean_1 = point1.mean_bearings
-        negx_mean_2, posx_mean_2 = point2.mean_bearings
+        negx_mean_1, posx_mean_1 = point1.mean_slopes
+        negx_mean_2, posx_mean_2 = point2.mean_slopes
         means = (negx_mean_1, posx_mean_1, negx_mean_2, posx_mean_2)
         if None not in means:
             assert (
@@ -546,7 +216,7 @@ class WrappedPointPriority:
             return self.key > other.key
         return WrappedPoint._compare_slopes(self.point, other.point) > 0
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         # type: () -> str
         return f'WrappedKey({self.point}, {self.point.point_type})'
 
@@ -579,7 +249,7 @@ class Chain:
         # type: () -> int
         return len(self.points)
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         # type: () -> str
         args = ', '.join(repr(point) for point in self.points)
         return f'Chain({args})'
@@ -610,7 +280,6 @@ class Chain:
 
     @property
     def posx_point(self):
-        # type: () -> WrappedPoint
         return self.points[self.posx_index]
 
     def get_dir_point(self, clock_dir):
@@ -622,7 +291,6 @@ class Chain:
             return self.widder_point
 
     def get_dir_dir_point(self, clock_dir):
-        # type: (ClockDir) -> WrappedPoint
         if clock_dir == ClockDir.DEASIL:
             return self.deasil_point.deasil_point
         else:
@@ -641,7 +309,6 @@ class Chain:
             return self.points[-2], self.points[-1]
 
     def get_dir_segment(self, clock_dir):
-        # type: (ClockDir) -> Segment
         return self.get_dir_point(clock_dir).get_dir_segment(clock_dir)
 
     def get_dir_key(self, clock_dir):
@@ -677,7 +344,31 @@ class Chain:
         else:
             self.points.append(point)
             self.posx_index = len(self.points) - 1
-        #self.validate()
+        # update the pos-x pointer
+        '''
+        # check the monotonicity invariant. This is necessary to ensure that
+        # degenerate triangles (with area = 0) will not be created.
+        if len(self.points) > 1:
+            point1 = self.points[0]
+            point2 = self.points[1]
+            if point1.point > point2.point:
+                for point1, point2 in zip(self.points[:-1], self.points[1:]):
+                    if not point1.point > point2.point:
+                        raise ValueError(' '.join((
+                            'cannot triangulate;',
+                            'perhaps the polygon is not simple or is disconnected?',
+                        )))
+            elif point1.point.x < point2.point.x:
+                for point1, point2 in zip(self.points[:-1], self.points[1:]):
+                    if not point1.point.x < point2.point.x:
+                        raise ValueError(' '.join((
+                            'cannot triangulate;',
+                            'perhaps the polygon is not simple or is disconnected?',
+                        )))
+            else:
+                assert False
+        '''
+        self.validate()
         return triangles
 
     def interval_at(self, x):
@@ -685,7 +376,7 @@ class Chain:
         """Get the upper and lower bounds of the chain at the given x-value."""
         # calculate the slope of the adjacent segments, if not boxed in by other chains
         if self.deasil_point.deasil_point.x == self.deasil_point.x:
-            deasil_slope = INF
+            deasil_slope = float('inf')
             deasil_y = max(
                 self.deasil_point.y,
                 self.deasil_point.deasil_point.y,
@@ -694,7 +385,7 @@ class Chain:
             deasil_slope = self.deasil_point.deasil_segment.slope
             deasil_y = self.deasil_point.y + deasil_slope * (x - self.deasil_point.x)
         if self.widder_point.widder_point.x == self.widder_point.x:
-            widder_slope = INF
+            widder_slope = float('inf')
             widder_y = min(
                 self.widder_point.y,
                 self.widder_point.widder_point.y,
@@ -702,12 +393,38 @@ class Chain:
         else:
             widder_slope = self.widder_point.widder_segment.slope
             widder_y = self.widder_point.y + widder_slope * (x - self.widder_point.x)
-        assert deasil_y >= widder_y
-        return deasil_y, widder_y
+        # if deasil_y < widder_y, the two lines intersect before x
+        # give the y value of the intersect, being careful of the case where one of the slopes is 0
+        if deasil_y < widder_y:
+            if deasil_slope == 0:
+                return deasil_y, deasil_y
+            elif widder_slope == 0:
+                return widder_y, widder_y
+            else:
+                intersect_y = self.deasil_point.deasil_segment.intersect(
+                    self.widder_point.widder_segment,
+                )
+                return intersect_y, intersect_y
+        else:
+            return deasil_y, widder_y
 
     def validate(self): # pragma: no cover
         # type: () -> None
         """Validate the chain."""
+        '''
+        # check that the chain is monotonic
+        if len(self.points) > 1:
+            point1 = self.points[0]
+            point2 = self.points[1]
+            if point1.point > point2.point:
+                for point1, point2 in zip(self.points[:-1], self.points[1:]):
+                    assert point1.point > point2.point, self.points
+            elif point1.point.x < point2.point.x:
+                for point1, point2 in zip(self.points[:-1], self.points[1:]):
+                    assert point1.point.x < point2.point.x
+            else:
+                assert False, self.points
+        '''
         # check the neg-x and pos-x pointers
         assert self.posx_point == max(
             self.points,
@@ -764,6 +481,8 @@ class ChainEnd:
             if leaving:
                 #print('    lt 0', self.clock_dir == ClockDir.WIDDER)
                 return self.clock_dir == ClockDir.WIDDER
+            if other == self.chain.get_dir_point(self.clock_dir):
+                assert False
             if other == self.chain.get_dir_dir_point(self.clock_dir):
                 #print('    lt 1', self.clock_dir == ClockDir.DEASIL)
                 return self.clock_dir == ClockDir.DEASIL
@@ -820,6 +539,8 @@ class ChainEnd:
             if leaving:
                 #print('    gt 0', self.clock_dir == ClockDir.DEASIL)
                 return self.clock_dir == ClockDir.DEASIL
+            if other == self.chain.get_dir_point(self.clock_dir):
+                assert False
             if other == self.chain.get_dir_dir_point(self.clock_dir):
                 #print('    gt 1', self.clock_dir == ClockDir.WIDDER)
                 return self.clock_dir == ClockDir.WIDDER
@@ -845,7 +566,7 @@ class ChainEnd:
                 #print('    gt 5', segment.point_at(other.x).y > other.y)
                 return segment.point_at(other.x).y > other.y
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         # type: () -> str
         return f'ChainEnd({self.point} {self.clock_dir} {self.chain})'
 
@@ -861,6 +582,7 @@ class Chains:
 
     def __init__(self):
         # type: () -> None
+        # FIXME still dislike the fact that two structures are needed here
         self.tree = SortedDict() # type: SortedDict[ChainEnd, Chain]
         self.triangles = [] # type: list[tuple[int, int, int]]
 
@@ -884,6 +606,7 @@ class Chains:
         This function will continue down adjacent chains if appropriate.
         """
         assert chain is not None
+        # FIXME it should be possible to do this without removing and re-adding the chain
         self.remove_chain(chain)
         self.triangles.extend(chain.add_point(point, clock_dir))
         # decide whether to reinsert the chain
@@ -891,15 +614,13 @@ class Chains:
             # if the chain is not the last one due to a LEAVE point
             # it is curving away and need to be reinserted
             self.add_chain(chain)
-        #chain.validate()
+            chain.validate()
 
     def remove_chain(self, chain):
-        # type: (Chain) -> None
         del self.tree[chain.get_dir_key(ClockDir.DEASIL)]
         del self.tree[chain.get_dir_key(ClockDir.WIDDER)]
 
     def merge_chains_at(self, point):
-        # type: (WrappedPoint) -> None
         deasil_chain, widder_chain = self.get_nearest_chains(point)
         assert deasil_chain.widder_point.widder_point == point
         assert widder_chain.deasil_point.deasil_point == point
@@ -1062,8 +783,7 @@ def triangulate_polygon(points):
         if point in visited:
             continue
         visited.add(point)
-        #print(f'\n{point} {point.point_type}')
-        #print(point.deasil_point, '->', point, '->', point.widder_point)
+        #print(point, point.point_type)
         # process the point
         if point.point_type == PointType.ENTER:
             chains.create_chain(point)
@@ -1105,119 +825,322 @@ def triangulate_polygon(points):
             priority_queue.push(point.deasil_point)
         if point.widder_point.point > point.point:
             priority_queue.push(point.widder_point)
-        #chains.validate()
+        chains.validate()
         #_print_chains(chains)
         #_visualize_state(points, chains)
     return tuple(chains.triangles)
 
 
-BearingInfo = namedtuple('BearingInfo', 'prev_index, bearing, next_index')
+POLYGON_PARTITION_DATASET = (
+    # start, add, end
+    (
+        Point2D(4, 1), Point2D(2, 2), Point2D(-1, 2), Point2D(-3, 1),
+        Point2D(-4, -1), Point2D(-2, -2), Point2D(1, -2), Point2D(3, -1),
+    ),
+    (
+        Point2D(-8, 0), Point2D(-5, -1), Point2D(-3, -2),
+        Point2D(-2, -3), Point2D(-1, -5), Point2D(0, -8),
+        Point2D(1, 1),
+    ),
+    (
+        Point2D(-8, 0), Point2D(-5, -1), Point2D(-3, -2),
+        Point2D(-2, -3), Point2D(-1, -5), Point2D(0, -8),
+        Point2D(1, -4), Point2D(3, 0),
+    ),
+    (
+        Point2D(8, -4), Point2D(7, 4), Point2D(5, 4), Point2D(4, 1), Point2D(3, -1),
+        Point2D(2, -2), Point2D(0, -3), Point2D(-1, 4), Point2D(-8, 4), Point2D(-8, 1),
+        Point2D(-6, 2), Point2D(-5, 2), Point2D(-4, 1), Point2D(-3, -1), Point2D(-2, -4),
+    ),
+    (
+        Point2D(-2, 2), Point2D(-2, -2), Point2D(2, -2), Point2D(2, 2),
+    ),
+    (
+        Point2D(-2, 2), Point2D(-2, 0), Point2D(-2, -2), Point2D(0, -2),
+        Point2D(2, -2), Point2D(2, 0), Point2D(2, 2), Point2D(0, 2),
+    ),
+    # merge or split
+    (
+        Point2D(-1, 1), Point2D(0, 0), Point2D(-1, -1),
+        Point2D(2, -1), Point2D(1, 1),
+    ),
+    (
+        Point2D(-1, 1), Point2D(0, 0), Point2D(-1, -1),
+        Point2D(2, -1),
+    ),
+    (
+        Point2D(-1, 5), Point2D(0, 4), Point2D(-1, 3), Point2D(1, 2), Point2D(-1, 1), Point2D(0, 0),
+        Point2D(-1, -1), Point2D(1, -2), Point2D(-1, -3), Point2D(0, -4), Point2D(-1, -5), Point2D(8, 0),
+    ),
+    (
+        Point2D(-1, 2), Point2D(0, 0), Point2D(-2, 1),
+        Point2D(1, -2), Point2D(2, -1),
+    ),
+    (
+        Point2D(-1, 2), Point2D(0, 0), Point2D(-2, 1),
+        Point2D(2, -2), Point2D(1, 3),
+    ),
+    (
+        Point2D(-1, 3), Point2D(-2, 2), Point2D(0, 0),
+        Point2D(-2, 1), Point2D(1, -1),
+    ),
+    (
+        Point2D(0, 3), Point2D(-1, 2), Point2D(0, 1),
+        Point2D(0, -1), Point2D(-1, -2), Point2D(0, -3),
+        Point2D(2, 0),
+    ),
+    (
+        Point2D(1, 3), Point2D(-2, 2), Point2D(-1, 1), Point2D(0, 1),
+        Point2D(0, -1), Point2D(-1, -2), Point2D(1, -3), Point2D(2, 0),
+    ),
+    (
+        Point2D(3, 0), Point2D(2, 4), Point2D(-3, 4), Point2D(1, -1), Point2D(-1, 1),
+        Point2D(-3, 1), Point2D(-2, 0), Point2D(-3, -1), Point2D(-3, -4), Point2D(2, -4),
+    ),
+    (
+        Point2D(3, 0), Point2D(2, 4), Point2D(-3, 4), Point2D(1, -1), Point2D(-1, 1),
+        Point2D(-3, 1), Point2D(-2, 0), Point2D(-6, -4), Point2D(2, -4),
+    ),
+    (
+        Point2D(-2, 2),
+        Point2D(0, -1),
+        Point2D(-2, -2),
+        Point2D(1, -2),
+        Point2D(1, 1),
+        Point2D(2, 2),
+    ),
+    (
+        Point2D(-2, 2),
+        Point2D(0, -1),
+        Point2D(-2, -2),
+        Point2D(0, -2),
+        Point2D(1, 1),
+        Point2D(2, 2),
+    ),
+    (
+        Point2D(0, 0), Point2D(8, 2), Point2D(7, 4),
+        Point2D(8, 6), Point2D(7, 5), Point2D(6, 3), Point2D(5, 2), Point2D(3, 1),
+    ),
+    # merge and split
+    (
+        Point2D(0, 2), Point2D(-2, 1), Point2D(-1, 0), Point2D(-2, -1),
+        Point2D(0, -2), Point2D(2, -1), Point2D(1, 0), Point2D(2, 1),
+    ),
+    (
+        Point2D(-2, 1), Point2D(-1, 0), Point2D(-2, -1),
+        Point2D(2, -1), Point2D(1, 0), Point2D(2, 1),
+    ),
+    (
+        Point2D(-2, 4), Point2D(0, 3), Point2D(-2, 2), Point2D(0, 1),
+        Point2D(-2, -1), Point2D(0, -2), Point2D(-2, -3), Point2D(-1, -4),
+        Point2D(2, -4), Point2D(0, -3), Point2D(2, -2), Point2D(0, -1),
+        Point2D(2, 1), Point2D(0, 2), Point2D(2, 3), Point2D(1, 4),
+    ),
+    (
+        Point2D(3, 0),
+        Point2D(1, 2), Point2D(3, 4),
+        Point2D(-2, 4), Point2D(-1, 3), Point2D(-2, 2), Point2D(-1, 1),
+        Point2D(-2, 0),
+        Point2D(-1, -1), Point2D(-2, -2), Point2D(-1, -3), Point2D(-2, -4),
+        Point2D(3, -4), Point2D(1, -2),
+    ),
+    (
+        Point2D(3, 0),
+        Point2D(1, 2), Point2D(3, 4),
+        Point2D(-4, 4), Point2D(-1, 3), Point2D(-2, 2), Point2D(-1, 1),
+        Point2D(-2, 0),
+        Point2D(-1, -1), Point2D(-2, -2), Point2D(-1, -3), Point2D(-4, -4),
+        Point2D(3, -4), Point2D(1, -2),
+    ),
+    (
+        Point2D(1, 0), Point2D(2, 5), Point2D(-4, 1), Point2D(-2, 2), Point2D(-1, 2),
+        Point2D(0, 0), Point2D(-1, -2), Point2D(-2, -2), Point2D(-4, -1), Point2D(2, -5),
+    ),
+    (
+        Point2D(1, 0), Point2D(2, 5), Point2D(-4, 1), Point2D(-2, 2), Point2D(-1, 2),
+        Point2D(-1, -2), Point2D(-2, -2), Point2D(-4, -1), Point2D(2, -5),
+    ),
+    (
+        Point2D(-2, 2),
+        Point2D(-1, 1),
+        Point2D(-2, -2),
+        Point2D(2, -2),
+        Point2D(0, -1),
+        Point2D(2, 2),
+    ),
+    (
+        Point2D(0, -5), Point2D(10, -3), Point2D(9, 0), Point2D(10, 3),
+        Point2D(0, 5), Point2D(3, 4), Point2D(5, 3), Point2D(6, 2),
+        Point2D(7, 0), Point2D(6, -2), Point2D(5, -3), Point2D(3, -4),
+    ),
+    (
+        Point2D(-2, 4),
+        Point2D(-2, -4),
+        Point2D(0, -1),
+        Point2D(2, -4),
+        Point2D(2, -3),
+        Point2D(-1, 2),
+        Point2D(2, -2),
+        Point2D(2, 4),
+        Point2D(0, 1),
+    ),
+    # repeated points and opposite colinear segments
+    (
+        Point2D(0, 0), Point2D(1, 1), Point2D(2, 0), Point2D(1, -1),
+        Point2D(0, 0), Point2D(2, -3), Point2D(4, 0), Point2D(2, 3),
+    ),
+    (
+        Point2D(2, 0), Point2D(0, 2), Point2D(-2, 0), Point2D(0, -2), Point2D(2, 0),
+        Point2D(1, 0), Point2D(0, -1), Point2D(-1, 0), Point2D(0, 1), Point2D(1, 0),
+    ),
+    (
+        Point2D(2, 0), Point2D(0, 2), Point2D(-3, 1), Point2D(0, -2), Point2D(2, 0),
+        Point2D(1, 0), Point2D(0, -1), Point2D(-1, 0), Point2D(0, 1), Point2D(1, 0),
+    ),
+    (
+        Point2D(0, 0), Point2D(2, -3), Point2D(1, -1), Point2D(4, -3), Point2D(4, -1),
+        Point2D(1, 0), Point2D(4, 1), Point2D(4, 3), Point2D(1, 1), Point2D(2, 3),
+        Point2D(0, 0), Point2D(3, 2), Point2D(3, 1),
+        Point2D(0, 0), Point2D(3, -1), Point2D(3, -2),
+    ),
+    (
+        Point2D(0, -4), Point2D(4, -4), Point2D(4, 4), Point2D(-4, 4), Point2D(-4, -4), Point2D(0, -4), Point2D(0, 0),
+        Point2D(-1, -2), Point2D(-2, -1), Point2D(0, 0),
+        Point2D(-3, -1), Point2D(-3, 1), Point2D(0, 0),
+        Point2D(-2, 1), Point2D(-1, 2), Point2D(0, 0),
+        Point2D(-1, 3), Point2D(1, 3), Point2D(0, 0),
+        Point2D(1, 2), Point2D(2, 1), Point2D(0, 0),
+        Point2D(3, 1), Point2D(3, -1), Point2D(0, 0),
+        Point2D(2, -1), Point2D(1, -2), Point2D(0, 0),
+    ),
+)
 
 
-def convex_partition(points, triangle_indices=None):
-    # type: (Sequence[Point2D], Sequence[tuple[int, int, int]]) -> tuple[tuple[int, ...], ...]
-    """Partition a simple polygon into component convex polygons."""
-    # get triangulation indices
-    if triangle_indices is None:
-        triangle_indices = triangulate_polygon(points)
-    # set up data structures
-    point_bearings_map = defaultdict(dict) # type: dict[int, dict[int, BearingInfo]]
-    bearings = {} # type: dict[tuple[int, int], float]
-    interior_segments = set() # type: set[tuple[int, int]]
-    for triangle_index in triangle_indices:
-        shifted_index = triangle_index[1:] + (triangle_index[0],)
-        for index1, index2 in zip(triangle_index, shifted_index):
-            point_bearings_map[index1][index2] = None
-            point_bearings_map[index2][index1] = None
-            segment = Segment(points[index1], points[index2])
-            bearings[(index1, index2)] = segment.bearing
-            if segment.bearing > PI:
-                bearings[(index2, index1)] = segment.bearing - PI
-            else:
-                bearings[(index2, index1)] = segment.bearing + PI
-            if abs(index1 - index2) not in (1, len(points) - 1):
-                if index1 < index2:
-                    interior_segments.add((index1, index2))
-                else:
-                    interior_segments.add((index2, index1))
-    # for every point, create a linked list of neighbors ordered by bearing
-    for index1 in range(len(points)):
-        # store bearings of all connected points as a linked structure
-        point_bearings = sorted(
-            (bearings[(index1, index2)], index2)
-            for index2 in point_bearings_map[index1]
+def _print_chains(chains):
+    for chain_end, chain in chains.tree.items():
+        print('   ', chain_end)
+        print('       ', chain)
+
+
+def _visualize_state(points, chains):
+    window = BasicWindow(600, 400)
+    if points:
+        shifted = points[1:] + (points[0],)
+        for point1, point2 in zip(points, shifted):
+            window.add_geometry(Segment(point1, point2))
+    for chain in chains.tree.values():
+        for point1, point2 in zip(chain.points[1:], chain.points[:-1]):
+            window.add_geometry(
+                Segment(point1, point2),
+                line_color=Color(0.1, 1, 1),
+            )
+    window.camera.zoom_level = 15
+    window.start()
+
+
+def _validate_partition(points, partition_indices):
+    # type: (Sequence[Point2D], tuple[tuple[int, ...], ...]) -> None
+    components = (
+        ConvexPolygon(points=tuple(points[i] for i in index))
+        for index in partition_indices
+    )
+    # initialize the segments with the _clockwise_ perimeter
+    # which will be "canceled out" during the verification
+    boundary_segments = set(
+        Segment(points[i], points[i - 1])
+        for i in range(len(points))
+    )
+    internal_segments = set() # type: set[Segment]
+    # verify each component
+    for component in components:
+        # verify component goes does not go clockwise
+        assert all(
+            Segment.orientation(
+                component.points[i - 1],
+                component.points[i],
+                component.points[i + 1],
+            ) != 1
+            for i in range(-2, len(component.points) - 2)
         )
-        point_bearings_map[index1] = {}
-        for i, (bearing, index2) in enumerate(point_bearings):
-            point_bearings_map[index1][index2] = BearingInfo(
-                point_bearings[(i - 1) % len(point_bearings)][1],
-                bearing,
-                point_bearings[(i + 1) % len(point_bearings)][1],
-            )
-    # repeatedly remove non-essential segments until there are no more changes
-    changed_segments = set(interior_segments)
-    while changed_segments:
-        new_changed_segments = set()
-        for index1, index2 in changed_segments:
-            if index2 not in point_bearings_map[index1]:
-                continue
-            # segment is essential if at least one end is dividing a reflex angle
-            essential = False
-            for src_index, dst_index in ((index1, index2), (index2, index1)):
-                point_info = point_bearings_map[src_index]
-                angle_info = point_info[dst_index]
-                angle = (
-                    point_info[angle_info.next_index].bearing
-                    - point_info[angle_info.prev_index].bearing
-                ) % (2 * PI)
-                if angle >= PI:
-                    essential = True
-                    break
-            if essential:
-                continue
-            # update the bearings data structure
-            for src_index, dst_index in ((index1, index2), (index2, index1)):
-                point_info = point_bearings_map[src_index]
-                # remove the segment from the chain
-                bearing_info = point_info[dst_index]
-                prev_index = bearing_info.prev_index
-                next_index = bearing_info.next_index
-                point_info[prev_index] = point_info[prev_index]._replace(
-                    next_index=next_index,
-                )
-                point_info[next_index] = point_info[next_index]._replace(
-                    prev_index=prev_index,
-                )
-                # add adjacent segments as having changed
-                for other_index in (prev_index, next_index):
-                    key = (src_index, other_index)
-                    if key in interior_segments:
-                        new_changed_segments.add(key)
-            del point_bearings_map[index1][index2]
-            del point_bearings_map[index2][index1]
-        changed_segments = new_changed_segments
-    # create the index lists of convex partitions via breadth-first search
-    frontier = [(0, 1),]
-    visited = set()
-    convex_indices = []
-    while frontier:
-        curr_index, next_index = frontier.pop(0)
-        init_index = curr_index
-        if (curr_index, next_index) in visited:
+        # verify component angles are convex
+        assert all(
+            Segment.angle(
+                component.points[i - 1],
+                component.points[i],
+                component.points[i + 1],
+            ) <= 2 * PI
+            for i in range(-2, len(component.points) - 2)
+        )
+        # verify component has non-zero area
+        assert component.area > 0
+        # verify that all component edges either:
+        # * have a twin that belongs to another component, or
+        # * is part of the perimeter of the polygon
+        for segment in component.segments:
+            if segment.twin in boundary_segments:
+                boundary_segments.remove(segment.twin)
+            elif segment.twin in internal_segments:
+                internal_segments.remove(segment.twin)
+            else:
+                assert segment not in internal_segments
+                internal_segments.add(segment)
+    assert not boundary_segments, boundary_segments
+    assert not internal_segments, internal_segments
+
+
+def test_polygon_triangulation_good(debug_index=None, debug_variant=None):
+    # type: () -> None
+    """Test successful polygon triangulations."""
+    for index, points in enumerate(POLYGON_PARTITION_DATASET):
+        if debug_index is not None and index != debug_index:
             continue
-        visited.add((curr_index, next_index))
-        face_indices = [curr_index]
-        while next_index != init_index:
-            next_next_index = point_bearings_map[next_index][curr_index].prev_index
-            curr_index = next_index
-            next_index = next_next_index
-            face_indices.append(curr_index)
-            visited.add((curr_index, next_index))
-            add_twin = (
-                (next_index, curr_index) not in visited
-                and abs(next_index - curr_index) not in (1, len(points) - 1)
-            )
-            if add_twin:
-                frontier.append((next_index, curr_index))
-        convex_indices.append(tuple(face_indices))
-    return tuple(convex_indices)
+        variants = (
+            ('', points),
+            (
+                'y',
+                tuple(reversed([
+                    Point2D.from_matrix(point.matrix.y_reflection) for point in points
+                ])),
+            ),
+            (
+                'x',
+                tuple(reversed([
+                    Point2D.from_matrix(point.matrix.x_reflection) for point in points
+                ])),
+            ),
+            (
+                'xy',
+                tuple(
+                    Point2D.from_matrix(point.matrix.x_reflection.y_reflection) for point in points
+                ),
+            ),
+        )
+        for marker, variant_points in variants:
+            if debug_variant is not None and marker != debug_variant:
+                continue
+            print()
+            print(f'POLYGON {index}{marker}')
+            for i, point in enumerate(variant_points):
+                print('   ', i, point)
+            print()
+            _validate_partition(variant_points, triangulate_polygon(variant_points))
+
+
+def main():
+    import sys
+    import re
+    args = sys.argv[1:]
+    debug_index = None
+    debug_variant = None
+    if len(sys.argv) > 1:
+        match = re.fullmatch('([0-9]+)([xy]*)', sys.argv[1])
+        if not match:
+            print(f'unrecognized arguments: {sys.argv}')
+        debug_index = int(match.group(1))
+        debug_variant = match.group(2)
+    print(debug_index, debug_variant)
+    test_polygon_triangulation_good(debug_index, debug_variant)
+
+
+if __name__ == '__main__':
+    main()

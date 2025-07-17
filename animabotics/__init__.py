@@ -11,7 +11,7 @@ from .game import Game
 from .game_object import GameObject
 from .matrix import Matrix, identity
 from .metaprogramming import CachedMetaclass
-from .polygon import Polygon
+from .polygon import ConvexPolygon, Polygon
 from .scene import HierarchicalHashGrid
 from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
 from .transform import Transform
