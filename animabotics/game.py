@@ -97,4 +97,4 @@ class Game:
     def get_msec():
         # type: () -> int
         """Return a millisecond-level time."""
-        return get_nsec_msec() // 1000
+        return get_nsec_msec() // 1_000_000
