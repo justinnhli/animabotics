@@ -21,7 +21,7 @@ class GameObject(Transformable):
         super().__init__(position, rotation)
         self.animation = None # type: Animation
         self.collision_geometry = None # type: Geometry
-        self.radius = 0.0
+        self.collision_radius = 0.0
         self._axis_projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
         self._collision_groups = frozenset() # type: frozenset[str]
         self._transformed_geometry_cache = {} # type: dict[PointsMatrix, PointsMatrix]
