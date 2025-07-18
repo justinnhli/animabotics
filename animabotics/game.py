@@ -62,10 +62,17 @@ class Game:
             self.collision_callbacks[group_pair](obj1, obj2)
         # draw all objects
         for game_object in self.scene.get_in_view(self.camera):
-            self.camera.draw_sprite(game_object.get_sprite())
-            #self.camera.draw_geometry(game_object.transformed_collision_geometry)
+            self.draw_recursive(game_object)
         # update timer
         self.prev_msec = curr_msec
+
+    def draw_recursive(self, game_object):
+        # type: (GameObject) -> None
+        """Recursively draw a GameObject and its children."""
+        self.camera.draw_sprite(game_object.get_sprite())
+        if hasattr(game_object, 'children'):
+            for child in game_object.children:
+                self.draw_recursive(child)
 
     def prestart(self):
         # type: () -> None
