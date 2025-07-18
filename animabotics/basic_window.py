@@ -23,6 +23,7 @@ class DummyGameObject(GameObject):
             fill_color,
             line_color,
         )]))
+        # TODO solve the smallest-circle problem instead
         self.collision_radius = max(
             point.distance(self.position)
             for point in geometry.points
