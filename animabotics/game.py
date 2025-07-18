@@ -1,12 +1,12 @@
 """The abstract Game class."""
 
-from time import monotonic_ns as get_nsec_msec
 from typing import Callable
 
 from .camera import Camera
 from .canvas import Canvas, Input, EventCallback
 from .game_object import GameObject
 from .scene import HierarchicalHashGrid
+from .timing import get_msec
 
 
 CollisionCallback = Callable[[GameObject, GameObject], None]
@@ -50,7 +50,7 @@ class Game:
         # type: (int) -> None
         """Deal with time passing."""
         # calculate elapsed time since last tick
-        curr_msec = Game.get_msec()
+        curr_msec = get_msec()
         if elapsed_msec is None:
             elapsed_msec = curr_msec - self.prev_msec
         elapsed_sec = elapsed_msec / 1000
@@ -82,7 +82,7 @@ class Game:
         This function does all non-UI things needed to start the game; it is in
         a separate function to facilitate testing.
         """
-        self.prev_msec = Game.get_msec()
+        self.prev_msec = get_msec()
         self.scene.set_collision_group_pairs(self.collision_callbacks.keys())
 
     def start(self):
@@ -92,9 +92,3 @@ class Game:
             self.canvas.bind(input_event, callback)
         self.prestart()
         self.canvas.start(self.dispatch_tick, 40)
-
-    @staticmethod
-    def get_msec():
-        # type: () -> int
-        """Return a millisecond-level time."""
-        return get_nsec_msec() // 1_000_000
