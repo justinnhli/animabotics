@@ -81,7 +81,7 @@ class Animation:
         self.sprites = {} # type: dict[str, Sprite]
         self.transitions = {} # type: dict[str, tuple[int, str]]
         self.state = None # type: str
-        self.remainder_msec = 0
+        self.remainder_sec = 0
 
     def add_state(self, state, sprite):
         # type: (str, Sprite) -> None
@@ -96,40 +96,40 @@ class Animation:
         assert state in self.sprites
         self.state = state
 
-    def add_timed_transition(self, src, dst, duration_msec):
+    def add_timed_transition(self, src, dst, duration_sec):
         # type: (str, str, int) -> None
         """Add a timed transition between states."""
-        self.transitions[src] = (duration_msec, dst)
+        self.transitions[src] = (duration_sec, dst)
 
-    def advance_state(self, elapsed_msec):
+    def advance_state(self, elapsed_sec):
         # type: (int) -> None
         """Change state based on elapsed time."""
         # FIXME optimize
-        self.remainder_msec += elapsed_msec
+        self.remainder_sec += elapsed_sec
         while True:
             duration, next_state = self.transitions[self.state]
-            if duration > self.remainder_msec:
+            if duration > self.remainder_sec:
                 return
-            self.remainder_msec -= duration
+            self.remainder_sec -= duration
             self.state = next_state
 
-    def get_sprite(self, elapsed_msec=0):
+    def get_sprite(self, elapsed_sec=0):
         # type: (int) -> Sprite
         """Get the sprite for the current state."""
-        if elapsed_msec:
-            self.advance_state(elapsed_msec)
+        if elapsed_sec:
+            self.advance_state(elapsed_sec)
         return self.sprites[self.state]
 
     @staticmethod
-    def create_fixed_fps_animation(frame_duration_msec, sprites):
+    def create_fixed_fps_animation(frame_duration_sec, sprites):
         # type: (int, Sequence[Sprite]) -> Animation
         """Create an animation with fixed timing."""
         animation = Animation()
         for i, sprite in enumerate(sprites):
             animation.add_state(str(i), sprite)
         for i in range(len(sprites) - 1):
-            animation.add_timed_transition(str(i), str(i + 1), frame_duration_msec)
-        animation.add_timed_transition(str(len(sprites) - 1), str(0), frame_duration_msec)
+            animation.add_timed_transition(str(i), str(i + 1), frame_duration_sec)
+        animation.add_timed_transition(str(len(sprites) - 1), str(0), frame_duration_sec)
         return animation
 
     @staticmethod
