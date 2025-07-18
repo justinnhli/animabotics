@@ -27,7 +27,7 @@ class GameObject(Transformable):
         if collision_groups:
             for group in collision_groups:
                 self.add_to_collision_group(group)
-        self.children = []
+        self.children = [] # type: list[GameObject]
 
     def __hash__(self):
         # type: () -> int
