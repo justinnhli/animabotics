@@ -156,6 +156,8 @@ class GameObject(Transformable):
         geometry2 = other.transformed_collision_geometry
         # try the vector between centroids first
         vector = (geometry1.centroid - geometry2.centroid).normalized
+        if not vector:
+            return True
         if self.separated_on_axis(other, vector):
             return False
         # revert to the standard approach of trying all segment normals
