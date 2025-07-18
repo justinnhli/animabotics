@@ -1,5 +1,7 @@
 """Tests for simplex.py."""
 
+from math import floor, ceil, pi as PI, inf as INF
+
 from animabotics.simplex import Point2D, Vector2D, Segment, Triangle
 from animabotics.transform import Transform
 
@@ -14,31 +16,64 @@ def test_point():
         assert False
     except AssertionError:
         pass
+    assert str(point) == 'Point2D(1, 2)'
+    assert point.segments == ()
+    assert point.area == 0
+    assert point.centroid == point
+    assert point.convex_partitions == (point,)
+    assert -point == Point2D(-1, -2)
     assert point + Vector2D(-1, -2) == Point2D()
     assert point - point == Vector2D()
+    assert point.distance(Point2D(4, 6)) == 5
     vector = Vector2D(1, 2)
+    assert point.to_vector() == vector
     assert Vector2D.from_matrix(vector.matrix) == vector
+    assert str(vector) == 'Vector2D(1, 2)'
+    assert bool(vector)
+    assert not bool(Vector2D(0, 0))
+    assert -vector == Vector2D(-1, -2)
     assert vector + Point2D(-1, -2) == Point2D()
     assert vector + Vector2D(-1, -2) == Vector2D()
     assert 2 * vector == Vector2D(2, 4)
+    assert vector * 2 == Vector2D(2, 4)
     assert vector / 2 == Vector2D(0.5, 1)
     assert vector // 2 == Vector2D(0, 1)
     assert point - vector == Point2D()
     assert vector - vector == Vector2D()
+    assert vector.to_point() == point
+    assert Vector2D(4, 3).magnitude == 5
+    assert Vector2D(2, 0).normalized == Vector2D(1, 0)
+    assert Vector2D(0, 2).normalized == Vector2D(0, 1)
+    assert Vector2D(0, 0).normalized == Vector2D(0, 0)
 
 
 def test_segment():
     # type: () -> None
     """Test Segment."""
     segment = Segment(Point2D(1, 2), Point2D(3, 4))
+    assert Segment.from_matrix(segment.matrix) == segment
     assert segment.points == (Point2D(1, 2), Point2D(3, 4))
     assert segment.min == Point2D(1, 2)
     assert segment.max == Point2D(3, 4)
+    assert segment.centroid == Point2D(2, 3)
     assert segment.twin == Segment(Point2D(3, 4), Point2D(1, 2))
     assert segment.twin.min == Point2D(1, 2)
     assert segment.twin.max == Point2D(3, 4)
+    assert segment.slope == 1
+    assert Segment(Point2D(0, -1), Point2D(0, 1)).slope == INF
+    assert Segment(Point2D(0, 1), Point2D(0, -1)).slope == -INF
+    assert Segment(Point2D(0, 0), Point2D(1, 0)).bearing == 0
+    assert Segment(Point2D(0, 0), Point2D(0, 1)).bearing == PI / 2
+    assert Segment(Point2D(0, 0), Point2D(-1, 0)).bearing == PI
+    assert Segment(Point2D(0, 0), Point2D(0, -1)).bearing == 3 * PI / 2
+    assert Segment(Point2D(4, 3), Point2D(0, 0)).length == 5
+    assert Segment(Point2D(0, 0), Point2D(1, 0)).normal == Vector2D(0, 1)
+    assert Segment(Point2D(0, 0), Point2D(1, 0)).twin.normal == Vector2D(0, -1)
+    assert Segment(Point2D(0, PI), Point2D(1, 2 * PI)).point_at(0).y == PI
+    assert Segment(Point2D(0, PI), Point2D(1, 2 * PI)).point_at(1).y == 2 * PI
     assert str(segment) == 'Segment(Point2D(1, 2), Point2D(3, 4))'
-    assert Segment.from_matrix(segment.matrix) == segment
+    assert segment.intersect(Segment(Point2D(1, 3), Point2D(3, 5))) is None
+    assert Segment(Point2D(1, 0), Point2D(1, 4)).intersect(segment) == Point2D(1, 2)
     # at most one point of intersection, include_end=True
     segments = [
         # vertical second segment
@@ -162,4 +197,12 @@ def test_triangle():
         Point2D(-3, 3),
         Point2D(3, -1),
         Point2D(3, 7),
+    )
+    assert (
+        floor(Triangle(Point2D(0.25, 1.25), Point2D(1.5, 0.5), Point2D(2.75, 3.75)))
+        == Triangle(Point2D(0, 1), Point2D(1, 0), Point2D(2, 3))
+    )
+    assert (
+        ceil(Triangle(Point2D(0.25, 1.25), Point2D(1.5, 0.5), Point2D(2.75, 3.75)))
+        == Triangle(Point2D(1, 2), Point2D(2, 1), Point2D(3, 4))
     )

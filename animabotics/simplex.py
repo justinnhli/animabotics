@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass
 from functools import cached_property
-from math import sqrt, atan2, pi as PI
+from math import sqrt, atan2, pi as PI, inf as INF
 from typing import TypeVar, Optional, Self
 
 from .matrix import Matrix
@@ -265,7 +265,10 @@ class Vector2D(PointsMatrix, metaclass=CachedMetaclass):
     def normalized(self):
         # type: () -> Vector2D
         """The normalized vector."""
-        return self / self.magnitude
+        if self.magnitude == 0:
+            return self
+        else:
+            return self / self.magnitude
 
     def to_point(self):
         # type: () -> Point2D
@@ -342,13 +345,16 @@ class Segment(Geometry, metaclass=CachedMetaclass):
         # type: () -> float
         """The slope of the segment."""
         denominator = self.point2.x - self.point1.x
-        if denominator == 0:
-            return float('Inf')
-        else:
+        if denominator != 0:
             return (self.point2.y - self.point1.y) / denominator
+        elif self.point2.y > self.point1.y:
+            return INF
+        else:
+            return -INF
 
     @cached_property
     def bearing(self):
+        # type: () -> float
         """The bearing of the segment.
 
         Calculated as the angle counterclockwise angle from the positive x-axis.
