@@ -23,7 +23,7 @@ class DummyGameObject(GameObject):
             fill_color,
             line_color,
         )]))
-        self.radius = max(
+        self.collision_radius = max(
             point.distance(self.position)
             for point in geometry.points
         )
