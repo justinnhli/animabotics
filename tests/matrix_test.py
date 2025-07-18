@@ -1,5 +1,7 @@
 """Tests for matrix.py."""
 
+from math import floor, ceil
+
 from animabotics.matrix import Matrix, identity
 
 
@@ -26,7 +28,12 @@ def test_matrix():
     assert Matrix(((1, -2, 3, -4),)) * 3.5 == Matrix(((3.5, -7, 10.5, -14),))
     assert 0.5 * Matrix(((1, -2, 3, -4),)) == Matrix(((0.5, -1, 1.5, -2),))
     assert Matrix(((1, -2, 3, -4),)) / 2 == Matrix(((0.5, -1, 1.5, -2),))
+    assert Matrix(((1, -2, 3, -4),)) // 2 == Matrix(((0, -1, 1, -2),))
     assert -Matrix(((1, 2), (3, 4))) == Matrix(((-1, -2), (-3, -4)))
+    # rounding
+    assert round(Matrix(((0.25, 0.5), (1.5, 1.75)))) == Matrix(((0, 0), (2, 2)))
+    assert floor(Matrix(((0.25, 0.5), (1.5, 1.75)))) == Matrix(((0, 0), (1, 1)))
+    assert ceil(Matrix(((0.25, 0.5), (1.5, 1.75)))) == Matrix(((1, 1), (2, 2)))
     # reflection
     assert Matrix(((1, 2, 3, 4),)).transpose.x_reflection == Matrix(((-1, 2, 3, 4),)).transpose
     assert Matrix(((1, 2, 3, 4),)).transpose.y_reflection == Matrix(((1, -2, 3, 4),)).transpose
