@@ -945,7 +945,7 @@ class Chains:
                     assert key1 < key2, (key1, key2)
 
 
-def _preculculate_points_info(polygon_index, points):
+def _preprocess_points(polygon_index, points):
     # type: (int, Sequence[Point2D]) -> list[WrappedPoint]
     segments = [
         Segment(points[i], points[i + 1])
@@ -1047,7 +1047,7 @@ def triangulate_polygon(points):
     # initialize sweep line variables
     priority_queue = PriorityQueue(key=WrappedPointPriority) # type: PriorityQueue[WrappedPointPriority, WrappedPoint]
     chains = Chains()
-    for point in _preculculate_points_info(0, points):
+    for point in _preprocess_points(0, points):
         if point.point_type in (PointType.ENTER, PointType.SPLIT):
             priority_queue.push(point)
     # start the sweep line
