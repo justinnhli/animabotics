@@ -1,7 +1,8 @@
 """Classes for sprites and animations."""
 
-from functools import cached_property
 from dataclasses import dataclass
+from functools import cached_property
+from math import inf as INF
 from typing import Any, Iterator, Sequence
 
 from .color import Color
@@ -137,5 +138,5 @@ class Animation:
         """Create an "animation" that is a static image."""
         animation = Animation()
         animation.add_state('0', sprite)
-        animation.add_timed_transition('0', '0', float('Inf'))
+        animation.add_timed_transition('0', '0', INF)
         return animation
