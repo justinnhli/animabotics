@@ -173,9 +173,10 @@ class PhysicsObject(GameObject):
         # type: (int) -> None
         """Update the velocity and the position."""
         super().update(elapsed_sec)
+        prev_velocity = self.velocity
         self.velocity += self.acceleration * elapsed_sec
         self.angular_velocity += self.angular_acceleration * elapsed_sec
         if self.velocity:
-            self.move_by(self.velocity * elapsed_sec)
+            self.move_by(prev_velocity * elapsed_sec + 0.5 * self.acceleration * elapsed_sec ** 2)
         if self.angular_velocity:
             self.rotate_by(self.angular_velocity * elapsed_sec)
