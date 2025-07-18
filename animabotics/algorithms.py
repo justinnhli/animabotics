@@ -4,7 +4,6 @@ from collections import defaultdict, Counter, namedtuple
 from collections.abc import Sequence
 from enum import IntEnum, Enum
 from math import inf as INF, pi as PI, copysign, nextafter
-from statistics import mean
 from typing import Any, Optional, Union
 
 from .data_structures import SortedDict, PriorityQueue
@@ -389,10 +388,7 @@ class WrappedPoint():
         self.deasil_segment = None # type: Segment
         self.widder_point = None # type: WrappedPoint
         self.widder_segment = None # type: Segment
-        self.negx_point = None # type: WrappedPoint
         self.posx_point = None # type: WrappedPoint
-        self.negx_slope = 0.0
-        self.posx_slope = 0.0
 
     def __repr__(self): # pragma: no cover
         # type: () -> str
@@ -412,7 +408,7 @@ class WrappedPoint():
 
     @property
     def mean_bearings(self):
-        # type: () -> tuple[float, float]
+        # type: () -> tuple[Optional[float], Optional[float]]
         """Calculate the mean "bearing" in the neg-x and pos-x directions."""
         # calculate segment bearings; flip the deasil segment so it's outwards from self
         deasil_bearing = self.deasil_segment.twin.bearing
@@ -421,26 +417,20 @@ class WrappedPoint():
         mean_bearing = (deasil_bearing + widder_bearing) / 2
         if abs(deasil_bearing - widder_bearing) > PI:
             mean_bearing = mean_bearing - PI
+        # determine which way the segments point
+        has_negx = (self.deasil_point.x < self.x or self.widder_point.x < self.x)
+        has_posx = (self.x < self.deasil_point.x or self.x < self.widder_point.x)
         # set the result depending on which way the segments point
-        if self.deasil_point.x < self.x and self.widder_point.x < self.x:
+        assert has_negx or has_posx
+        result = (None, None) # type: tuple[Optional[float], Optional[float]]
+        if has_negx and not has_posx:
             result = (mean_bearing, None)
-        elif self.deasil_point.x < self.x and self.x == self.widder_point.x: 
-            result = (mean_bearing, None)
-        elif self.deasil_point.x < self.x and self.x < self.widder_point.x: 
+        elif not has_negx and has_posx:
+            result = (None, mean_bearing)
+        elif self.deasil_point.x < self.x < self.widder_point.x:
             result = (deasil_bearing, widder_bearing)
-        elif self.x == self.deasil_point.x and self.widder_point.x < self.x: 
-            result = (mean_bearing, None)
-        elif self.x == self.deasil_point.x and self.x == self.widder_point.x: 
-            assert False
-            pass # FIXME
-        elif self.x == self.deasil_point.x and self.x < self.widder_point.x: 
-            result = (None, mean_bearing)
-        elif self.x < self.deasil_point.x and self.widder_point.x < self.x: 
+        elif self.widder_point.x < self.x < self.deasil_point.x:
             result = (widder_bearing, deasil_bearing)
-        elif self.x < self.deasil_point.x and self.x == self.widder_point.x: 
-            result = (None, mean_bearing)
-        elif self.x < self.deasil_point.x and self.x < self.widder_point.x: 
-            result = (None, mean_bearing)
         else:
             assert False
         # convert results be smaller if neg-y and larger if pos-y
@@ -453,6 +443,7 @@ class WrappedPoint():
 
     def get_dir_segment(self, clock_dir):
         # type: (ClockDir) -> Segment
+        """Get the segment in either clock direction."""
         if clock_dir == ClockDir.DEASIL:
             return self.deasil_segment
         else:
@@ -560,7 +551,7 @@ class WrappedPointPriority:
 class Chain:
     """A chain of untriangulated points to the left of the sweep line.
 
-    Chains represent points in widdershins order (as in the original polygon). 
+    Chains represent points in widdershins order (as in the original polygon).
     Chains are non-strictly monotonic; for all adjacent points p and q, either:
 
     * (p.x, p.y) > (q.x, q.y)
@@ -611,6 +602,7 @@ class Chain:
     @property
     def posx_point(self):
         # type: () -> WrappedPoint
+        """Get the "largest" point (with the highest positive x value)."""
         return self.points[self.posx_index]
 
     def get_dir_point(self, clock_dir):
@@ -623,6 +615,7 @@ class Chain:
 
     def get_dir_dir_point(self, clock_dir):
         # type: (ClockDir) -> WrappedPoint
+        """Get the point past the end point in either clock direction."""
         if clock_dir == ClockDir.DEASIL:
             return self.deasil_point.deasil_point
         else:
@@ -642,6 +635,7 @@ class Chain:
 
     def get_dir_segment(self, clock_dir):
         # type: (ClockDir) -> Segment
+        """Get the segment past the end point in either clock direction."""
         return self.get_dir_point(clock_dir).get_dir_segment(clock_dir)
 
     def get_dir_key(self, clock_dir):
@@ -895,11 +889,13 @@ class Chains:
 
     def remove_chain(self, chain):
         # type: (Chain) -> None
+        """Remove a chain from the chains data structure."""
         del self.tree[chain.get_dir_key(ClockDir.DEASIL)]
         del self.tree[chain.get_dir_key(ClockDir.WIDDER)]
 
     def merge_chains_at(self, point):
         # type: (WrappedPoint) -> None
+        """Merge two chains by joining them at the given point."""
         deasil_chain, widder_chain = self.get_nearest_chains(point)
         assert deasil_chain.widder_point.widder_point == point
         assert widder_chain.deasil_point.deasil_point == point
@@ -975,10 +971,8 @@ def _preculculate_points_info(polygon_index, points):
         wrapped_point.widder_point = widder_point
         widder_point.deasil_point = wrapped_point
         if deasil_point.point < wrapped_point.point:
-            wrapped_point.negx_point = deasil_point
             wrapped_point.posx_point = widder_point
         else:
-            wrapped_point.negx_point = widder_point
             wrapped_point.posx_point = deasil_point
         deasil_segment = segments[wrapped_point.point_index]
         widder_segment = segments[wrapped_point.point_index + 1]
@@ -995,22 +989,11 @@ def _preculculate_points_info(polygon_index, points):
                 wrapped_point.point_type = PointType.ENTER
             elif orientation == 1:
                 wrapped_point.point_type = PointType.SPLIT
-            wrapped_point.negx_slope = None
-            wrapped_point.posx_slope = (deasil_segment.slope + widder_segment.slope) / 2
         elif deasil_point.point < wrapped_point.point and widder_point.point < wrapped_point.point:
             if orientation == -1:
                 wrapped_point.point_type = PointType.LEAVE
             elif orientation == 1:
                 wrapped_point.point_type = PointType.MERGE
-            wrapped_point.negx_slope = (deasil_segment.slope + widder_segment.slope) / -2
-            wrapped_point.posx_slope = None
-        else:
-            if deasil_point.point < wrapped_point.point:
-                wrapped_point.negx_slope = deasil_segment.slope
-                wrapped_point.posx_slope = widder_segment.slope
-            else:
-                wrapped_point.negx_slope = widder_segment.slope
-                wrapped_point.posx_slope = deasil_segment.slope
     return wrapped_points
 
 
@@ -1089,7 +1072,7 @@ def triangulate_polygon(points):
             chains.merge_chains_at(point)
         else:
             deasil_chain, widder_chain = chains.get_nearest_chains(point)
-            if point.negx_point == point.deasil_point:
+            if point.posx_point == point.widder_point:
                 chains.extend_chain(
                     deasil_chain,
                     point,
