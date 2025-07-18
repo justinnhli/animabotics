@@ -87,11 +87,11 @@ class GameObject(Transformable):
         if rotated:
             self._projection_cache.clear()
 
-    def update(self, elapsed_msec):
+    def update(self, elapsed_sec):
         # type: (int) -> None
         """Update the object."""
         if self.animation is not None:
-            self.animation.advance_state(elapsed_msec)
+            self.animation.advance_state(elapsed_sec)
         pass # pylint: disable = unnecessary-pass
 
     def squared_distance(self, other):
@@ -169,13 +169,13 @@ class PhysicsObject(GameObject):
         self.acceleration = Vector2D()
         self.angular_acceleration = 0.0
 
-    def update(self, elapsed_msec):
+    def update(self, elapsed_sec):
         # type: (int) -> None
         """Update the velocity and the position."""
-        super().update(elapsed_msec)
-        self.velocity += self.acceleration * elapsed_msec / 1000
-        self.angular_velocity += self.angular_acceleration * elapsed_msec / 1000
+        super().update(elapsed_sec)
+        self.velocity += self.acceleration * elapsed_sec
+        self.angular_velocity += self.angular_acceleration * elapsed_sec
         if self.velocity:
-            self.move_by(self.velocity * elapsed_msec / 1000)
+            self.move_by(self.velocity * elapsed_sec)
         if self.angular_velocity:
-            self.rotate_by(self.angular_velocity * elapsed_msec / 1000)
+            self.rotate_by(self.angular_velocity * elapsed_sec)
