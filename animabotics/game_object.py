@@ -1,9 +1,9 @@
 """GameObject and its hierarchy."""
 
 from functools import cached_property
-from typing import Iterator, Sequence
+from typing import Sequence
 
-from .animation import Animation, Sprite, Shape
+from .animation import Animation, Sprite
 from .simplex import Geometry, Point2D, Vector2D
 from .transformable import Transformable
 
@@ -22,10 +22,8 @@ class GameObject(Transformable):
         self.animation = None # type: Animation
         self.collision_geometry = None # type: Geometry
         self.collision_radius = 0.0
-        self._axis_projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
+        self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
         self._collision_groups = frozenset() # type: frozenset[str]
-        self._transformed_geometry_cache = {} # type: dict[PointsMatrix, PointsMatrix]
-        self._transformed_sprite_cache = {} # type: dict[str, Sprite]
         if collision_groups:
             for group in collision_groups:
                 self.add_to_collision_group(group)
@@ -45,15 +43,18 @@ class GameObject(Transformable):
         return self.transform @ self.collision_geometry
 
     @cached_property
-    def segment_normals(self):
-        # type: () -> set[Vector2D]
-        """Return the set of normal vectors to the perimeter."""
-        result = set() # type: set[Vector2D]
-        for segment in self.transformed_collision_geometry.segments:
-            normal = segment.normal
-            if normal.x < 0:
-                normal = -normal
-            result.add(normal)
+    def partition_segment_normals(self):
+        # type: () -> dict[Geometry, set[Vector2D]]
+        """Calculate the segment normals of all partitions."""
+        result = {}
+        for partition in self.transformed_collision_geometry.convex_partitions:
+            normals = set()
+            for segment in partition.segments:
+                normal = segment.normal
+                if normal.x < 0:
+                    normal = -normal
+                normals.add(normal)
+            result[partition] = normals
         return result
 
     @property
@@ -62,55 +63,28 @@ class GameObject(Transformable):
         """Get the collision groups of the object."""
         return self._collision_groups
 
-    def _transform_geometry(self, geometry):
-        if geometry not in self._transformed_geometry_cache:
-            self._transformed_geometry_cache[geometry] = self.transform @ geometry
-        return self._transformed_geometry_cache[geometry]
-
     def get_sprite(self):
         # type: () -> Sprite
         """Get the current animation sprite."""
         return self.transform @ self.animation.get_sprite()
 
-    def axis_projections(self, vector):
-        # type: (Vector2D) -> Iterator[tuple[Geometry, float, float]]
-        """Yield the min and max values of the points projected onto the vector."""
-        cache = {} # type: dict[Point2D, float]
-        denominator = (vector.x * vector.x + vector.y * vector.y) ** (1/2)
-        for partition in self.transformed_collision_geometry.convex_partitions:
-            key = (partition, vector)
-            if key in self._axis_projection_cache:
-                projected_min, projected_max = self._axis_projection_cache[key]
-            else:
-                projected = [] # type: list[float]
-                for point in partition.points:
-                    if point not in cache:
-                        cache[point] = (vector.x * point.x + vector.y * point.y) / denominator
-                    projected.append(cache[point])
-                projected_min = min(projected)
-                projected_max = max(projected)
-            yield partition, projected_min, projected_max
-
-    def cache_axis_projections(self):
-        # type: () -> None
-        """Cache the projections onto segment normals."""
-        if self._axis_projection_cache:
-            return
-        for vector in self.segment_normals:
-            for partition, projected_min, projected_max in self.axis_projections(vector):
-                self._axis_projection_cache[(partition, vector)] = (projected_min, projected_max)
+    def project_to_axis(self, geometry, vector):
+        # type: (Geometry, Vector2D) -> tuple[float, float]
+        """Project the geometry onto a vector (and cache it)."""
+        key = (geometry, vector)
+        if key not in self._projection_cache:
+            self._projection_cache[key] = geometry.get_projected_range(vector)
+        return self._projection_cache[key]
 
     def _clear_cache(self, rotated=False):
         # type: (bool) -> None
         """Clear the cached_property cache."""
         super()._clear_cache(rotated=rotated)
         # need to provide a default to avoid KeyError
-        self.__dict__.pop('transformed_geometry', None)
         self.__dict__.pop('transformed_collision_geometry', None)
-        self.__dict__.pop('segment_normals', None)
-        self._transformed_geometry_cache.clear()
+        self.__dict__.pop('partition_segment_normals', None)
         if rotated:
-            self._axis_projection_cache.clear()
+            self._projection_cache.clear()
 
     def update(self, elapsed_msec):
         # type: (int) -> None
@@ -148,47 +122,37 @@ class GameObject(Transformable):
         Additionally, the vector between the two centroids is tried first as a
         potential shortcut.
         """
-        # trigger caching of axis projections
-        self.cache_axis_projections()
-        other.cache_axis_projections()
-        # define convenience variables
-        geometry1 = self.transformed_collision_geometry
-        geometry2 = other.transformed_collision_geometry
-        # try the vector between centroids first
-        vector = (geometry1.centroid - geometry2.centroid).normalized
-        if not vector:
-            return True
-        if self.separated_on_axis(other, vector):
-            return False
-        # revert to the standard approach of trying all segment normals
-        checked = set() # type: set[Vector2D]
-        for obj in (self, other):
-            for normal in obj.segment_normals:
-                if normal in checked:
-                    continue
-                checked.add(normal)
-                if self.separated_on_axis(other, normal):
-                    return False
-        return True
-
-    def separated_on_axis(self, other, vector):
-        # type: (GameObject, Vector2D) -> bool
-        """Check if an axis separates two points matrices."""
-        projections1 = self.axis_projections(vector)
-        projections2 = other.axis_projections(vector)
-        # this is essentially itertools.product(projections1, projections2),
-        # but modified to not consume the entire generator unnecessarily
-        _, min1, max1 = next(projections1)
-        cache = []
-        for partition2, min2, max2 in projections2:
-            if min1 <= max2 and min2 <= max1:
+        # try the vector between centroids first, unless the centroids are the same
+        # may not collide even if centroids are the same (eg. a circle and a ring)
+        vector = (
+            self.transformed_collision_geometry.centroid
+            - other.transformed_collision_geometry.centroid
+        )
+        if vector:
+            separable = not self.is_overlapping_on_axis(
+                self.transformed_collision_geometry,
+                other.transformed_collision_geometry,
+                vector.normalized,
+            )
+            if separable:
                 return False
-            cache.append((partition2, min2, max2))
-        for _, min1, max1 in projections1:
-            for _, min2, max2 in cache:
-                if min1 <= max2 and min2 <= max1:
-                    return False
-        return True
+        # fall back to the standard approach of trying all segment normals of partitions
+        for partition1, normals1 in self.partition_segment_normals.items():
+            for partition2, normals2 in other.partition_segment_normals.items():
+                separable = not all(
+                    self.is_overlapping_on_axis(partition1, partition2, normal)
+                    for normal in set.union(normals1, normals2)
+                )
+                if not separable:
+                    return True
+        return False
+
+    def is_overlapping_on_axis(self, geometry1, geometry2, vector):
+        # type: (Geometry, Geometry, Vector2D) -> bool
+        """Check if an axis separates two points matrices."""
+        min1, max1 = self.project_to_axis(geometry1, vector)
+        min2, max2 = self.project_to_axis(geometry2, vector)
+        return min1 <= max2 and min2 <= max1
 
 
 class PhysicsObject(GameObject):
