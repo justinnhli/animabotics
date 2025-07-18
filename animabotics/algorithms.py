@@ -549,14 +549,7 @@ class WrappedPointPriority:
 
 
 class Chain:
-    """A chain of untriangulated points to the left of the sweep line.
-
-    Chains represent points in widdershins order (as in the original polygon).
-    Chains are non-strictly monotonic; for all adjacent points p and q, either:
-
-    * (p.x, p.y) > (q.x, q.y)
-    * or p.x < q.x
-    """
+    """A chain of untriangulated points to the left of the sweep line."""
 
     def __init__(self, wrapped_points):
         # type: (WrappedPoint|Sequence[WrappedPoint]) -> None
@@ -1002,30 +995,53 @@ def triangulate_polygon(points):
     """Triangulate a simple polygon.
 
     This is an overly-complicated implementation of monotone polygon
-    triangularization. This (pre-complication) implementation is based on the
-    lecture notes by David Mount at the University of Maryland. The primary
-    complication comes from doing the monotone partitioning and the
-    triangularization itself in one sweep, in addition to dealing with vertical
-    segments. Instead of sorting points by their y-values - which could cause
-    points to be processed without being connected to a chain - the queue for
-    the main loop is initialized with only start and split points, with other
-    points added as the points to the left are processed. This forces points in
-    a vertical line to be processed in increasing distance from points to the
-    left, forming a chain. Nonetheless, as a tiebreaker, points with a smaller
-    y-value are processed before points with a larger y-value; as a result, if
-    the polygon is a square, the bottom-left vertex would be the start point,
-    the top-right vertex would be the end point, and both other vertices would
-    be treated normally. Split and merge points are similarly ordered.
+    triangulation. The complications include:
 
-    Since monotone partitioning is normally the first step in triangulation, it
-    is does not significantly deviate from using a sorted binary search tree
-    to maintain where split point should connect to. Triangularization, however,
-    must deal with partition boundaries being added at the same time. The main
-    problem is when two merge points should be connected as part of the
-    partitioning process, as triangles should be formed with both the middle
-    chain and the chain on the other side. To accommodate this, before a point
-    is added to a chain, the chain could be "extended" to subsume the next
-    chain, which simplifies the triangle forming process.
+    * Doing the monotone partitioning and the triangulation in a single pass
+    * Allowing vertical perimeter segments 
+    * Allowing polygons with holes (ie. that are not simple)
+    * Allowing polygons whose perimeter visit a point multiple times
+
+    An explicit non-goal is dealing with polygons with zero-width interiors,
+    which would allow polygons that are disconnected. Zero-width exteriors are
+    allowed, as per the standard trick for representing a polygon with holes
+    (by connecting the hole to the perimeter with a zero-width "gap".)
+
+    The standard monotone triangulation algorithm uses a sweep-line (this
+    implementation goes from negative-x to positive-x) and maintains "chains"
+    of untriangulated point behind the line. To deal with vertical segments,
+    points with the same x but a more negative y are processed first. The
+    chains are kept in a sorted data structure ordered by their vertical
+    position, such that as new points are encountered, the relevant chain can
+    be found and updated. Because this implementation partitions at the same
+    time as it triangulates, the chains are more complicated; notably, they may
+    not be monotonic in y, or be classifiable into the "top" or "bottom" of the
+    polygon. Instead, a chain should be thought of as all untriangulated points
+    behind the sweep line, ordered (counter-)clockwise, and bounded above and
+    below by segments that extend ahead of the sweep line. Each chain also
+    tracks it's most positive-x point, where the chain could be split (where
+    the polygon would have been partitioned into monotone components).
+
+    Managing the complications listed above is, in practice, a matter of
+    defining sorting order of the chains consistently. At a high level,
+    as with the standard algorithm, the chains are sorted vertically by the
+    area (or interval at the sweep line position) defined by the two boundary
+    segments.  Since the same point could be on the perimeter multiple times,
+    however, care must be taken to determine which vertex is being processed,
+    and to maintain the sorting order despite having the same coordinate. The
+    solution is to use the slopes of the segments before and after the point,
+    reminiscent of similar comparisons in the Bentley-Ottman all intersections
+    algorithm. The details of the sorting can be found in the __lt__ and __gt__
+    methods of the ChainEnd class.
+
+    References:
+
+    * Polygon Triangulation on Wikipedia
+      https://en.wikipedia.org/wiki/Polygon_triangulation
+    * Lecture notes by David Mount
+      https://www.cs.umd.edu/users/mount/
+    * Hertel and Mehlhorn (1985). Fast Triangulation of the Plane with Respect
+      to Simple Polygons.
     """
 
     # initialize sweep line variables
