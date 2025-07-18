@@ -13,6 +13,7 @@ from PIL.ImageTk import PhotoImage
 from .color import Color
 from .metaprogramming import CachedMetaclass
 from .simplex import Point2D
+from .timing import get_msec
 
 _CHAR_KEYSYM_MAP = {
     ' ': 'space',
@@ -325,10 +326,15 @@ class Canvas:
 
         def callback():
             # type: () -> None
+            start_msec = get_msec()
             self.new_page()
             update_fn()
             self.display_page()
-            self.tk.after(msecs, callback)
+            delay_msec = get_msec() - start_msec
+            self.tk.after(
+                (0 if delay_msec > 40 else msecs - delay_msec),
+                callback,
+            )
 
         return callback
 
