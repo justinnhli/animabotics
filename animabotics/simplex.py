@@ -112,6 +112,16 @@ class Geometry(PointsMatrix):
         """Return a convex partition of the PointsMatrix."""
         return (self,)
 
+    def get_projected_range(self, vector):
+        # type: (Vector2D) -> tuple[float, float]
+        """Return the min and max values when projected onto a vector."""
+        denominator = (vector.x * vector.x + vector.y * vector.y) ** (1/2)
+        projected = [
+            (vector.x * point.x + vector.y * point.y) / denominator
+            for point in self.points
+        ]
+        return min(projected), max(projected)
+
 
 class Point2D(Geometry, metaclass=CachedMetaclass):
     """A 2D point."""
