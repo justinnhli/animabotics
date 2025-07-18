@@ -71,7 +71,7 @@ class Game:
         # type: () -> None
         """Prepare the game to start.
 
-        This function does all non-UI things needed to start the game; iti s in
+        This function does all non-UI things needed to start the game; it is in
         a separate function to facilitate testing.
         """
         self.prev_msec = Game.get_msec()
