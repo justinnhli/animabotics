@@ -1,6 +1,7 @@
 """Tests for matrix.py."""
 
 from math import floor, ceil
+from fractions import Fraction
 
 from animabotics.matrix import Matrix, identity
 
@@ -100,3 +101,43 @@ def test_matrix():
     assert identity(4).shear(0, 0, 0, 1, 0, 0) @ Matrix(((2, 3, 4, 1),)).transpose == Matrix(((2, 7, 4, 1),)).transpose
     assert identity(4).shear(0, 0, 0, 0, 1, 0) @ Matrix(((2, 3, 4, 1),)).transpose == Matrix(((2, 3, 6, 1),)).transpose
     assert identity(4).shear(0, 0, 0, 0, 0, 1) @ Matrix(((2, 3, 4, 1),)).transpose == Matrix(((2, 3, 7, 1),)).transpose
+
+def test_rref():
+    testcases = [
+        (
+            Matrix(((2, 0, 0), (0, 3, 0),)),
+            Matrix(((1, 0, 0), (0, 1, 0),)),
+        ),
+        (
+            Matrix(((2, 4), (1, 2), (3, 6),)),
+            Matrix(((1, 2), (0, 0), (0, 0),)),
+        ),
+        (
+            Matrix(((1, 0), (1, 0), (0, 1),)),
+            Matrix(((1, 0), (0, 0), (0, 1),)),
+        ),
+        (
+            Matrix(((2, 6, 3, 6), (0, 0, 1, 2), (0, 0, 0, 0),)),
+            Matrix(((1, 3, 0, 0), (0, 0, 1, 2), (0, 0, 0, 0),)),
+        ),
+        (
+            # from https://kirkmcdonald.github.io/posts/calculation.html
+            Matrix((
+                (Fraction(-40),  Fraction(0),    Fraction(30),    Fraction(10),    Fraction(0),  Fraction(0),  Fraction(10)),
+                (Fraction(30),   Fraction(-30),  Fraction(30),    Fraction(45),    Fraction(0),  Fraction(0),  Fraction(0)),
+                (Fraction(0),    Fraction(20),   Fraction(40),    Fraction(55),    Fraction(0),  Fraction(0),  Fraction(45)),
+                (Fraction(-30),  Fraction(-30),  Fraction(0),     Fraction(-50),   Fraction(1),  Fraction(0),  Fraction(0)),
+                (Fraction(0),    Fraction(0),    Fraction(-100),  Fraction(-100),  Fraction(0),  Fraction(1),  Fraction(0)),
+            )),
+            Matrix((
+                (Fraction(1), Fraction(0), Fraction(0), Fraction(0), Fraction(0), Fraction(-13, 400), Fraction(-23, 12)),
+                (Fraction(0), Fraction(1), Fraction(0), Fraction(0), Fraction(0), Fraction(-7, 400), Fraction(-1, 4)),
+                (Fraction(0), Fraction(0), Fraction(1), Fraction(0), Fraction(0), Fraction(-3, 50), Fraction(-10, 3)),
+                (Fraction(0), Fraction(0), Fraction(0), Fraction(1), Fraction(0), Fraction(1, 20), Fraction(10, 3)),
+                (Fraction(0), Fraction(0), Fraction(0), Fraction(0), Fraction(1), Fraction(1), Fraction(305, 3)),
+            )),
+        ),
+    ]
+    for matrix, expect in testcases:
+        actual = matrix.rref
+        assert expect == actual
