@@ -7,11 +7,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from animabotics.game import Game
-from animabotics.game_object import GameObject, PhysicsObject
-from animabotics.polygon import Polygon
-from animabotics.simplex import Point2D, Vector2D
-from animabotics.animation import Animation, Sprite, Shape
+from animabotics import Game
+from animabotics import GameObject, PhysicsObject
+from animabotics import Polygon
+from animabotics import Point2D, Vector2D
+from animabotics import Animation, Sprite, Shape
 
 
 class Ball(PhysicsObject):

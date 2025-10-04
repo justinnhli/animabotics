@@ -71,7 +71,7 @@ class AnimatedBall(Ball):
         super().__init__()
         self.animation = AnimationController()
         self.animation.add_state(
-            'default', # name
+            'default',
             Clip.create_static_clip(
                 Shape(Polygon.ellipse(50, 50)),
             ),
@@ -87,9 +87,7 @@ class AnimatedBall(Ball):
                     Polygon.ellipse(width_radius, height_radius)
                 ),
                 sprite=(lambda y_offset, ellipse:
-                    Transform(y=y_offset) @ Sprite([
-                        Shape(ellipse),
-                    ])
+                    Transform(y=y_offset) @ Sprite(Shape(ellipse))
                 ),
             ),
             'default',
