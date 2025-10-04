@@ -7,6 +7,7 @@ from animabotics.transform import Transform
 
 
 def test_clip():
+    # type: () -> None
     """Test Clip."""
     # normal clip
     clip = Clip(
@@ -79,3 +80,82 @@ def test_clip():
         assert False
     except AssertionError:
         pass
+
+def test_animation_controller():
+    # type: () -> None
+    """Test AnimationController."""
+    # static animation
+    controller = AnimationController.create_static_animation(
+        Shape(Polygon.ellipse(50, 50, num_points=4)),
+    )
+    assert (
+        round(controller.get_sprite().shapes[0].polygon).points
+        == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(-0, -50))
+    )
+    # real animation
+    controller = AnimationController()
+    controller.add_state(
+        '0',
+        Clip.create_static_clip(
+            Shape(Polygon.ellipse(50, 50, num_points=4)),
+        ),
+    )
+    controller.add_state(
+        '1',
+        Clip(
+            200,
+            radius=(lambda t: 50 * ((200 - t) / 200) + 50),
+            sprite=(lambda radius: Sprite(Shape(
+                Polygon.ellipse(radius, radius, num_points=4),
+            ))),
+        ),
+        '0',
+    )
+    controller.add_state(
+        '2',
+        Clip(
+            200,
+            radius=(lambda t: 100 * ((200 - t) / 200) + 100),
+            sprite=(lambda radius: Sprite(Shape(
+                Polygon.ellipse(radius, radius, num_points=4),
+            ))),
+        ),
+        '1',
+    )
+    controller.set_state('0')
+    assert controller.elapsed_msec == 0
+    assert controller.state == '0'
+    assert (
+        round(controller.get_sprite().shapes[0].polygon).points
+        == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(-0, -50))
+    )
+    assert (
+        round(controller.get_sprite(40).shapes[0].polygon).points
+        == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(-0, -50))
+    )
+    assert controller.elapsed_msec == 40
+    controller.set_state('2')
+    assert (
+        round(controller.get_sprite().shapes[0].polygon).points
+        == (Point2D(200, 0), Point2D(0, 200), Point2D(-200, 0), Point2D(-0, -200))
+    )
+    controller.advance_state(50)
+    assert (
+        round(controller.get_sprite().shapes[0].polygon).points
+        == (Point2D(175, 0), Point2D(0, 175), Point2D(-175, 0), Point2D(-0, -175))
+    )
+    controller.advance_state(150)
+    assert controller.state == '1'
+    assert (
+        round(controller.get_sprite().shapes[0].polygon).points
+        == (Point2D(100, 0), Point2D(0, 100), Point2D(-100, 0), Point2D(-0, -100))
+    )
+    controller.advance_state(100)
+    assert (
+        round(controller.get_sprite().shapes[0].polygon).points
+        == (Point2D(75, 0), Point2D(0, 75), Point2D(-75, 0), Point2D(-0, -75))
+    )
+    assert (
+        round(controller.get_sprite(100).shapes[0].polygon).points
+        == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(-0, -50))
+    )
