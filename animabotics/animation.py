@@ -176,7 +176,7 @@ class AnimationController:
         self.elapsed_msec += elapsed_msec
         while True:
             duration_msec = self.clips[self.state].duration_msec
-            if self.elapsed_msec <= duration_msec:
+            if self.elapsed_msec < duration_msec:
                 return
             self.state = self.transitions[self.state]
             self.elapsed_msec -= duration_msec
