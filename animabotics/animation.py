@@ -73,7 +73,7 @@ class Clip:
     """A single animation."""
 
     def __init__(self, duration_msec, **components):
-        # type: (int|float, **Any|Callable[[Any], Any]) -> None
+        # type: (int, **Any|Callable[[Any], Any]) -> None
         self.duration_msec = duration_msec
         self.components = components
         self.order = [] # type: list[str]
@@ -137,6 +137,7 @@ class Clip:
     @staticmethod
     def create_static_clip(arg):
         # type: (Shape|Sprite) -> Clip
+        """Create a Clip that is a single Sprite/Shape."""
         if isinstance(arg, Shape):
             arg = Sprite([arg])
         assert isinstance(arg, Sprite)

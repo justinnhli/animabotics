@@ -13,7 +13,9 @@ try:
 except (ModuleNotFoundError, ImportError):
 
     def import_error_factory(module_name):
+        # type: (str) -> Callable[[], None]
         def raise_import_error():
+            # type; () -> None
             raise ImportError(f'{module_name} not imported')
         return raise_import_error
 
