@@ -6,9 +6,21 @@ from functools import cached_property
 from tkinter import CENTER, Tk, Canvas as TKCanvas, NW
 from typing import Callable
 
-from PIL.Image import Image, new as new_image
-from PIL.ImageDraw import Draw
-from PIL.ImageTk import PhotoImage
+try:
+    from PIL.Image import Image, new as new_image
+    from PIL.ImageDraw import Draw
+    from PIL.ImageTk import PhotoImage
+except (ModuleNotFoundError, ImportError):
+
+    def import_error_factory(module_name):
+        def raise_import_error():
+            raise ImportError(f'{module_name} not imported')
+        return raise_import_error
+
+    Image = import_error_factory('PIL.Image')
+    new_image = import_error_factory('PIL.Image.new')
+    Draw = import_error_factory('PIL.ImageDraw.Draw')
+    PhotoImage = import_error_factory('PIL.ImageTk.PhotoImage')
 
 from .color import Color
 from .metaprogramming import CachedMetaclass
