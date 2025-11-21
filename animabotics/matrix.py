@@ -355,7 +355,8 @@ class Matrix(metaclass=CachedMetaclass): # pylint: disable = too-many-public-met
                         in zip(that_row, this_row)
                     ))
             rows = new_rows
-        return Matrix(tuple(rows))
+        # reorder the rows by the position of the first coefficient
+        return Matrix(tuple(sorted(rows, reverse=True)))
 
 
 @cache
