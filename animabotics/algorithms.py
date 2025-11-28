@@ -3,7 +3,7 @@
 from collections import defaultdict, Counter, namedtuple
 from collections.abc import Sequence
 from enum import IntEnum, Enum
-from math import inf as INF, pi as PI, copysign, nextafter
+from math import copysign, nextafter, pi as PI, inf as INF
 from typing import Any, Optional, Union
 
 from .data_structures import SortedDict, PriorityQueue

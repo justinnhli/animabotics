@@ -3,7 +3,7 @@
 from typing import Callable
 
 from .camera import Camera
-from .canvas import Canvas, Input, EventCallback
+from .canvas import Input, EventCallback, Canvas
 from .game_object import GameObject
 from .scene import HierarchicalHashGrid
 from .timing import get_msec

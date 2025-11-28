@@ -227,6 +227,39 @@ class Matrix(metaclass=CachedMetaclass): # pylint: disable = too-many-public-met
             result.append(tuple(self.cofactor(r, c) for c in range(self.width)))
         return Matrix(tuple(result)).transpose / self.determinant
 
+    @cached_property
+    def rref(self):
+        # type: () -> Matrix
+        """Get the row reduced echelon form (RREF) of the matrix."""
+        rows = list(self.rows)
+        for this_r in range(len(rows)): # pylint: disable = consider-using-enumerate
+            this_row = rows[this_r]
+            # find the first non-zero coefficient and its column
+            first_coeff_c = 0
+            first_coeff = 0.0
+            for first_coeff_c, first_coeff in enumerate(this_row):
+                if first_coeff != 0:
+                    break
+            # if there is no non-zero coefficient, continue to the next row
+            if first_coeff == 0:
+                continue
+            # either make the coefficient 1, or subtract this row from every other row
+            new_rows = []
+            for that_r, that_row in enumerate(rows):
+                if this_r == that_r:
+                    factor = 1 / first_coeff
+                    new_rows.append(tuple(this_number * factor for this_number in this_row))
+                else:
+                    factor = that_row[first_coeff_c] / first_coeff
+                    new_rows.append(tuple(
+                        that_number - this_number * factor
+                        for that_number, this_number
+                        in zip(that_row, this_row)
+                    ))
+            rows = new_rows
+        # reorder the rows by the position of the first coefficient
+        return Matrix(tuple(sorted(rows, reverse=True)))
+
     def dot(self, other):
         # type: (Matrix) -> float
         """Take the dot product with another 4-tuple."""
@@ -324,39 +357,6 @@ class Matrix(metaclass=CachedMetaclass): # pylint: disable = too-many-public-met
             (z_x, z_y, 1, 0),
             (0, 0, 0, 1),
         )) @ self
-
-    @cached_property
-    def rref(self):
-        # type: () -> Matrix
-        """Get the row reduced echelon form (RREF) of the matrix."""
-        rows = list(self.rows)
-        for this_r in range(len(rows)): # pylint: disable = consider-using-enumerate
-            this_row = rows[this_r]
-            # find the first non-zero coefficient and its column
-            first_coeff_c = 0
-            first_coeff = 0.0
-            for first_coeff_c, first_coeff in enumerate(this_row):
-                if first_coeff != 0:
-                    break
-            # if there is no non-zero coefficient, continue to the next row
-            if first_coeff == 0:
-                continue
-            # either make the coefficient 1, or subtract this row from every other row
-            new_rows = []
-            for that_r, that_row in enumerate(rows):
-                if this_r == that_r:
-                    factor = 1 / first_coeff
-                    new_rows.append(tuple(this_number * factor for this_number in this_row))
-                else:
-                    factor = that_row[first_coeff_c] / first_coeff
-                    new_rows.append(tuple(
-                        that_number - this_number * factor
-                        for that_number, this_number
-                        in zip(that_row, this_row)
-                    ))
-            rows = new_rows
-        # reorder the rows by the position of the first coefficient
-        return Matrix(tuple(sorted(rows, reverse=True)))
 
 
 @cache

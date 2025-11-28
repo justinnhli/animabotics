@@ -168,6 +168,12 @@ class PhysicsObject(GameObject):
         self.acceleration = Vector2D()
         self.angular_acceleration = 0.0
 
+    @property
+    def kinetic_energy(self):
+        # type: () -> float
+        """Calculate the kinetic energy."""
+        return 0.5 * self.mass * self.velocity.magnitude ** 2
+
     def update(self, elapsed_msec, elapsed_msec_squared):
         # type: (int, int) -> None
         """Update the velocity and the position."""
@@ -178,9 +184,3 @@ class PhysicsObject(GameObject):
             self.rotate_by(self.angular_velocity * elapsed_msec + 0.5 * self.angular_acceleration * elapsed_msec_squared)
         self.velocity += self.acceleration * elapsed_msec
         self.angular_velocity += self.angular_acceleration * elapsed_msec
-
-    @property
-    def kinetic_energy(self):
-        # type: () -> float
-        """Calculate the kinetic energy."""
-        return 0.5 * self.mass * self.velocity.magnitude ** 2

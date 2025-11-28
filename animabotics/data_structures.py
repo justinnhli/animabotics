@@ -396,19 +396,6 @@ class SortedDict(Mapping[KT, VT]):
         # type: (KT, VT) -> None
         self.root = self._put_helper(key, value, self.root, None, None)
 
-    @staticmethod
-    def _get_node_helper(key, node=None, prev_node=None, next_node=None):
-        # pylint: disable = line-too-long
-        # type: (KT, _AVLNode[KT, VT], _AVLNode[KT, VT], _AVLNode[KT, VT]) -> tuple[_AVLNode[KT, VT], _AVLNode[KT, VT], _AVLNode[KT, VT]]
-        if node is None:
-            return prev_node, None, next_node
-        elif key < node.key:
-            return SortedDict._get_node_helper(key, node.left, prev_node, node)
-        elif node.key < key:
-            return SortedDict._get_node_helper(key, node.right, node, next_node)
-        else:
-            return prev_node, node, next_node
-
     def _get_node(self, key):
         # type: (KT) -> Optional[_AVLNode[KT, VT]]
         return SortedDict._get_node_helper(key, self.root)[1]
@@ -460,21 +447,6 @@ class SortedDict(Mapping[KT, VT]):
         self.root = None
         self.head = None
         self.tail = None
-
-    @staticmethod
-    def _balance(node):
-        # type: (_AVLNode[KT, VT]) -> _AVLNode[KT, VT]
-        node.update_metadata()
-        if node.balance < -1:
-            if node.left.balance == 1:
-                node.left = SortedDict._rotate_ccw(node.left)
-            return SortedDict._rotate_cw(node)
-        elif node.balance > 1:
-            if node.right.balance == -1:
-                node.right = SortedDict._rotate_cw(node.right)
-            return SortedDict._rotate_ccw(node)
-        else:
-            return node
 
     def setdefault(self, key, default=None):
         # type: (KT, Optional[VT]) -> Optional[VT]
@@ -558,6 +530,34 @@ class SortedDict(Mapping[KT, VT]):
         tree = SortedDict() # type: SortedDict[KT, VT]
         tree.update(src_dict)
         return tree
+
+    @staticmethod
+    def _get_node_helper(key, node=None, prev_node=None, next_node=None):
+        # pylint: disable = line-too-long
+        # type: (KT, _AVLNode[KT, VT], _AVLNode[KT, VT], _AVLNode[KT, VT]) -> tuple[_AVLNode[KT, VT], _AVLNode[KT, VT], _AVLNode[KT, VT]]
+        if node is None:
+            return prev_node, None, next_node
+        elif key < node.key:
+            return SortedDict._get_node_helper(key, node.left, prev_node, node)
+        elif node.key < key:
+            return SortedDict._get_node_helper(key, node.right, node, next_node)
+        else:
+            return prev_node, node, next_node
+
+    @staticmethod
+    def _balance(node):
+        # type: (_AVLNode[KT, VT]) -> _AVLNode[KT, VT]
+        node.update_metadata()
+        if node.balance < -1:
+            if node.left.balance == 1:
+                node.left = SortedDict._rotate_ccw(node.left)
+            return SortedDict._rotate_cw(node)
+        elif node.balance > 1:
+            if node.right.balance == -1:
+                node.right = SortedDict._rotate_cw(node.right)
+            return SortedDict._rotate_ccw(node)
+        else:
+            return node
 
     @staticmethod
     def _rotate_cw(node):

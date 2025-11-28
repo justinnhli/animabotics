@@ -203,19 +203,6 @@ class Canvas:
 
     # drawing functions
 
-    @staticmethod
-    def _set_default_colors(fill_color, line_color):
-        # type: (Color, Color) -> tuple[Color, Color]
-        if line_color is None:
-            if fill_color is None:
-                line_color = Color(0, 0, 0, 1)
-                fill_color = Color(0, 0, 0, 0)
-            else:
-                line_color = fill_color
-        elif fill_color is None:
-            fill_color = Color(0, 0, 0, 0)
-        return fill_color, line_color
-
     def draw_pixel(self, point, fill_color=None):
         # type: (FloatCoord, Color) -> None
         """Draw a pixel."""
@@ -357,3 +344,16 @@ class Canvas:
         self.canvas.focus_set()
         self.tk.after(msecs, self._create_update_callback(update_fn, msecs))
         self.canvas.mainloop()
+
+    @staticmethod
+    def _set_default_colors(fill_color, line_color):
+        # type: (Color, Color) -> tuple[Color, Color]
+        if line_color is None:
+            if fill_color is None:
+                line_color = Color(0, 0, 0, 1)
+                fill_color = Color(0, 0, 0, 0)
+            else:
+                line_color = fill_color
+        elif fill_color is None:
+            fill_color = Color(0, 0, 0, 0)
+        return fill_color, line_color
