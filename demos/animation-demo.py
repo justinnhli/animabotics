@@ -60,7 +60,7 @@ class StoicBall(Ball):
     def __init__(self):
         # type: () -> None
         super().__init__()
-        self.animation = AnimationController.create_static_animation(Sprite([Shape(Ball.ELLIPSE)]))
+        self.animation = AnimationController.create_static_animation(Shape(Ball.ELLIPSE))
 
 
 class AnimatedBall(Ball):
@@ -108,9 +108,9 @@ class Ground(GameObject):
         self.width = 575
         self.height = 30
         self.collision_geometry = Polygon.rectangle(self.width, self.height)
-        self.animation = AnimationController.create_static_animation(Sprite([
+        self.animation = AnimationController.create_static_animation(
             Shape(self.collision_geometry),
-        ]))
+        )
         self.collision_radius = max(self.width, self.height) / 2
 
 

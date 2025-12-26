@@ -19,13 +19,13 @@ class Ball(PhysicsObject):
 
     RADIUS = 15
     ELLIPSE = Polygon.ellipse(RADIUS, RADIUS)
-    SPRITE = Sprite([Shape(ELLIPSE)])
+    SHAPE = Shape(ELLIPSE)
 
     def __init__(self):
         # type: () -> None
         super().__init__()
         self.collision_geometry = Ball.ELLIPSE
-        self.animation = AnimationController.create_static_animation(Ball.SPRITE)
+        self.animation = AnimationController.create_static_animation(Ball.SHAPE)
         self.collision_radius = Ball.RADIUS
 
     def bounce_vertical(self, _):
@@ -48,9 +48,9 @@ class Wall(GameObject):
         self.width = width
         self.height = height
         self.collision_geometry = Polygon.rectangle(width, height)
-        self.animation = AnimationController.create_static_animation(Sprite([
+        self.animation = AnimationController.create_static_animation(
             Shape(self.collision_geometry),
-        ]))
+        )
         self.collision_radius = max(width, height) / 2
 
 
