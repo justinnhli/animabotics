@@ -30,6 +30,7 @@ class Game:
         self.keybinds = {} # type: dict[Input, EventCallback]
         # state
         self.prev_msec = None # type: int
+        self.prev_collisions = set() # type: set[tuple[GameObject, GameObject]]
 
     def add_object(self, game_object):
         # type: (GameObject) -> None
@@ -57,10 +58,15 @@ class Game:
         # update all physics objects
         for obj in self.scene.objects:
             obj.update(elapsed_msec, elapsed_msec_squared)
-        # deal with collisions
+        # deal with collisions, with de-bouncing
         # FIXME use movement to optimize collision detection
+        new_collisions = set()
         for obj1, obj2, group_pair in self.scene.collisions:
-            self.collision_callbacks[group_pair](obj1, obj2)
+            key = (obj1, obj2)
+            new_collisions.add(key)
+            if key not in self.prev_collisions:
+                self.collision_callbacks[group_pair](obj1, obj2)
+        self.prev_collisions = new_collisions
         # draw all objects
         for game_object in self.scene.get_in_view(self.camera):
             self.draw_recursive(game_object)
