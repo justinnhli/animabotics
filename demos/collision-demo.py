@@ -11,7 +11,7 @@ from animabotics import Game
 from animabotics import GameObject, PhysicsObject
 from animabotics import Polygon
 from animabotics import Point2D, Vector2D
-from animabotics import Animation, Sprite, Shape
+from animabotics import AnimationController, Sprite, Shape
 
 
 class Ball(PhysicsObject):
@@ -25,9 +25,8 @@ class Ball(PhysicsObject):
         # type: () -> None
         super().__init__()
         self.collision_geometry = Ball.ELLIPSE
-        self.animation = Animation.create_static_animation(Ball.SPRITE)
+        self.animation = AnimationController.create_static_animation(Ball.SPRITE)
         self.collision_radius = Ball.RADIUS
-        self.animation.set_state('0')
 
     def bounce_vertical(self, _):
         # type: (GameObject) -> None
@@ -49,11 +48,10 @@ class Wall(GameObject):
         self.width = width
         self.height = height
         self.collision_geometry = Polygon.rectangle(width, height)
-        self.animation = Animation.create_static_animation(Sprite([
+        self.animation = AnimationController.create_static_animation(Sprite([
             Shape(self.collision_geometry),
         ]))
         self.collision_radius = max(width, height) / 2
-        self.animation.set_state('0')
 
 
 class Bouncy(Game):
