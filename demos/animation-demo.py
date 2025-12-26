@@ -1,6 +1,8 @@
 #!/home/justinnhli/.local/share/venv/animabotics/bin/python3
 """Demo for animations."""
 
+# pylint: disable = wrong-import-position
+
 import sys
 from pathlib import Path
 

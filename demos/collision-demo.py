@@ -1,6 +1,8 @@
 #!/home/justinnhli/.local/share/venv/animabotics/bin/python3
 """Demo for object collisions."""
 
+# pylint: disable = wrong-import-position
+
 import sys
 from random import Random
 from pathlib import Path
@@ -11,7 +13,7 @@ from animabotics import Game
 from animabotics import GameObject, PhysicsObject
 from animabotics import Polygon
 from animabotics import Point2D, Vector2D
-from animabotics import AnimationController, Sprite, Shape
+from animabotics import AnimationController, Shape
 
 
 class Ball(PhysicsObject):
