@@ -129,21 +129,21 @@ class GameObject(Transformable):
             - other.transformed_collision_geometry.centroid
         )
         if vector:
-            separable = not self.is_overlapping_on_axis(
+            colliding = self.is_overlapping_on_axis(
                 self.transformed_collision_geometry,
                 other.transformed_collision_geometry,
                 vector.normalized,
             )
-            if separable:
+            if not colliding:
                 return False
         # fall back to the standard approach of trying all segment normals of partitions
         for partition1, normals1 in self.partition_segment_normals.items():
             for partition2, normals2 in other.partition_segment_normals.items():
-                separable = not all(
+                colliding = all(
                     self.is_overlapping_on_axis(partition1, partition2, normal)
                     for normal in set.union(normals1, normals2)
                 )
-                if not separable:
+                if colliding:
                     return True
         return False
 
