@@ -67,10 +67,12 @@ class HashGrid:
         self.num_objects += 1
         self.populated_coords.add(coord)
 
-    def remove(self, game_object):
+    def remove(self, game_object, position=None):
         # type: (GameObject) -> None
         """Remove an object to the grid."""
-        coord = self.to_cell_coord(game_object.position)
+        if position is None:
+            position = game_object.position
+        coord = self.to_cell_coord(position)
         self.cells[coord].remove(game_object)
         self.num_objects -= 1
         if not self.cells[coord]:
@@ -206,6 +208,12 @@ class HierarchicalHashGrid:
         # type: (Camera) -> list[GameObject]
         """Get all objects in view of the camera."""
         return self.objects # FIXME
+
+    def remove(self, game_object, position=None):
+        if position is None:
+            position = game_object.position
+        exponent = self._get_exponent(game_object)
+        self.grids[exponent].remove(game_object, position)
 
     def set_collision_group_pairs(self, collision_pairs):
         # type: (Iterable[CollisionGroupPair]) -> None
