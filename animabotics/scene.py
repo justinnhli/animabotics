@@ -1,80 +1,24 @@
 """A scene of objects."""
 
-from collections import defaultdict
 from functools import cached_property
 from math import ceil, log2
 from typing import Iterator, Iterable
 
-from .simplex import Point2D, Vector2D
 from .camera import Camera
 from .game_object import GameObject
+from .data_structures import HashGrid as OGHashGrid
 
 CollisionGroups = frozenset[str]
 CollisionGroupPair = tuple[str, str]
 CollisionGroupsPair = tuple[frozenset[str], frozenset[str]]
 
 
-class HashGrid:
+class HashGrid(OGHashGrid):
     """A hash grid."""
 
-    HALF_OFFSETS = [
-        Vector2D(-1, -1),
-        Vector2D(-1, 0),
-        Vector2D(-1, 1),
-        Vector2D(0, -1),
-    ]
-    FULL_OFFSETS = [
-        *HALF_OFFSETS,
-        Vector2D(0, 0),
-        Vector2D(0, 1),
-        Vector2D(1, -1),
-        Vector2D(1, 0),
-        Vector2D(1, 1),
-    ]
-
-    def __init__(self, grid_size, hierarchy):
-        # type: (int, HierarchicalHashGrid) -> None
-        self.grid_size = grid_size
-        self.hierarchy = hierarchy
-        self.num_objects = 0
-        self.cells = defaultdict(list) # type: dict[Point2D, list[GameObject]]
-
-    def __len__(self):
-        # type: () -> int
-        return self.num_objects
-
-    @property
-    def objects(self):
-        # type: () -> Iterator[GameObject]
-        """Get all objects in the grid."""
-        for cell in self.cells.values():
-            yield from cell
-
-    def to_cell_coord(self, position):
-        # type: (Point2D) -> Point2D
-        """Calculate the cell for an object."""
-        return Point2D(
-            position.x // self.grid_size,
-            position.y // self.grid_size,
-        )
-
-    def add(self, game_object):
-        # type: (GameObject) -> None
-        """Add an object to the grid."""
-        coord = self.to_cell_coord(game_object.position)
-        self.cells[coord].append(game_object)
-        self.num_objects += 1
-
-    def remove(self, game_object, position=None):
-        # type: (GameObject) -> None
-        """Remove an object to the grid."""
-        if position is None:
-            position = game_object.position
-        coord = self.to_cell_coord(position)
-        self.cells[coord].remove(game_object)
-        self.num_objects -= 1
-        if not self.cells[coord]:
-            del self.cells[coord]
+    def __init__(self, grid_size, hierarhical_hash_grid):
+        super().__init__(grid_size)
+        self.hierarchy = hierarhical_hash_grid
 
     def get_collisions(self):
         # type: () -> Iterator[tuple[GameObject, GameObject]]
@@ -204,6 +148,8 @@ class HierarchicalHashGrid:
         self.grids[exponent].add(game_object)
 
     def remove(self, game_object, position=None):
+        # type: (GameObject, Point2D) -> None
+        """Remove an object from the grid."""
         if position is None:
             position = game_object.position
         exponent = self._get_exponent(game_object)
