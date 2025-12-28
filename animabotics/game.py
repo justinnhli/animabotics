@@ -24,6 +24,7 @@ class Game:
         self.canvas = Canvas(window_width, window_height)
         self.camera = Camera(self.canvas)
         # objects
+        self.objects = []
         self.scene = HierarchicalHashGrid()
         self.collision_callbacks = {} # type: dict[tuple[str, str], CollisionCallback]
         # settings
@@ -35,6 +36,7 @@ class Game:
     def add_object(self, game_object):
         # type: (GameObject) -> None
         """Add an object to the scene."""
+        self.objects.append(game_object)
         self.scene.add(game_object)
 
     def bind(self, input_event, callback):
@@ -56,7 +58,7 @@ class Game:
             elapsed_msec = curr_msec - self.prev_msec
         elapsed_msec_squared = elapsed_msec * elapsed_msec
         # update all objects
-        for obj in self.scene.objects:
+        for obj in self.objects:
             obj.update(elapsed_msec, elapsed_msec_squared)
         # deal with collisions, with de-bouncing
         # FIXME use movement to optimize collision detection
