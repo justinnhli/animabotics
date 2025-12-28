@@ -2,6 +2,7 @@
 
 from math import pi as PI
 from functools import cached_property
+from typing import Iterator
 
 from .simplex import Point2D, Vector2D
 from .transform import Transform
@@ -168,7 +169,7 @@ class Collidable(Transformable):
         return result
 
     def is_colliding(self, other):
-        # type: (GameObject) -> bool
+        # type: (Collidable) -> bool
         """Determine if two objects are colliding.
 
         This uses the hyperplane separation/separating axis theorem, which
@@ -214,7 +215,7 @@ class Collidable(Transformable):
         return False
 
     def is_overlapping_on_axis(self, other, geometry1, geometry2, vector, cache=True):
-        # type: (GameObject, Geometry, Geometry, Vector2D, bool) -> bool
+        # type: (Collidable, Geometry, Geometry, Vector2D, bool) -> bool
         """Check if an axis separates two points matrices."""
         min1, max1 = self.project_to_axis(geometry1, vector, cache=cache)
         min2, max2 = other.project_to_axis(geometry2, vector, cache=False)
