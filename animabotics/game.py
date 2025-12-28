@@ -27,6 +27,7 @@ class Game:
         self.objects = []
         self.scene = HierarchicalHashGrid()
         self.collision_callbacks = {} # type: dict[tuple[str, str], CollisionCallback]
+        self.bounced_collision_group_pairs = set() # type: set[tuple[str, str]]
         # settings
         self.keybinds = {} # type: dict[Input, EventCallback]
         # state
@@ -44,10 +45,12 @@ class Game:
         """Add a keybind."""
         self.keybinds[input_event] = callback
 
-    def on_collision(self, group1, group2, callback):
+    def on_collision(self, group1, group2, callback, debounce=True):
         # type: (str, str, CollisionCallback) -> None
         """Add a collision handler."""
         self.collision_callbacks[(group1, group2)] = callback
+        if not debounce:
+            self.bounced_collision_group_pairs.add((group1, group2))
 
     def dispatch_tick(self, elapsed_msec=None):
         # type: (int) -> None
@@ -70,7 +73,11 @@ class Game:
         for obj1, obj2, group_pair in self.scene.collisions:
             key = (obj1, obj2)
             new_collisions.add(key)
-            if key not in self.prev_collisions:
+            trigger_callback = (
+                key not in self.prev_collisions
+                or group_pair in self.bounced_collision_group_pairs 
+            )
+            if trigger_callback:
                 self.collision_callbacks[group_pair](obj1, obj2)
         self.prev_collisions = new_collisions
         # draw all objects
