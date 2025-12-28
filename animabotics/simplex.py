@@ -273,7 +273,13 @@ class Vector2D(PointsMatrix, metaclass=CachedMetaclass):
     def magnitude(self):
         # type: () -> float
         """The magnitude of the vector."""
-        return sqrt(self.x * self.x + self.y * self.y)
+        return sqrt(self.squared_magnitude)
+
+    @cached_property
+    def squared_magnitude(self):
+        # type: () -> float
+        """The squared magnitude of the vector."""
+        return self.x * self.x + self.y * self.y
 
     @cached_property
     def normalized(self):
