@@ -17,6 +17,10 @@ class PointsMatrix:
     """Abstract class for a sequence of points."""
     matrix: Matrix
 
+    def __abs__(self):
+        # type: (int) -> Self
+        return type(self).from_matrix(abs(self.matrix))
+
     def __round__(self, ndigits=0):
         # type: (int) -> Self
         return type(self).from_matrix(round(self.matrix, ndigits))

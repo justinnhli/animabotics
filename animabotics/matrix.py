@@ -21,6 +21,13 @@ class Matrix(metaclass=CachedMetaclass): # pylint: disable = too-many-public-met
         # type: (int) -> tuple[float, ...]
         return self.rows[index]
 
+    def __abs__(self):
+        # type: () -> Matrix
+        return Matrix(tuple(
+            tuple(abs(val) for val in row)
+            for row in self.rows
+        ))
+
     def __round__(self, ndigits=None):
         # type: (int) -> Matrix
         return Matrix(tuple(
