@@ -35,7 +35,7 @@ def test_hierarchical_hash_grid():
         grid = hhg.grids[exponent]
         assert grid
         grid_objects = []
-        for coord in grid.populated_coords:
+        for coord in grid.cells:
             for grid_object in grid.cells[coord]:
                 grid_objects.append(grid_object)
         assert obj in grid_objects
