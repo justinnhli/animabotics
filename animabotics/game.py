@@ -33,6 +33,16 @@ class Game:
         # state
         self.prev_msec = None # type: int
         self.prev_collisions = set() # type: set[tuple[GameObject, GameObject]]
+        self.in_camera_objects = []
+        # initialization
+        self.camera.add_to_collision_group('_camera')
+        self.scene.add(self.camera)
+        self.on_collision(
+            '_camera',
+            None,
+            (lambda _, game_object: self.in_camera_objects.append(game_object)),
+            debounce=False,
+        )
 
     def add_object(self, game_object):
         # type: (GameObject) -> None
@@ -81,8 +91,9 @@ class Game:
                 self.collision_callbacks[group_pair](obj1, obj2)
         self.prev_collisions = new_collisions
         # draw all objects
-        for game_object in self.scene.get_in_view(self.camera):
+        for game_object in self.in_camera_objects:
             self.draw_recursive(game_object)
+        self.in_camera_objects.clear()
         # update timer
         self.prev_msec = curr_msec
 

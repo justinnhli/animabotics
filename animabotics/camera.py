@@ -6,9 +6,10 @@ from .animation import Sprite, Shape
 from .canvas import Canvas
 from .color import Color
 from .matrix import Matrix
-from .simplex import Geometry
+from .polygon import Polygon
+from .simplex import Geometry, Point2D
 from .transform import Transform
-from .transformable import Transformable
+from .transformable import Collidable
 
 
 @lru_cache
@@ -21,7 +22,7 @@ def projection_matrix(width, height, x, y, rotation, zoom): # pylint: disable = 
     )
 
 
-class Camera(Transformable):
+class Camera(Collidable):
     """A 2D camera."""
 
     def __init__(self, canvas, zoom_level=0):
@@ -34,6 +35,7 @@ class Camera(Transformable):
             self.canvas.width // 2,
             self.canvas.height // 2,
         )
+        self._set_collision_geometry()
 
     @property
     def zoom(self):
@@ -57,6 +59,25 @@ class Camera(Transformable):
             self.rotation,
             self.zoom,
         ) 
+
+    @property
+    def inverse_projection_matrix(self):
+        """Create the inverse of the projection matrix."""
+        return self.projection_matrix.inverse
+
+    def _set_collision_geometry(self):
+        corner = Point2D.from_matrix(self.projection_matrix.inverse @ Point2D(0, 0).matrix)
+        min_x = corner.x
+        max_y = corner.y
+        corner = Point2D.from_matrix(self.projection_matrix.inverse @ Point2D(self.canvas.width, self.canvas.height).matrix)
+        max_x = corner.x
+        min_y = corner.y
+        self.collision_geometry = Polygon((
+            Point2D(min_x, max_y),
+            Point2D(min_x, min_y),
+            Point2D(max_x, min_y),
+            Point2D(max_x, max_y),
+        ))
 
     def _project(self, matrix):
         # type: (Matrix) -> Matrix

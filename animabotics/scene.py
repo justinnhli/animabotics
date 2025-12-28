@@ -210,11 +210,6 @@ class HierarchicalHashGrid:
         self.grids[exponent].add(game_object)
         self.num_objects += 1
 
-    def get_in_view(self, camera):
-        # type: (Camera) -> list[GameObject]
-        """Get all objects in view of the camera."""
-        return self.objects # FIXME
-
     def remove(self, game_object, position=None):
         if position is None:
             position = game_object.position
