@@ -41,15 +41,14 @@ class Camera(Transformable):
         """Get the zoom level."""
         return 1.25 ** self.zoom_level
 
-    def _project(self, matrix):
-        # type: (Matrix) -> Matrix
-        """Project to screen coordinates.
+    @property
+    def projection_matrix(self):
+        """Create the projection matrix.
 
         Because this project involves flipping the y-axis, it cannot be
         represented as a Transform, and the underlying matrix must be used
         instead. The creation of the matrix is put in a separate function to
-        take advantage of caching.
-        """
+        take advantage of caching."""
         return projection_matrix(
             self.canvas.width,
             self.canvas.height,
@@ -57,7 +56,12 @@ class Camera(Transformable):
             self.position.y,
             self.rotation,
             self.zoom,
-        ) @ matrix
+        ) 
+
+    def _project(self, matrix):
+        # type: (Matrix) -> Matrix
+        """Project to screen coordinates."""
+        return self.projection_matrix @ matrix
 
     def draw_sprite(self, sprite):
         # type: (Sprite) -> None
