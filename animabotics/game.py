@@ -55,7 +55,7 @@ class Game:
         if elapsed_msec is None:
             elapsed_msec = curr_msec - self.prev_msec
         elapsed_msec_squared = elapsed_msec * elapsed_msec
-        # update all physics objects
+        # update all objects
         for obj in self.scene.objects:
             obj.update(elapsed_msec, elapsed_msec_squared)
         # deal with collisions, with de-bouncing
