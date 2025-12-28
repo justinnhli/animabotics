@@ -126,13 +126,11 @@ class HierarchicalHashGrid:
             max_exponent = min_exponent + 10
         self.min_exponent = min_exponent
         self.max_exponent = max_exponent
-        self.num_objects = 0
         self.grids = [] # type: list[HashGrid]
         for exponent in range(min_exponent):
             self.grids.append(None)
         for exponent in range(min_exponent, max_exponent + 1):
             self.grids.append(HashGrid(2 ** exponent, self))
-        self.objects = [] # type: list[GameObject]
         self.collision_group_pairs = set() # type: set[CollisionGroupPair]
         self.collision_groups_cache = {} # type: dict[CollisionGroupsPair, tuple[CollisionGroupPair, ...]]
 
@@ -205,10 +203,8 @@ class HierarchicalHashGrid:
     def add(self, game_object):
         # type: (GameObject) -> None
         """Add an object to the grid."""
-        self.objects.append(game_object)
         exponent = self._get_exponent(game_object)
         self.grids[exponent].add(game_object)
-        self.num_objects += 1
 
     def remove(self, game_object, position=None):
         if position is None:
