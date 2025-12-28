@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from itertools import chain, groupby
-from typing import Any, Iterator
+from typing import Iterator
 
 from ..simplex import Point2D, Vector2D
 from ..transformable import Transformable
@@ -38,7 +38,7 @@ class HashGrid:
 
     @property
     def objects(self):
-        # type: () -> Iterator[Any]
+        # type: () -> Iterator[Transformable]
         """Get all objects in the grid."""
         for cell in self.cells.values():
             yield from cell
@@ -52,14 +52,14 @@ class HashGrid:
         )
 
     def add(self, obj):
-        # type: (Any) -> None
+        # type: (Transformable) -> None
         """Add an object to the grid."""
         coord = self.to_cell_coord(obj.position)
         self.cells[coord].append(obj)
         self.num_objects += 1
 
     def remove(self, obj, position=None):
-        # type: (Any, Point2D) -> None
+        # type: (Transformable, Point2D) -> None
         """Remove an object to the grid."""
         if position is None:
             position = obj.position
