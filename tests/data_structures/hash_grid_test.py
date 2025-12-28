@@ -41,16 +41,24 @@ def test_hash_grid_nearest_neighbor():
         ))
         points.append(point)
         hash_grid.add(point)
-    # calculate the ground truth
+    # test hash grid size
+    assert len(hash_grid) == num_points
+    # general check that points are in increasing distance from target
+    prev_distance = 0
+    for point in hash_grid.nearest_neighbors(target.position, num_points):
+        distance = (point.position - target.position).magnitude
+        assert distance >= prev_distance
+        prev_distance = distance
+    # calculate the ground truth; use sets to avoid non-determinism for equidistant points
     groundtruth = defaultdict(set) # type: dict[float, set[TransformablePoint]]
     for point in points:
         groundtruth[(point.position - target.position).magnitude].add(point)
+    # remove the max to avoid the generator finishing
+    groundtruth.pop(max(groundtruth))
     # get points in sorted order
-    expect = set()
-    for distance, points in sorted(groundtruth.items()):
-        expect |= points
-        actual = hash_grid.nearest_neighbors(
-            target.position,
-            k=len(expect),
-        )
-        assert set(actual) == expect
+    generator = hash_grid.nearest_neighbors(target.position, num_points - 1)
+    for distance, expect in sorted(groundtruth.items()):
+        actual = set()
+        for _ in range(len(expect)):
+            actual.add(next(generator))
+        assert actual == expect

@@ -70,14 +70,15 @@ class HashGrid:
             del self.cells[coord]
 
     def nearest_neighbors(self, target, k=1):
-        # type: (Point2D, int) -> list[Any]
+        # type: (Point2D, int) -> Iterator[Transformable]
         """Get the k nearest objects to a target Point2D."""
         # special case if all objects are "nearest"
         if len(self) <= k:
-            return sorted(
+            yield from sorted(
                 chain(*self.cells.values()),
-                key=(lambda obj: (target - obj.position).magnitude),
+                key=(lambda obj: (obj.position - target).magnitude),
             )
+            return
         # initialize variables
         target_coord = self.to_cell_coord(target)
         coord_dists = groupby(
@@ -87,7 +88,7 @@ class HashGrid:
             ),
             key=(lambda pair: pair[0]),
         )
-        result = []
+        num_results = 0
         holding_area = [] # type: list[tuple[float, Transformable]]
         for min_dist, coords in coord_dists:
             for _, coord in coords:
@@ -96,13 +97,12 @@ class HashGrid:
                     for obj in self.cells[coord]
                 )
             holding_area = sorted(holding_area)
-            while holding_area and holding_area[0][0] < min_dist:
-                result.append(holding_area.pop(0)[-1])
-            if len(result) > k:
-                return result[:k]
-        while holding_area:
-            result.append(holding_area.pop(0)[-1])
-        return result[:k]
+            while num_results < k and holding_area and holding_area[0][0] < min_dist:
+                yield holding_area.pop(0)[-1]
+                num_results += 1
+        while num_results < k and holding_area:
+            yield holding_area.pop(0)[-1]
+            num_results += 1
 
     def _min_squared_distance(self, coord_diff):
         # type: (Vector2D) -> float
