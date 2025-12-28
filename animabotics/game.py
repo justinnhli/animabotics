@@ -1,6 +1,8 @@
 """The abstract Game class."""
 
-from typing import Callable
+from enum import Enum
+from collections import defaultdict
+from typing import Any, Callable
 
 from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
@@ -10,6 +12,11 @@ from .timing import get_msec
 
 
 CollisionCallback = Callable[[GameObject, GameObject], None]
+
+
+class HookTrigger(Enum):
+    PRE_UPDATE = 'PRE_UPDATE'
+    POST_UPDATE = 'POST_UPDATE'
 
 
 class Game:
@@ -30,6 +37,7 @@ class Game:
         self.bounced_collision_group_pairs = set() # type: set[tuple[str, str]]
         # settings
         self.keybinds = {} # type: dict[Input, EventCallback]
+        self.hooks = defaultdict(list) # type: dict[HookTrigger, list[Callable[[int, int], Any]]]
         # state
         self.prev_msec = None # type: int
         self.prev_collisions = set() # type: set[tuple[GameObject, GameObject]]
@@ -62,6 +70,11 @@ class Game:
         if not debounce:
             self.bounced_collision_group_pairs.add((group1, group2))
 
+    def register_hook(self, hook_trigger, callback):
+        # type: (HookTrigger, Callable[[int], Any]) -> None
+        assert isinstance(hook_trigger, HookTrigger)
+        self.hooks[hook_trigger].append(callback)
+
     def dispatch_tick(self, elapsed_msec=None):
         # type: (int) -> None
         """Deal with time passing."""
@@ -70,6 +83,9 @@ class Game:
         if elapsed_msec is None:
             elapsed_msec = curr_msec - self.prev_msec
         elapsed_msec_squared = elapsed_msec * elapsed_msec
+        # call all pre-update hooks
+        for callback in self.hooks[HookTrigger.PRE_UPDATE]:
+            callback(curr_msec, elapsed_msec)
         # update all objects
         for obj in self.objects:
             prev_position = obj.position
@@ -94,6 +110,9 @@ class Game:
         for game_object in self.in_camera_objects:
             self.draw_recursive(game_object)
         self.in_camera_objects.clear()
+        # call all post-update hooks
+        for callback in self.hooks[HookTrigger.POST_UPDATE]:
+            callback(curr_msec, elapsed_msec)
         # update timer
         self.prev_msec = curr_msec
 
