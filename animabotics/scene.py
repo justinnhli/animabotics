@@ -186,7 +186,13 @@ class HierarchicalHashGrid:
             self.collision_groups_cache[key] = tuple(
                 (group1, group2)
                 for group1, group2 in self.collision_group_pairs
-                if group1 in collision_groups1 and group2 in collision_groups2
+                if (
+                    group1 in collision_groups1
+                    and (
+                        group2 is None
+                        or group2 in collision_groups2
+                    )
+                )
             )
         return self.collision_groups_cache[key]
 
