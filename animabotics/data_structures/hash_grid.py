@@ -1,6 +1,7 @@
 """A spatial hashing container."""
 
 from collections import defaultdict
+from itertools import chain, groupby
 from typing import Any, Iterator
 
 from ..simplex import Point2D, Vector2D
@@ -67,3 +68,52 @@ class HashGrid:
         self.num_objects -= 1
         if not self.cells[coord]:
             del self.cells[coord]
+
+    def nearest_neighbors(self, target, k=1):
+        # type: (Point2D, int) -> list[Any]
+        """Get the k nearest objects to a target Point2D."""
+        # special case if all objects are "nearest"
+        if len(self) <= k:
+            return sorted(
+                chain(*self.cells.values()),
+                key=(lambda obj: (target - obj.position).magnitude),
+            )
+        # initialize variables
+        target_coord = self.to_cell_coord(target)
+        coord_dists = groupby(
+            sorted(
+                (self._min_squared_distance(coord - target_coord), coord)
+                for coord in self.cells
+            ),
+            key=(lambda pair: pair[0]),
+        )
+        result = []
+        holding_area = [] # type: list[tuple[float, Transformable]]
+        for min_dist, coords in coord_dists:
+            for _, coord in coords:
+                holding_area.extend(
+                    ((obj.position - target).squared_magnitude, obj)
+                    for obj in self.cells[coord]
+                )
+            holding_area = sorted(holding_area)
+            while holding_area and holding_area[0][0] < min_dist:
+                result.append(holding_area.pop(0)[-1])
+            if len(result) > k:
+                return result[:k]
+        while holding_area:
+            result.append(holding_area.pop(0)[-1])
+        return result[:k]
+
+    def _min_squared_distance(self, coord_diff):
+        # type: (Vector2D) -> float
+        coord_diff = abs(coord_diff)
+        if coord_diff.x == 0 and coord_diff.y == 0:
+            return 0
+        elif coord_diff.x == 0 or coord_diff.y == 0:
+            diff = max(coord_diff.x, coord_diff.y)
+            return ((diff - 1) * self.grid_size) ** 2
+        else:
+            return (
+                ((coord_diff.x - 1) * self.grid_size) ** 2
+                + ((coord_diff.y - 1) * self.grid_size) ** 2
+            )
