@@ -332,9 +332,9 @@ class Canvas:
             self.new_page()
             update_fn()
             self.display_page()
-            delay_msec = get_msec() - start_msec
+            elapsed_msec = get_msec() - start_msec
             self.tk.after(
-                (0 if delay_msec > 40 else msecs - delay_msec),
+                (0 if elapsed_msec > 40 else msecs - elapsed_msec),
                 callback,
             )
 
