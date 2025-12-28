@@ -51,18 +51,18 @@ class HashGrid:
         for cell in self.cells.values():
             yield from cell
 
-    def to_cell_coord(self, game_object):
-        # type: (GameObject) -> Point2D
+    def to_cell_coord(self, position):
+        # type: (Point2D) -> Point2D
         """Calculate the cell for an object."""
         return Point2D(
-            game_object.position.x // self.grid_size,
-            game_object.position.y // self.grid_size,
+            position.x // self.grid_size,
+            position.y // self.grid_size,
         )
 
     def add(self, game_object):
         # type: (GameObject) -> None
         """Add an object to the grid."""
-        coord = self.to_cell_coord(game_object)
+        coord = self.to_cell_coord(game_object.position)
         self.cells[coord].append(game_object)
         self.num_objects += 1
         self.populated_coords.add(coord)
@@ -70,7 +70,7 @@ class HashGrid:
     def remove(self, game_object):
         # type: (GameObject) -> None
         """Remove an object to the grid."""
-        coord = self.to_cell_coord(game_object)
+        coord = self.to_cell_coord(game_object.position)
         self.cells[coord].remove(game_object)
         self.num_objects -= 1
         if not self.cells[coord]:
@@ -96,7 +96,7 @@ class HashGrid:
         """Get collisions with an object."""
         if self.num_objects == 0:
             return
-        coord = self.to_cell_coord(game_object)
+        coord = self.to_cell_coord(game_object.position)
         if half_neighbors:
             offsets = HashGrid.HALF_OFFSETS
         else:
