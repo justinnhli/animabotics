@@ -188,14 +188,17 @@ class HierarchicalHashGrid:
             )
         return self.collision_groups_cache[key]
 
+    def _get_exponent(self, game_object):
+        return min(
+            max(ceil(log2(game_object.collision_radius)), self.min_exponent),
+            self.max_exponent,
+        )
+
     def add(self, game_object):
         # type: (GameObject) -> None
         """Add an object to the grid."""
         self.objects.append(game_object)
-        exponent = min(
-            max(ceil(log2(game_object.collision_radius)), self.min_exponent),
-            self.max_exponent,
-        )
+        exponent = self._get_exponent(game_object)
         self.grids[exponent].add(game_object)
         self.num_objects += 1
 
