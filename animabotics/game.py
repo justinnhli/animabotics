@@ -59,7 +59,11 @@ class Game:
         elapsed_msec_squared = elapsed_msec * elapsed_msec
         # update all objects
         for obj in self.objects:
+            prev_position = obj.position
             obj.update(elapsed_msec, elapsed_msec_squared)
+            if prev_position != obj.position:
+                self.scene.remove(obj, position=prev_position)
+                self.scene.add(obj)
         # deal with collisions, with de-bouncing
         # FIXME use movement to optimize collision detection
         new_collisions = set()
