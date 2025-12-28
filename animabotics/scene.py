@@ -38,7 +38,6 @@ class HashGrid:
         self.hierarchy = hierarchy
         self.num_objects = 0
         self.cells = defaultdict(list) # type: dict[Point2D, list[GameObject]]
-        self.populated_coords = set() # type: set[Point2D]
 
     def __len__(self):
         # type: () -> int
@@ -65,7 +64,6 @@ class HashGrid:
         coord = self.to_cell_coord(game_object.position)
         self.cells[coord].append(game_object)
         self.num_objects += 1
-        self.populated_coords.add(coord)
 
     def remove(self, game_object, position=None):
         # type: (GameObject) -> None
@@ -76,13 +74,12 @@ class HashGrid:
         self.cells[coord].remove(game_object)
         self.num_objects -= 1
         if not self.cells[coord]:
-            self.populated_coords.remove(coord)
+            del self.cells[coord]
 
     def get_collisions(self):
         # type: () -> Iterator[tuple[GameObject, GameObject]]
         """Get all collisions."""
-        for coord in self.populated_coords:
-            cell = self.cells[coord]
+        for cell in self.cells.values():
             for i, obj1 in enumerate(cell):
                 # find collisions in the current cell
                 for obj2 in cell[i + 1:]:
