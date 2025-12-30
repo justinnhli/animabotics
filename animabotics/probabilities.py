@@ -34,10 +34,6 @@ class DiscreteDistribution(Mapping[ValueT, Fraction]):
             and self._probabilities == other._probabilities
         )
 
-    def __bool__(self):
-        # type: () -> bool
-        return bool(self._probabilities)
-
     def __len__(self):
         # type: () -> int
         return len(self._probabilities)
