@@ -16,8 +16,8 @@ def pytest_collection_modifyitems(session, config, items): # pylint: disable = u
     num_items = len(items)
     tests = defaultdict(list)
     for item in items:
-        test_path, *_ = item.reportinfo()
-        module = test_path.stem.replace('_test', '')
+        test_path_str, *_ = item.reportinfo()
+        module = Path(test_path_str).stem.replace('_test', '')
         tests[module].append(item)
     # collect the importees of of the source files
     modules = set()
