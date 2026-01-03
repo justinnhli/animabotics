@@ -135,7 +135,7 @@ class Game:
     def draw_recursive(self, game_object):
         # type: (GameObject) -> None
         """Recursively draw a GameObject and its children."""
-        self.camera.draw_sprite(game_object.get_sprite())
+        self.camera.draw_sprite(game_object.sprite)
         if hasattr(game_object, 'children'):
             for child in game_object.children:
                 self.draw_recursive(child)

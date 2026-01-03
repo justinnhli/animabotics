@@ -29,7 +29,8 @@ class GameObject(Collidable):
         # type: () -> str
         return f'{type(self).__name__}({self.position})'
 
-    def get_sprite(self):
+    @property
+    def sprite(self):
         # type: () -> Sprite
         """Get the current animation sprite."""
         return self.transform @ self.animation.get_sprite()
