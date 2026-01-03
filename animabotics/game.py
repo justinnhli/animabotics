@@ -78,6 +78,14 @@ class Game:
         assert isinstance(hook_trigger, HookTrigger)
         self.hooks[hook_trigger].append(callback)
 
+    def run_for_msec(self, duration, update_every=40):
+        # type: (int) -> None
+        """Run for the specified time, updating at a fixed interval."""
+        while duration > update_every:
+            self.dispatch_tick(update_every)
+            duration -= update_every
+        self.dispatch_tick(duration)
+
     def dispatch_tick(self, elapsed_msec=None):
         # type: (int) -> None
         """Deal with time passing."""
@@ -107,7 +115,12 @@ class Game:
                 or group_pair in self.bounced_collision_group_pairs
             )
             if trigger_callback:
+                prev_positions = [obj1.position, obj2.position]
                 self.collision_callbacks[group_pair](obj1, obj2)
+                for prev_position, obj in zip(prev_positions, [obj1, obj2]):
+                    if prev_position != obj.position:
+                        self.scene.remove(obj, position=prev_position)
+                        self.scene.add(obj)
         self.prev_collisions = new_collisions
         # draw all objects
         for game_object in self.in_camera_objects:
