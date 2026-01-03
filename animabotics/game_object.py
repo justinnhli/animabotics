@@ -1,10 +1,9 @@
 """GameObject and its hierarchy."""
 
-from functools import cached_property
-from typing import Sequence, Iterator
+from typing import Sequence
 
 from .animation import AnimationController, Sprite
-from .simplex import Geometry, Point2D, Vector2D
+from .simplex import Point2D, Vector2D
 from .transformable import Collidable
 
 
@@ -16,7 +15,7 @@ class GameObject(Collidable):
         position=None, rotation=0,
         collision_groups=None,
     ): # pylint: disable = unused-argument
-        # type: (Sequence[str], Point2D, float) -> None
+        # type: (Point2D, float, Sequence[str]) -> None
         """Initialize the GameObject."""
         super().__init__(position, rotation, collision_groups)
         self.animation = None # type: AnimationController

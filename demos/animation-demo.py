@@ -17,6 +17,7 @@ from animabotics import AnimationController, Clip, Sprite, Shape
 
 
 class Ball(PhysicsObject):
+    """A bouncy ball."""
 
     RADIUS = 50
     ELLIPSE = Polygon.ellipse(RADIUS, RADIUS)
@@ -30,7 +31,7 @@ class Ball(PhysicsObject):
         self.acceleration = Vector2D(0, -0.001)
 
     def bounce_vertical(self, ground):
-        # type: (GameObject) -> None
+        # type: (Ground) -> None
         """Bounce the ball vertically.
 
         This function cheats physics a bit by:
@@ -85,7 +86,7 @@ class AnimatedBall(Ball):
                 y_offset=(lambda t: 20 * (t / 150) - 20),
                 width_radius=(lambda t: -10 * (t / 150) + 60),
                 height_radius=(lambda t: 20 * (t / 150) + 30),
-                ellipse=(lambda width_radius, height_radius:
+                ellipse=(lambda width_radius, height_radius: # pylint: disable = unnecessary-lambda
                     Polygon.ellipse(width_radius, height_radius)
                 ),
                 sprite=(lambda y_offset, ellipse:

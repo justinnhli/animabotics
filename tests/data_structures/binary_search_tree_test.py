@@ -161,4 +161,3 @@ def test_priorityqueue():
         assert priority == prev_item + 1
         assert curr_item == prev_item + 1
         prev_item = curr_item
-

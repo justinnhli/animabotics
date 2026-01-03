@@ -9,22 +9,29 @@ from animabotics.data_structures import HashGrid
 
 
 class TransformablePoint(Transformable):
+    """A wrapper around Point2D to make it Transformable."""
 
     def __init__(self, position):
+        # type: (Point2D) -> None
         super().__init__(position=position)
 
     def __lt__(self, other):
+        # type: (TransformablePoint) -> bool
         assert isinstance(other, TransformablePoint)
         return self.position < other.position
 
     def __str__(self):
+        # type: () -> str
         return str(self.position)
 
     def __repr__(self):
+        # type: () -> str
         return str(self)
 
 
 def test_hash_grid_nearest_neighbor():
+    # type: () -> None
+    """Test HashGrid."""
     # set test constants
     num_points = 2000
     grid_size = 50
@@ -44,7 +51,7 @@ def test_hash_grid_nearest_neighbor():
     # test hash grid size
     assert len(hash_grid) == num_points
     # general check that points are in increasing distance from target
-    prev_distance = 0
+    prev_distance = 0.0
     for point in hash_grid.nearest_neighbors(target.position, num_points):
         distance = (point.position - target.position).magnitude
         assert distance >= prev_distance

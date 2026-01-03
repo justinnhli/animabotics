@@ -4,9 +4,9 @@ from functools import cached_property
 from math import ceil, log2
 from typing import Iterator, Iterable
 
-from .camera import Camera
-from .game_object import GameObject
 from .data_structures import HashGrid as OGHashGrid
+from .simplex import Point2D
+from .transformable import Collidable
 
 CollisionGroups = frozenset[str]
 CollisionGroupPair = tuple[str, str]
@@ -17,11 +17,12 @@ class HashGrid(OGHashGrid):
     """A hash grid."""
 
     def __init__(self, grid_size, hierarhical_hash_grid):
+        # type: (int, HierarchicalHashGrid) -> None
         super().__init__(grid_size)
         self.hierarchy = hierarhical_hash_grid
 
     def get_collisions(self):
-        # type: () -> Iterator[tuple[GameObject, GameObject]]
+        # type: () -> Iterator[tuple[Collidable, Collidable]]
         """Get all collisions."""
         for cell in self.cells.values():
             for i, obj1 in enumerate(cell):
@@ -35,7 +36,7 @@ class HashGrid(OGHashGrid):
                 yield from self.get_collisions_with(obj1, half_neighbors=True)
 
     def get_collisions_with(self, game_object, half_neighbors=False):
-        # type: (GameObject, bool) -> Iterator[tuple[GameObject, GameObject]]
+        # type: (Collidable, bool) -> Iterator[tuple[Collidable, Collidable]]
         """Get collisions with an object."""
         if self.num_objects == 0:
             return
@@ -86,7 +87,7 @@ class HierarchicalHashGrid:
 
     @property
     def all_collisions(self):
-        # type: () -> Iterator[tuple[GameObject, GameObject]]
+        # type: () -> Iterator[tuple[Collidable, Collidable]]
         """Yield all collisions."""
         for exponent, small_grid in self.exponent_grids:
             yield from small_grid.get_collisions()
@@ -96,7 +97,7 @@ class HierarchicalHashGrid:
 
     @property
     def collisions(self):
-        # type: () -> Iterator[tuple[GameObject, GameObject, CollisionGroupPair]]
+        # type: () -> Iterator[tuple[Collidable, Collidable, CollisionGroupPair]]
         """Yield all collisions of registered group pairs."""
         for obj1, obj2 in self.all_collisions:
             for pair in self.get_collision_group_pairs(obj1, obj2):
@@ -105,7 +106,7 @@ class HierarchicalHashGrid:
                 yield obj2, obj1, pair
 
     def has_collision_group_pairs(self, obj1, obj2):
-        # type: (GameObject, GameObject) -> bool
+        # type: (Collidable, Collidable) -> bool
         """Determine if the two objects are part of a collision group pair."""
         return (
             bool(self._get_collision_group_pair(obj1.collision_groups, obj2.collision_groups))
@@ -113,7 +114,7 @@ class HierarchicalHashGrid:
         )
 
     def get_collision_group_pairs(self, obj1, obj2):
-        # type: (GameObject, GameObject) -> tuple[CollisionGroupPair, ...]
+        # type: (Collidable, Collidable) -> tuple[CollisionGroupPair, ...]
         """Get the collision group pairs for the two objects."""
         return self._get_collision_group_pair(obj1.collision_groups, obj2.collision_groups)
 
@@ -136,19 +137,20 @@ class HierarchicalHashGrid:
         return self.collision_groups_cache[key]
 
     def _get_exponent(self, game_object):
+        # type: (Collidable) -> int
         return min(
             max(ceil(log2(game_object.collision_radius)), self.min_exponent),
             self.max_exponent,
         )
 
     def add(self, game_object):
-        # type: (GameObject) -> None
+        # type: (Collidable) -> None
         """Add an object to the grid."""
         exponent = self._get_exponent(game_object)
         self.grids[exponent].add(game_object)
 
     def remove(self, game_object, position=None):
-        # type: (GameObject, Point2D) -> None
+        # type: (Collidable, Point2D) -> None
         """Remove an object from the grid."""
         if position is None:
             position = game_object.position

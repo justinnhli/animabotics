@@ -49,11 +49,14 @@ class Shape(Transformable, metaclass=CachedMetaclass):
         return self.transform @ self.polygon
 
 
+OneOrMoreShapes = Sequence[Shape] | Shape
+
+
 class Sprite:
     """Multiple shapes that make up a single image."""
 
     def __init__(self, shapes):
-        # type: (Sequence[Shape]|Shape) -> None
+        # type: (OneOrMoreShapes) -> None
         if isinstance(shapes, Shape):
             self.shapes = (shapes,) # type: tuple[Shape, ...]
         else:
@@ -69,10 +72,13 @@ class Sprite:
         return Sprite(tuple(other @ shape for shape in self.shapes))
 
 
+SpriteOrSimpler = Sprite | Shape
+
+
 class Clip:
     """A single animation."""
 
-    def __init__(self, duration_msec, **components):
+    def __init__(self, duration_msec=0, **components):
         # type: (int, **Any|Callable[[Any], Any]) -> None
         self.duration_msec = duration_msec
         self.components = components
@@ -136,12 +142,15 @@ class Clip:
 
     @staticmethod
     def create_static_clip(arg):
-        # type: (Shape|Sprite) -> Clip
+        # type: (SpriteOrSimpler) -> Clip
         """Create a Clip that is a single Sprite/Shape."""
         if isinstance(arg, Shape):
             arg = Sprite([arg])
         assert isinstance(arg, Sprite)
-        return Clip(INF, sprite=arg)
+        return Clip(sprite=arg)
+
+
+ClipOrSimpler = Clip | Sprite | Shape
 
 
 class AnimationController:
@@ -177,10 +186,12 @@ class AnimationController:
         self.elapsed_msec += elapsed_msec
         while True:
             duration_msec = self.clips[self.state].duration_msec
+            if duration_msec <= 0:
+                return
             if self.elapsed_msec < duration_msec:
                 return
-            self.state = self.transitions[self.state]
             self.elapsed_msec -= duration_msec
+            self.state = self.transitions[self.state]
 
     def get_sprite(self, elapsed_msec=0):
         # type: (int) -> Sprite
@@ -191,7 +202,7 @@ class AnimationController:
 
     @staticmethod
     def create_static_animation(arg):
-        # type: (Shape|Sprite|Clip) -> AnimationController
+        # type: (ClipOrSimpler) -> AnimationController
         """Create an "animation" that is a static image."""
         if isinstance(arg, (Shape, Sprite)):
             arg = Clip.create_static_clip(arg)

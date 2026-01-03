@@ -9,12 +9,14 @@ from .canvas import Input, EventCallback, Canvas
 from .game_object import GameObject
 from .scene import HierarchicalHashGrid
 from .timing import get_msec
+from .transformable import Collidable
 
 
-CollisionCallback = Callable[[GameObject, GameObject], None]
+CollisionCallback = Callable[[Collidable, Collidable], None]
 
 
 class HookTrigger(Enum):
+    """Enum for when callbacks are triggered."""
     PRE_UPDATE = 'PRE_UPDATE'
     POST_UPDATE = 'POST_UPDATE'
 
@@ -31,7 +33,7 @@ class Game:
         self.canvas = Canvas(window_width, window_height)
         self.camera = Camera(self.canvas)
         # objects
-        self.objects = []
+        self.objects = [] # type: list[GameObject]
         self.scene = HierarchicalHashGrid()
         self.collision_callbacks = {} # type: dict[tuple[str, str], CollisionCallback]
         self.bounced_collision_group_pairs = set() # type: set[tuple[str, str]]
@@ -41,7 +43,7 @@ class Game:
         # state
         self.prev_msec = None # type: int
         self.prev_collisions = set() # type: set[tuple[GameObject, GameObject]]
-        self.in_camera_objects = []
+        self.in_camera_objects = [] # type: list[GameObject]
         # initialization
         self.camera.add_to_collision_group('_camera')
         self.scene.add(self.camera)
@@ -64,14 +66,15 @@ class Game:
         self.keybinds[input_event] = callback
 
     def on_collision(self, group1, group2, callback, debounce=True):
-        # type: (str, str, CollisionCallback) -> None
+        # type: (str, str, CollisionCallback, bool) -> None
         """Add a collision handler."""
         self.collision_callbacks[(group1, group2)] = callback
         if not debounce:
             self.bounced_collision_group_pairs.add((group1, group2))
 
     def register_hook(self, hook_trigger, callback):
-        # type: (HookTrigger, Callable[[int], Any]) -> None
+        # type: (HookTrigger, Callable[[int, int], Any]) -> None
+        """Register a callback function."""
         assert isinstance(hook_trigger, HookTrigger)
         self.hooks[hook_trigger].append(callback)
 
@@ -101,7 +104,7 @@ class Game:
             new_collisions.add(key)
             trigger_callback = (
                 key not in self.prev_collisions
-                or group_pair in self.bounced_collision_group_pairs 
+                or group_pair in self.bounced_collision_group_pairs
             )
             if trigger_callback:
                 self.collision_callbacks[group_pair](obj1, obj2)

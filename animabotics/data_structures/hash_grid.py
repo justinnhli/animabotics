@@ -110,7 +110,7 @@ class HashGrid:
         if coord_diff.x == 0 and coord_diff.y == 0:
             return 0
         elif coord_diff.x == 0 or coord_diff.y == 0:
-            diff = max(coord_diff.x, coord_diff.y)
+            diff = max(coord_diff.x, coord_diff.y) # type: float
             return ((diff - 1) * self.grid_size) ** 2
         else:
             return (

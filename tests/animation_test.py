@@ -52,7 +52,7 @@ def test_clip():
             500,
             width_radius=(lambda t: -10 * (t / 500) + 60),
             height_radius=(lambda t: 20 * (t / 500) + 30),
-            ellipse=(lambda width_radius, height_radius:
+            ellipse=(lambda width_radius, height_radius: # pylint: disable = unnecessary-lambda
                 Polygon.ellipse(width_radius, height_radius)
             ),
             sprite=(lambda ellipse: Sprite([ellipse])),
@@ -70,7 +70,7 @@ def test_clip():
             500,
             width_radius=(lambda t: -10 * (t / 500) + 60),
             height_radius=(lambda t: 20 * (t / 500) + 30),
-            ellipse=(lambda width_radius, height_radius:
+            ellipse=(lambda width_radius, height_radius: # pylint: disable = unnecessary-lambda
                 Polygon.ellipse(width_radius, height_radius)
             ),
             sprite=(lambda ellipse: Sprite([ellipse])),

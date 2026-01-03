@@ -18,7 +18,7 @@ class PointsMatrix:
     matrix: Matrix
 
     def __abs__(self):
-        # type: (int) -> Self
+        # type: () -> Self
         return type(self).from_matrix(abs(self.matrix))
 
     def __round__(self, ndigits=0):

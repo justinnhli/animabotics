@@ -45,6 +45,7 @@ class Camera(Collidable):
 
     @property
     def projection_matrix(self):
+        # type: () -> Matrix
         """Create the projection matrix.
 
         Because this project involves flipping the y-axis, it cannot be
@@ -58,18 +59,25 @@ class Camera(Collidable):
             self.position.y,
             self.rotation,
             self.zoom,
-        ) 
+        )
 
     @property
     def inverse_projection_matrix(self):
+        # type: () -> Matrix
         """Create the inverse of the projection matrix."""
         return self.projection_matrix.inverse
 
     def _set_collision_geometry(self):
-        corner = Point2D.from_matrix(self.projection_matrix.inverse @ Point2D(0, 0).matrix)
+        # type: () -> None
+        corner = Point2D.from_matrix(
+            self.projection_matrix.inverse @ Point2D(0, 0).matrix
+        )
         min_x = corner.x
         max_y = corner.y
-        corner = Point2D.from_matrix(self.projection_matrix.inverse @ Point2D(self.canvas.width, self.canvas.height).matrix)
+        corner = Point2D.from_matrix(
+            self.projection_matrix.inverse
+            @ Point2D(self.canvas.width, self.canvas.height).matrix
+        )
         max_x = corner.x
         min_y = corner.y
         self.collision_geometry = Polygon((

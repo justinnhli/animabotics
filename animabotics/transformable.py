@@ -2,9 +2,9 @@
 
 from math import pi as PI
 from functools import cached_property
-from typing import Iterator
+from typing import Iterator, Sequence
 
-from .simplex import Point2D, Vector2D
+from .simplex import Geometry, Point2D, Vector2D
 from .transform import Transform
 
 
@@ -76,27 +76,30 @@ class Transformable:
 
 
 class Collidable(Transformable):
+    """An object with a collision geometry."""
 
     def __init__(
         self,
         position=None, rotation=0,
         collision_groups=None,
     ):
+        # type: (Point2D, float, Sequence[str]) -> None
         super().__init__(position, rotation)
         self.collision_geometry = None # type: Geometry
         if collision_groups:
             self._collision_groups = frozenset(collision_groups) # type: frozenset[str]
         else:
-            self._collision_groups = frozenset() # type: frozenset[str]
+            self._collision_groups = frozenset()
         self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
 
     @cached_property
     def collision_radius(self):
-        max_distance = 0
+        # type: () -> float
+        """Calculate the maximum radius of the collision geometry."""
+        max_distance = 0.0
         for point in self.collision_geometry.points:
             distance = (point - self.position).magnitude
-            if distance > max_distance:
-                max_distance = distance
+            max_distance = max(max_distance, distance)
         return max_distance
 
     @cached_property
