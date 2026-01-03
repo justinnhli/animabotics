@@ -67,7 +67,11 @@ def test_einstein():
     window.add_geometry(left_hexagon)
     window.add_geometry(down_hexagon)
     window.add_geometry(up_hexagon)
-    window.add_geometry(einstein, line_color=Color(0, 1, 1))
+    window.add_geometry(
+        einstein,
+        line_color=Color(0, 1, 1),
+        z_level=1,
+    )
     window.camera.move_to(einstein.centroid)
     window.prestart()
     window.dispatch_tick()

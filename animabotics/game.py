@@ -43,14 +43,16 @@ class Game:
         # state
         self.prev_msec = None # type: int
         self.prev_collisions = set() # type: set[tuple[GameObject, GameObject]]
-        self.in_camera_objects = [] # type: list[GameObject]
+        self.in_camera_objects = defaultdict(list) # type: dict[int, GameObject]
         # initialization
         self.camera.add_to_collision_group('_camera')
         self.scene.add(self.camera)
         self.on_collision(
             '_camera',
             None,
-            (lambda _, game_object: self.in_camera_objects.append(game_object)),
+            (lambda _, game_object:
+                self.in_camera_objects[game_object.z_level].append(game_object)
+            ),
             debounce=False,
         )
 
@@ -123,8 +125,9 @@ class Game:
                         self.scene.add(obj)
         self.prev_collisions = new_collisions
         # draw all objects
-        for game_object in self.in_camera_objects:
-            self.draw_recursive(game_object)
+        for _, game_objects in sorted(self.in_camera_objects.items()):
+            for game_object in game_objects:
+                self.draw_recursive(game_object)
         self.in_camera_objects.clear()
         # call all post-update hooks
         for callback in self.hooks[HookTrigger.POST_UPDATE]:

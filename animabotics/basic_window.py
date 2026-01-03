@@ -40,14 +40,16 @@ class BasicWindow(Game):
         for char in ['w', 's', 'a', 'd', 'e', 'q', ' ', 'r', 'f']:
             self.bind(Input(event_type='KeyPress', key_button=char), self.key_callback)
 
-    def add_geometry(self, geometry, fill_color=None, line_color=None):
+    def add_geometry(self, geometry, fill_color=None, line_color=None, z_level=0):
         # type: (Geometry, Color, Color) -> None
         """Add a geometry to be drawn."""
-        self.add_object(DummyGameObject(
+        obj = DummyGameObject(
             geometry,
             fill_color=fill_color,
             line_color=line_color,
-        ))
+        )
+        obj.z_level = z_level
+        self.add_object(obj)
 
     def key_callback(self, input_event, _):
         # type: (Input, Point2D) -> None

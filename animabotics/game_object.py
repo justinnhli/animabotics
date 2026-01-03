@@ -20,6 +20,7 @@ class GameObject(Collidable):
         super().__init__(position, rotation, collision_groups)
         self.animation = None # type: AnimationController
         self.children = [] # type: list[GameObject]
+        self.z_level = 0
 
     def __hash__(self):
         # type: () -> int
