@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+"""Tests for Animation Demo."""
 
 from collections import defaultdict
 
@@ -121,7 +121,3 @@ def test_animation():
         },
     )
     assert_ball_size(bouncy.objects, 100, 100)
-
-
-if __name__ == '__main__':
-    main()
