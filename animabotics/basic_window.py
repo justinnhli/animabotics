@@ -1,6 +1,6 @@
 """A basic window for basic drawing."""
 
-from math import sin, cos
+from math import sin, cos, pi as PI
 
 from .animation import AnimationController, Sprite, Shape
 from .canvas import Input
@@ -64,9 +64,9 @@ class BasicWindow(Game):
         elif input_event.key_button == 'd':
             self.camera.move_by(translation * Vector2D(cos(self.camera.radians), sin(self.camera.radians)))
         elif input_event.key_button == 'q':
-            self.camera.rotate_by(0.125)
+            self.camera.rotate_by(PI / 8)
         elif input_event.key_button == 'e':
-            self.camera.rotate_by(-0.125)
+            self.camera.rotate_by(-PI / 8)
         elif input_event.key_button == ' ':
             self.camera.move_to(Point2D(0, 0))
             self.camera.rotate_to(0)

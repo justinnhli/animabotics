@@ -33,8 +33,8 @@ class Transform(metaclass=CachedMetaclass):
         if isinstance(other, Transform):
             # from https://gamedev.stackexchange.com/a/207764
             return Transform(
-                self.x + self.scale * (other.x * cos(self.radians) - other.y * sin(self.radians)),
-                self.y + self.scale * (other.x * sin(self.radians) + other.y * cos(self.radians)),
+                self.x + self.scale * (other.x * cos(self.theta) - other.y * sin(self.theta)),
+                self.y + self.scale * (other.x * sin(self.theta) + other.y * cos(self.theta)),
                 other.theta + self.theta,
                 other.scale * self.scale,
             )
@@ -43,19 +43,13 @@ class Transform(metaclass=CachedMetaclass):
             return NotImplemented
 
     @cached_property
-    def radians(self):
-        # type: () -> float
-        """Return the rotation in radians."""
-        return self.theta * PI
-
-    @cached_property
     def matrix(self):
         # type: () -> Matrix
         """Create the transformation matrix."""
         return (
             identity()
             .scale(self.scale, self.scale, self.scale)
-            .rotate_z(self.radians)
+            .rotate_z(self.theta)
             .translate(self.x, self.y, 0)
         )
 
@@ -72,8 +66,8 @@ class Transform(metaclass=CachedMetaclass):
             @ Transform(-self.x, -self.y)
         )
         """
-        sin_radians = sin(self.radians)
-        cos_radians = cos(self.radians)
+        sin_radians = sin(self.theta)
+        cos_radians = cos(self.theta)
         return Transform(
             (-self.x * cos_radians - self.y * sin_radians) / self.scale,
             (self.x * sin_radians - self.y * cos_radians) / self.scale,

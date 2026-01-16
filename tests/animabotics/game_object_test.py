@@ -1,5 +1,7 @@
 """Tests for game_object.py."""
 
+from math import pi as PI
+
 from animabotics import Point2D, Polygon
 from animabotics.basic_window import DummyGameObject
 
@@ -27,9 +29,9 @@ def test_collision():
     assert colliding_and_commutes(obj1, obj2)
     obj2.move_to(Point2D(112.5, 0))
     assert not colliding_and_commutes(obj1, obj2)
-    obj2.rotate_by(0.25)
+    obj2.rotate_by(0.25 * PI)
     assert colliding_and_commutes(obj1, obj2)
-    obj2.rotate_by(0.25)
+    obj2.rotate_by(0.25 * PI)
     assert not colliding_and_commutes(obj1, obj2)
     # hexagons
     obj1 = DummyGameObject(Polygon.ellipse(100, 100, 6))

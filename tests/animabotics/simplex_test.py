@@ -192,7 +192,7 @@ def test_triangle():
     assert triangle.area == 19.5
     assert triangle.centroid == Point2D()
     assert round(
-        Transform(1, 3, 0.5, 2)
+        Transform(1, 3, PI / 2, 2)
         @ Triangle(
             Point2D(0, 2),
             Point2D(-2, -1),
