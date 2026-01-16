@@ -55,7 +55,7 @@ def test_rectangle():
     window = BasicWindow(5, 5)
     window.add_geometry(Polygon.rectangle(2, 2))
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__rectangle.ppm')
 
 
@@ -74,7 +74,7 @@ def test_einstein():
     )
     window.camera.move_to(einstein.centroid)
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__einstein.ppm')
 
 
@@ -90,7 +90,7 @@ def test_up():
             Point2D(),
         )
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__up.ppm')
 
 
@@ -106,7 +106,7 @@ def test_down():
             Point2D(),
         )
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__down.ppm')
 
 
@@ -122,7 +122,7 @@ def test_left():
             Point2D(),
         )
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__left.ppm')
 
 
@@ -138,7 +138,7 @@ def test_right():
             Point2D(),
         )
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__right.ppm')
 
 
@@ -154,7 +154,7 @@ def test_clockwise():
             Point2D(),
         )
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__clockwise.ppm')
 
 
@@ -170,7 +170,7 @@ def test_counter_clockwise():
             Point2D(),
         )
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__counter_clockwise.ppm')
 
 
@@ -186,7 +186,7 @@ def test_zoom_in():
             Point2D(),
         )
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__in.ppm')
 
 
@@ -202,5 +202,5 @@ def test_zoom_out():
             Point2D(),
         )
     window.prestart()
-    window.dispatch_tick()
+    window.dispatch_tick(40)
     check_image(window.canvas.image, 'basic_window__out.ppm')

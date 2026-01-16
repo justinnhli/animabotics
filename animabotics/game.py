@@ -8,7 +8,6 @@ from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
 from .game_object import GameObject
 from .scene import HierarchicalHashGrid
-from .timing import get_msec
 from .transformable import Collidable
 
 
@@ -42,7 +41,6 @@ class Game:
         self.keybinds = {} # type: dict[Input, EventCallback]
         self.hooks = defaultdict(list) # type: dict[HookTrigger, list[HookCallback]]
         # state
-        self.prev_msec = None # type: int
         self.prev_collisions = set() # type: set[tuple[GameObject, GameObject, tuple[str, str]]]
         self.in_camera_objects = defaultdict(list) # type: dict[int, GameObject]
         # initialization
@@ -87,13 +85,10 @@ class Game:
             duration -= update_every
         self.dispatch_tick(duration)
 
-    def dispatch_tick(self, elapsed_msec=None):
+    def dispatch_tick(self, elapsed_msec):
         # type: (int) -> None
         """Deal with time passing."""
         # calculate elapsed time since last tick
-        curr_msec = get_msec()
-        if elapsed_msec is None:
-            elapsed_msec = curr_msec - self.prev_msec
         elapsed_msec_squared = elapsed_msec * elapsed_msec
         # call all pre-update hooks
         for callback in self.hooks[HookTrigger.PRE_UPDATE]:
@@ -128,8 +123,6 @@ class Game:
         # call all post-update hooks
         for callback in self.hooks[HookTrigger.POST_UPDATE]:
             callback(elapsed_msec)
-        # update timer
-        self.prev_msec = curr_msec
 
     def draw_recursive(self, game_object):
         # type: (GameObject) -> None
@@ -146,7 +139,6 @@ class Game:
         This function does all non-UI things needed to start the game; it is in
         a separate function to facilitate testing.
         """
-        self.prev_msec = get_msec()
         self.scene.set_collision_group_pairs(self.collision_callbacks.keys())
 
     def start(self):

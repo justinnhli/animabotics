@@ -4,7 +4,7 @@ from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from functools import cached_property
 from tkinter import CENTER, Tk, Canvas as TKCanvas, NW
-from typing import Callable
+from typing import Any, Callable
 
 try:
     from PIL.Image import Image, new as new_image
@@ -203,6 +203,7 @@ class Canvas:
         self.tk = None # type: Tk
         self.canvas = None # type: TKCanvas
         self.image_tk = None # type: PhotoImage
+        self.prev_msec = 0
 
     # drawing functions
 
@@ -323,17 +324,19 @@ class Canvas:
         )
 
     def _create_update_callback(self, update_fn, msecs):
-        # type: (Callable[[], None], int) -> Callable[[], None]
+        # type: (Callable[[int], Any], int) -> Callable[[], None]
         """Create the wrapped update callback function."""
 
         def callback():
             # type: () -> None
-            start_msec = get_msec()
+            curr_msec = get_msec()
             self.new_page()
-            update_fn()
+            update_fn(get_msec() - self.prev_msec)
             self.display_page()
-            elapsed_msec = get_msec() - start_msec
+            elapsed_msec = get_msec() - curr_msec
+            self.prev_msec = curr_msec
             self.tk.after(
+                #max(0, msecs - (get_msec() - curr_msec)),
                 (0 if elapsed_msec > 40 else msecs - elapsed_msec),
                 callback,
             )
@@ -341,10 +344,11 @@ class Canvas:
         return callback
 
     def start(self, update_fn, msecs):
-        # type: (Callable[[], None], int) -> None
+        # type: (Callable[[int], None], int) -> None
         """Display the canvas."""
         self.create_tk()
         self.canvas.focus_set()
+        self.prev_msec = get_msec()
         self.tk.after(msecs, self._create_update_callback(update_fn, msecs))
         self.canvas.mainloop()
 
