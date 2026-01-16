@@ -59,6 +59,9 @@ class Game:
         """Add an object to the scene."""
         self.objects.add(game_object)
 
+    def remove_object(self, game_object):
+        self.objects.remove(game_object)
+
     def bind(self, input_event, callback):
         # type: (Input, EventCallback) -> None
         """Add a keybind."""
