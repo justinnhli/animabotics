@@ -88,7 +88,9 @@ class PhysicsObject(GameObject):
         # type: (int, int) -> None
         """Update the velocity and the position."""
         super().update(elapsed_msec, elapsed_msec_squared)
-        net_force, net_torque = PhysicsObject.sum_forces(self.forces, self.center_of_mass)
+        net_force, net_torque = self.sum_forces(self.forces)
+        # translate net force into global coordinates
+        net_force = self.transform @ net_force
         self.forces.clear()
         acceleration = net_force / self.mass
         angular_acceleration = net_torque / self.mass
@@ -107,18 +109,17 @@ class PhysicsObject(GameObject):
 
     def apply_force(self, vector, position=None):
         # type: (Vector2D, Point2D) -> None
-        """Apply a force at the position."""
+        """Apply a local force."""
         if position is None:
             position = Point2D()
         self.forces.append((vector, position))
 
-    @staticmethod
-    def sum_forces(forces, center_of_mass):
-        # type: (list[tuple[Vector2D, Point2D]], Point2D) -> tuple[Vector2D, float]
+    def sum_forces(self, forces):
+        # type: (list[tuple[Vector2D, Point2D]]) -> tuple[Vector2D, float]
         """Sum up forces to determine net force and net torque."""
         net_force = Vector2D()
         net_torque = 0.0
         for force, position in forces:
             net_force += force
-            net_torque += (position - center_of_mass).matrix.cross(force.matrix).z
+            net_torque += position.matrix.cross(force.matrix).z
         return net_force, net_torque
