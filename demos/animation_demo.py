@@ -157,7 +157,7 @@ class AnimationDemo(Game):
             (lambda ball, ground: ball.bounce_vertical(ground)),
         )
 
-    def apply_gravity(self, _1, _2):
+    def apply_gravity(self, _):
         self.stoic_ball.apply_force(Vector2D(0, -0.001))
         self.anime_ball.apply_force(Vector2D(0, -0.001))
 

@@ -12,6 +12,7 @@ from .timing import get_msec
 from .transformable import Collidable
 
 
+HookCallback = Callable[[int], None]
 CollisionCallback = Callable[[Collidable, Collidable], None]
 
 
@@ -39,7 +40,7 @@ class Game:
         self.bouncing_collision_group_pairs = set() # type: set[tuple[str, str]]
         # settings
         self.keybinds = {} # type: dict[Input, EventCallback]
-        self.hooks = defaultdict(list) # type: dict[HookTrigger, list[Callable[[int, int], Any]]]
+        self.hooks = defaultdict(list) # type: dict[HookTrigger, list[HookCallback]]
         # state
         self.prev_msec = None # type: int
         self.prev_collisions = set() # type: set[tuple[GameObject, GameObject, tuple[str, str]]]
@@ -73,7 +74,7 @@ class Game:
             self.bouncing_collision_group_pairs.add((group1, group2))
 
     def register_hook(self, hook_trigger, callback):
-        # type: (HookTrigger, Callable[[int, int], Any]) -> None
+        # type: (HookTrigger, HookCallback) -> None
         """Register a callback function."""
         assert isinstance(hook_trigger, HookTrigger)
         self.hooks[hook_trigger].append(callback)
@@ -96,7 +97,7 @@ class Game:
         elapsed_msec_squared = elapsed_msec * elapsed_msec
         # call all pre-update hooks
         for callback in self.hooks[HookTrigger.PRE_UPDATE]:
-            callback(curr_msec, elapsed_msec)
+            callback(elapsed_msec)
         # update all objects
         for obj in self.objects:
             obj.update(elapsed_msec, elapsed_msec_squared)
@@ -126,7 +127,7 @@ class Game:
         self.in_camera_objects.clear()
         # call all post-update hooks
         for callback in self.hooks[HookTrigger.POST_UPDATE]:
-            callback(curr_msec, elapsed_msec)
+            callback(elapsed_msec)
         # update timer
         self.prev_msec = curr_msec
 
