@@ -13,10 +13,11 @@ from animabotics import GameObject, PhysicsObject
 from animabotics import Polygon
 from animabotics import Point2D, Vector2D
 from animabotics import Transform
+from animabotics import Collidable
 from animabotics import AnimationController, Clip, Sprite, Shape
 
 
-class Ball(PhysicsObject):
+class Ball(PhysicsObject, Collidable):
     """A bouncy ball."""
 
     RADIUS = 50
