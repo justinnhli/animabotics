@@ -5,7 +5,7 @@ from animabotics.canvas import Canvas
 from animabotics.polygon import Polygon
 from animabotics.simplex import Point2D
 
-from image_test_utils import check_image
+from image_test_utils import check_image # pylint: disable = wrong-import-order
 
 
 def test_canvas_pixel():
@@ -27,6 +27,7 @@ def test_canvas_rect():
 
 
 def test_camera_collision_geometry():
+    # type: () -> None
     canvas = Canvas(100, 100, 'test')
     camera = Camera(canvas)
     assert camera.collision_geometry == Polygon((

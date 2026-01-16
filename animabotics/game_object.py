@@ -59,7 +59,7 @@ class PhysicsObject(GameObject):
         self.mass = 1
         self.velocity = Vector2D()
         self.angular_velocity = 0.0
-        self.forces = []
+        self.forces = [] # type: list[tuple[Vector2D, Point2D]]
 
     @property
     def kinetic_energy(self):

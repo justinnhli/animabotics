@@ -9,7 +9,7 @@ from animabotics.polygon import Polygon
 from animabotics.simplex import Point2D
 from animabotics.transform import Transform
 
-from image_test_utils import check_image
+from image_test_utils import check_image # pylint: disable = wrong-import-order
 
 
 def create_einstein():

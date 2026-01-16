@@ -124,8 +124,8 @@ class AnimationDemo(Game):
     def __init__(self):
         # type: () -> None
         super().__init__(600, 800)
-        self.stoic_ball = None
-        self.anime_ball = None
+        self.stoic_ball = None # type: StoicBall
+        self.anime_ball = None # type: AnimatedBall
         self.create_objects()
         self.register_collisions()
         self.camera.zoom_level = -5
@@ -158,6 +158,8 @@ class AnimationDemo(Game):
         )
 
     def apply_gravity(self, _):
+        # type: (int) -> None
+        """Apply gravity to the balls."""
         self.stoic_ball.apply_force(Vector2D(0, -0.001))
         self.anime_ball.apply_force(Vector2D(0, -0.001))
 

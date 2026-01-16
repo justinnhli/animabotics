@@ -296,7 +296,7 @@ class Vector2D(PointsMatrix, metaclass=CachedMetaclass):
         return Point2D(self.x, self.y)
 
     def project(self, other):
-        # type: (Vector2D) -> (Vector2D, Vector2D)
+        # type: (Vector2D) -> tuple[Vector2D, Vector2D]
         """Get the parallel and perpendicular components when projected onto another vector."""
         this_matrix = self.matrix
         that_matrix = other.matrix

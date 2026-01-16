@@ -11,8 +11,8 @@ from .scene import HierarchicalHashGrid
 from .transformable import Collidable
 
 
-HookCallback = Callable[[int], None]
-CollisionCallback = Callable[[Collidable, Collidable], None]
+HookCallback = Callable[[int], Any]
+CollisionCallback = Callable[[Collidable, Collidable], Any]
 
 
 class HookTrigger(Enum):
@@ -42,7 +42,7 @@ class Game:
         self.hooks = defaultdict(list) # type: dict[HookTrigger, list[HookCallback]]
         # state
         self.prev_collisions = set() # type: set[tuple[GameObject, GameObject, tuple[str, str]]]
-        self.in_camera_objects = defaultdict(list) # type: dict[int, GameObject]
+        self.in_camera_objects = defaultdict(list) # type: dict[int, list[GameObject]]
         # initialization
         self.camera.add_to_collision_group('_camera')
         self.on_collision(
@@ -78,7 +78,7 @@ class Game:
         self.hooks[hook_trigger].append(callback)
 
     def run_for_msec(self, duration, update_every=40):
-        # type: (int) -> None
+        # type: (int, int) -> None
         """Run for the specified time, updating at a fixed interval."""
         while duration > update_every:
             self.dispatch_tick(update_every)

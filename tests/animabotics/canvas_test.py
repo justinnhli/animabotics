@@ -5,7 +5,7 @@ from itertools import product
 from animabotics.canvas import Canvas
 from animabotics.color import Color
 
-from image_test_utils import grab_screen, check_image
+from image_test_utils import grab_screen, check_image # pylint: disable = wrong-import-order
 
 
 def test_canvas_pixel():

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from functools import cached_property
-from math import sin, cos, pi as PI
+from math import sin, cos
 from typing import Any
 
 from .matrix import Matrix, identity

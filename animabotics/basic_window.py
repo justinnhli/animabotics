@@ -41,7 +41,7 @@ class BasicWindow(Game):
             self.bind(Input(event_type='KeyPress', key_button=char), self.key_callback)
 
     def add_geometry(self, geometry, fill_color=None, line_color=None, z_level=0):
-        # type: (Geometry, Color, Color) -> None
+        # type: (Geometry, Color, Color, int) -> None
         """Add a geometry to be drawn."""
         obj = DummyGameObject(
             geometry,

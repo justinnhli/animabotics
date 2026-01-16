@@ -1,14 +1,14 @@
 """Tests for Collision Demo."""
 
-from collections import defaultdict
-
 from animabotics import Point2D
 from demos.collision_demo import CollisionDemo
 
-from game_test_utils import assert_object_attributes
+from game_test_utils import assert_object_attributes # pylint: disable = wrong-import-order
 
 
 def test_collision_demo():
+    # type: () -> None
+    """Test CollisionDemo."""
     demo = CollisionDemo(1, random_seed=8675309)
     # check the initial position of the ball
     demo.prestart()

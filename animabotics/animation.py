@@ -3,7 +3,6 @@
 from collections import defaultdict
 from functools import cached_property
 from inspect import signature
-from math import inf as INF
 from typing import Any, Callable, Iterator, Sequence
 
 from .color import Color
