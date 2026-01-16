@@ -290,6 +290,29 @@ class Vector2D(PointsMatrix, metaclass=CachedMetaclass):
         else:
             return self / self.magnitude
 
+    @cached_property
+    def slope(self):
+        # type: () -> float
+        """The slope of the vector."""
+        if self.x != 0:
+            return self.y / self.x
+        elif self.y > 0:
+            return INF
+        else:
+            return -INF
+
+    @cached_property
+    def bearing(self):
+        # type: () -> float
+        """The bearing of the vector.
+
+        Calculated as the angle counterclockwise from the positive x-axis.
+        """
+        result = atan2(self.y, self.x)
+        if result < 0:
+            result += 2 * PI
+        return result
+
     def to_point(self):
         # type: () -> Point2D
         """Convert to a Point2D."""
@@ -372,13 +395,7 @@ class Segment(Geometry, metaclass=CachedMetaclass):
     def slope(self):
         # type: () -> float
         """The slope of the segment."""
-        denominator = self.point2.x - self.point1.x
-        if denominator != 0:
-            return (self.point2.y - self.point1.y) / denominator
-        elif self.point2.y > self.point1.y:
-            return INF
-        else:
-            return -INF
+        return self.to_vector().slope
 
     @cached_property
     def bearing(self):
@@ -387,12 +404,7 @@ class Segment(Geometry, metaclass=CachedMetaclass):
 
         Calculated as the angle counterclockwise from the positive x-axis.
         """
-        dx = self.point2.x - self.point1.x
-        dy = self.point2.y - self.point1.y
-        result = atan2(dy, dx)
-        if result < 0:
-            result += 2 * PI
-        return result
+        return self.to_vector().bearing
 
     @cached_property
     def length(self):
@@ -557,6 +569,11 @@ class Segment(Geometry, metaclass=CachedMetaclass):
             return other.point2
         else:
             return None
+
+    def to_vector(self):
+        # type: () -> Vector2D
+        """Convert to a Vector2D, losing positional information."""
+        return self.point2 - self.point1
 
     @staticmethod
     def angle(p1, p2, p3):
