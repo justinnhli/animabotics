@@ -105,6 +105,12 @@ class HierarchicalHashGrid:
             for pair in self.get_collision_group_pairs(obj2, obj1): # pylint: disable = arguments-out-of-order
                 yield obj2, obj1, pair
 
+    def clear(self):
+        # type: () -> None
+        """Remove all objects."""
+        for _, grid in self.exponent_grids:
+            grid.clear()
+
     def has_collision_group_pairs(self, obj1, obj2):
         # type: (Collidable, Collidable) -> bool
         """Determine if the two objects are part of a collision group pair."""

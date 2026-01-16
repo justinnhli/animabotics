@@ -31,6 +31,7 @@ class HashGrid:
         self.grid_size = grid_size
         self.num_objects = 0
         self.cells = defaultdict(list) # type: dict[Point2D, list[Transformable]]
+        self.clear()
 
     def __len__(self):
         # type: () -> int
@@ -42,6 +43,12 @@ class HashGrid:
         """Get all objects in the grid."""
         for cell in self.cells.values():
             yield from cell
+
+    def clear(self):
+        # type: () -> None
+        """Remove all objects."""
+        self.num_objects = 0
+        self.cells.clear()
 
     def to_cell_coord(self, position):
         # type: (Point2D) -> Point2D
