@@ -36,17 +36,16 @@ class Game:
         self.objects = [] # type: list[GameObject]
         self.scene = HierarchicalHashGrid()
         self.collision_callbacks = {} # type: dict[tuple[str, str], CollisionCallback]
-        self.bounced_collision_group_pairs = set() # type: set[tuple[str, str]]
+        self.bouncing_collision_group_pairs = set() # type: set[tuple[str, str]]
         # settings
         self.keybinds = {} # type: dict[Input, EventCallback]
         self.hooks = defaultdict(list) # type: dict[HookTrigger, list[Callable[[int, int], Any]]]
         # state
         self.prev_msec = None # type: int
-        self.prev_collisions = set() # type: set[tuple[GameObject, GameObject]]
+        self.prev_collisions = set() # type: set[tuple[GameObject, GameObject, tuple[str, str]]]
         self.in_camera_objects = defaultdict(list) # type: dict[int, GameObject]
         # initialization
         self.camera.add_to_collision_group('_camera')
-        self.scene.add(self.camera)
         self.on_collision(
             '_camera',
             None,
@@ -60,7 +59,6 @@ class Game:
         # type: (GameObject) -> None
         """Add an object to the scene."""
         self.objects.append(game_object)
-        self.scene.add(game_object)
 
     def bind(self, input_event, callback):
         # type: (Input, EventCallback) -> None
@@ -72,7 +70,7 @@ class Game:
         """Add a collision handler."""
         self.collision_callbacks[(group1, group2)] = callback
         if not debounce:
-            self.bounced_collision_group_pairs.add((group1, group2))
+            self.bouncing_collision_group_pairs.add((group1, group2))
 
     def register_hook(self, hook_trigger, callback):
         # type: (HookTrigger, Callable[[int, int], Any]) -> None
@@ -101,29 +99,26 @@ class Game:
             callback(curr_msec, elapsed_msec)
         # update all objects
         for obj in self.objects:
-            prev_position = obj.position
             obj.update(elapsed_msec, elapsed_msec_squared)
-            if prev_position != obj.position:
-                self.scene.remove(obj, position=prev_position)
-                self.scene.add(obj)
-        # deal with collisions, with de-bouncing
-        # FIXME use movement to optimize collision detection
+            self.scene.add(obj)
+        self.scene.add(self.camera)
+        # collect collisions
         new_collisions = set()
-        for obj1, obj2, group_pair in self.scene.collisions:
-            key = (obj1, obj2)
+        call_back = set()
+        for key in self.scene.collisions:
+            obj1, obj2, group_pair = key
             new_collisions.add(key)
             trigger_callback = (
                 key not in self.prev_collisions
-                or group_pair in self.bounced_collision_group_pairs
+                or group_pair in self.bouncing_collision_group_pairs
             )
             if trigger_callback:
-                prev_positions = [obj1.position, obj2.position]
-                self.collision_callbacks[group_pair](obj1, obj2)
-                for prev_position, obj in zip(prev_positions, [obj1, obj2]):
-                    if prev_position != obj.position:
-                        self.scene.remove(obj, position=prev_position)
-                        self.scene.add(obj)
+                call_back.add(key)
+        self.scene.clear()
         self.prev_collisions = new_collisions
+        # trigger collision callbacks
+        for obj1, obj2, group_pair in call_back:
+            self.collision_callbacks[group_pair](obj1, obj2)
         # draw all objects
         for _, game_objects in sorted(self.in_camera_objects.items()):
             for game_object in game_objects:
