@@ -385,7 +385,7 @@ class Segment(Geometry, metaclass=CachedMetaclass):
         # type: () -> float
         """The bearing of the segment.
 
-        Calculated as the angle counterclockwise angle from the positive x-axis.
+        Calculated as the angle counterclockwise from the positive x-axis.
         """
         dx = self.point2.x - self.point1.x
         dy = self.point2.y - self.point1.y
