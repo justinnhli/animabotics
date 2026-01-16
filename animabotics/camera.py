@@ -30,7 +30,7 @@ class Camera(Collidable):
         """Initialize the Camera."""
         super().__init__()
         self.canvas = canvas
-        self.zoom_level = zoom_level
+        self._zoom_level = zoom_level
         self.origin_transform = Transform(
             self.canvas.width // 2,
             self.canvas.height // 2,
@@ -40,8 +40,21 @@ class Camera(Collidable):
     @property
     def zoom(self):
         # type: () -> float
-        """Get the zoom level."""
+        """Get the zoom factor."""
         return 1.25 ** self.zoom_level
+
+    @property
+    def zoom_level(self):
+        # type: () -> int
+        """Get the zoom level."""
+        return self._zoom_level
+
+    @zoom_level.setter
+    def zoom_level(self, value):
+        # type: (int) -> None
+        """Set the zoom level."""
+        self._zoom_level = value
+        self._set_collision_geometry()
 
     @property
     def projection_matrix(self):
