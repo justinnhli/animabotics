@@ -33,7 +33,7 @@ class Game:
         self.canvas = Canvas(window_width, window_height)
         self.camera = Camera(self.canvas)
         # objects
-        self.objects = [] # type: list[GameObject]
+        self.objects = set() # type: set[GameObject]
         self.scene = HierarchicalHashGrid()
         self.collision_callbacks = {} # type: dict[tuple[str, str], CollisionCallback]
         self.bouncing_collision_group_pairs = set() # type: set[tuple[str, str]]
@@ -57,7 +57,7 @@ class Game:
     def add_object(self, game_object):
         # type: (GameObject) -> None
         """Add an object to the scene."""
-        self.objects.append(game_object)
+        self.objects.add(game_object)
 
     def bind(self, input_event, callback):
         # type: (Input, EventCallback) -> None
