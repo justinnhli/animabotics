@@ -55,11 +55,11 @@ class PhysicsObject(GameObject):
         # type: () -> None
         """Initialize the PhysicsObject."""
         super().__init__()
+        self.center_of_mass = Point2D() # FIXME
         self.mass = 1
         self.velocity = Vector2D()
         self.angular_velocity = 0.0
-        self.acceleration = Vector2D()
-        self.angular_acceleration = 0.0
+        self.forces = []
 
     @property
     def kinetic_energy(self):
@@ -71,15 +71,37 @@ class PhysicsObject(GameObject):
         # type: (int, int) -> None
         """Update the velocity and the position."""
         super().update(elapsed_msec, elapsed_msec_squared)
-        if self.velocity or self.acceleration:
+        net_force, net_torque = PhysicsObject.sum_forces(self.forces, self.center_of_mass)
+        self.forces.clear()
+        acceleration = net_force / self.mass
+        angular_acceleration = net_torque / self.mass
+        if self.velocity or acceleration:
             self.move_by(
                 self.velocity * elapsed_msec
-                + 0.5 * self.acceleration * elapsed_msec_squared
+                + 0.5 * acceleration * elapsed_msec_squared
             )
-        if self.angular_velocity or self.angular_acceleration:
+        if self.angular_velocity or angular_acceleration:
             self.rotate_by(
                 self.angular_velocity * elapsed_msec
-                + 0.5 * self.angular_acceleration * elapsed_msec_squared
+                + 0.5 * angular_acceleration * elapsed_msec_squared
             )
-        self.velocity += self.acceleration * elapsed_msec
-        self.angular_velocity += self.angular_acceleration * elapsed_msec
+        self.velocity += acceleration * elapsed_msec
+        self.angular_velocity += angular_acceleration * elapsed_msec
+
+    def apply_force(self, vector, position=None):
+        # type: (Vector2D, Point2D) -> None
+        """Apply a force at the position."""
+        if position is None:
+            position = Point2D()
+        self.forces.append((vector, position))
+
+    @staticmethod
+    def sum_forces(forces, center_of_mass):
+        # type: (list[tuple[Vector2D, Point2D]], Point2D) -> tuple[Vector2D, float]
+        """Sum up forces to determine net force and net torque."""
+        net_force = Vector2D()
+        net_torque = 0.0
+        for force, position in forces:
+            net_force += force
+            net_torque += (position - center_of_mass).matrix.cross(force.matrix).z
+        return net_force, net_torque
