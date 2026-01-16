@@ -295,6 +295,14 @@ class Vector2D(PointsMatrix, metaclass=CachedMetaclass):
         """Convert to a Point2D."""
         return Point2D(self.x, self.y)
 
+    def project(self, other):
+        # type: (Vector2D) -> (Vector2D, Vector2D)
+        """Get the parallel and perpendicular components when projected onto another vector."""
+        this_matrix = self.matrix
+        that_matrix = other.matrix
+        projection = (this_matrix.dot(that_matrix) / (other.magnitude ** 2)) * other
+        return projection, self - projection
+
 
 class Segment(Geometry, metaclass=CachedMetaclass):
     """A line segment."""

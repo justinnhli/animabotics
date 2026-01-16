@@ -45,6 +45,12 @@ def test_point():
     assert Vector2D(2, 0).normalized == Vector2D(1, 0)
     assert Vector2D(0, 2).normalized == Vector2D(0, 1)
     assert Vector2D(0, 0).normalized == Vector2D(0, 0)
+    assert Vector2D(0, 1).project(Vector2D(1, 0)) == (Vector2D(0, 0), Vector2D(0, 1))
+    assert Vector2D(0, -1).project(Vector2D(1, 0)) == (Vector2D(0, 0), Vector2D(0, -1))
+    assert Vector2D(0, 1).project(Vector2D(0, -1)) == (Vector2D(0, 1), Vector2D(0, 0))
+    assert Vector2D(0, -1).project(Vector2D(0, -1)) == (Vector2D(0, -1), Vector2D(0, 0))
+    assert Vector2D(4, 3).project(Vector2D(1, 0)) == (Vector2D(4, 0), Vector2D(0, 3))
+    assert Vector2D(4, 3).project(Vector2D(-1, 0)) == (Vector2D(4, 0), Vector2D(0, 3))
 
 
 def test_segment():
