@@ -77,8 +77,12 @@ class PhysicsObject(GameObject):
     def moment_of_inertia(self, center_of_rotation):
         # type: (Point2D) -> float
         """Calculate the moment of inertia for a given center of rotation."""
-        # FIXME simplify to point mass for now
-        return self.mass * (self.center_of_mass - center_of_rotation).magnitude ** 2
+        # FIXME simplify to point masses for now
+        point_mass = self.mass / len(self.collision_geometry.points)
+        return sum(
+            point_mass * (point - center_of_rotation).magnitude ** 2
+            for point in self.collision_geometry.points
+        )
 
     def update(self, elapsed_msec, elapsed_msec_squared):
         # type: (int, int) -> None
