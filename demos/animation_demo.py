@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from animabotics import Game
+from animabotics import Game, HookTrigger
 from animabotics import GameObject, PhysicsObject
 from animabotics import Polygon
 from animabotics import Point2D, Vector2D
@@ -124,9 +124,12 @@ class AnimationDemo(Game):
     def __init__(self):
         # type: () -> None
         super().__init__(600, 800)
+        self.stoic_ball = None
+        self.anime_ball = None
         self.create_objects()
         self.register_collisions()
         self.camera.zoom_level = -5
+        self.register_hook(HookTrigger.PRE_UPDATE, self.apply_gravity)
 
     def create_objects(self):
         # type: () -> None
@@ -136,14 +139,14 @@ class AnimationDemo(Game):
         ground.move_to(Point2D(0, -65))
         ground.add_to_collision_group('ground')
         self.add_object(ground)
-        stoic_ball = StoicBall()
-        stoic_ball.move_to(Point2D(-200, 825))
-        stoic_ball.add_to_collision_group('balls')
-        self.add_object(stoic_ball)
-        anime_ball = AnimatedBall()
-        anime_ball.move_to(Point2D(200, 825))
-        anime_ball.add_to_collision_group('balls')
-        self.add_object(anime_ball)
+        self.stoic_ball = StoicBall()
+        self.stoic_ball.move_to(Point2D(-200, 825))
+        self.stoic_ball.add_to_collision_group('balls')
+        self.add_object(self.stoic_ball)
+        self.anime_ball = AnimatedBall()
+        self.anime_ball.move_to(Point2D(200, 825))
+        self.anime_ball.add_to_collision_group('balls')
+        self.add_object(self.anime_ball)
 
     def register_collisions(self):
         # type: () -> None
@@ -153,6 +156,10 @@ class AnimationDemo(Game):
             'balls', 'ground',
             (lambda ball, ground: ball.bounce_vertical(ground)),
         )
+
+    def apply_gravity(self, _1, _2):
+        self.stoic_ball.apply_force(Vector2D(0, -0.001))
+        self.anime_ball.apply_force(Vector2D(0, -0.001))
 
 
 def main(): # pragma: no cover
