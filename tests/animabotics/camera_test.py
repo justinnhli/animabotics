@@ -28,6 +28,7 @@ def test_canvas_rect():
 
 def test_camera_collision_geometry():
     # type: () -> None
+    """Test camera collision geometry."""
     canvas = Canvas(100, 100, 'test')
     camera = Camera(canvas)
     assert camera.collision_geometry == Polygon((

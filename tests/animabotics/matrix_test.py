@@ -102,6 +102,7 @@ def test_matrix():
     assert identity(4).shear(0, 0, 0, 0, 1, 0) @ Matrix(((2, 3, 4, 1),)).transpose == Matrix(((2, 3, 6, 1),)).transpose
     assert identity(4).shear(0, 0, 0, 0, 0, 1) @ Matrix(((2, 3, 4, 1),)).transpose == Matrix(((2, 3, 7, 1),)).transpose
 
+
 def test_rref():
     # type: () -> None
     """Test Matrix row-reduced echelon form."""

@@ -1,7 +1,6 @@
 """Classes for sprites and animations."""
 
 from collections import defaultdict
-from functools import cached_property
 from inspect import signature
 from typing import Any, Callable, Iterator, Sequence
 
