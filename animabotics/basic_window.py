@@ -56,13 +56,13 @@ class BasicWindow(Game):
         """Deal with key presses."""
         translation = 25 / self.camera.zoom
         if input_event.key_button == 'w':
-            self.camera.move_by(translation * Vector2D(sin(-self.camera.radians), cos(-self.camera.radians)))
+            self.camera.move_by(translation * Vector2D(sin(-self.camera.rotation), cos(-self.camera.rotation)))
         elif input_event.key_button == 's':
-            self.camera.move_by(-translation * Vector2D(sin(-self.camera.radians), cos(-self.camera.radians)))
+            self.camera.move_by(-translation * Vector2D(sin(-self.camera.rotation), cos(-self.camera.rotation)))
         elif input_event.key_button == 'a':
-            self.camera.move_by(-translation * Vector2D(cos(self.camera.radians), sin(self.camera.radians)))
+            self.camera.move_by(-translation * Vector2D(cos(self.camera.rotation), sin(self.camera.rotation)))
         elif input_event.key_button == 'd':
-            self.camera.move_by(translation * Vector2D(cos(self.camera.radians), sin(self.camera.radians)))
+            self.camera.move_by(translation * Vector2D(cos(self.camera.rotation), sin(self.camera.rotation)))
         elif input_event.key_button == 'q':
             self.camera.rotate_by(PI / 8)
         elif input_event.key_button == 'e':

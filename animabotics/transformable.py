@@ -1,6 +1,5 @@
 """An abstract class for something that is transformable."""
 
-from math import pi as PI
 from functools import cached_property
 from typing import Iterator, Sequence
 
@@ -28,14 +27,8 @@ class Transformable:
     @property
     def rotation(self):
         # type: () -> float
-        """Return the rotation in 2pi radians."""
-        return self._rotation
-
-    @property
-    def radians(self):
-        # type: () -> float
         """Return the rotation in radians."""
-        return self.rotation * PI
+        return self._rotation
 
     @cached_property
     def transform(self):
