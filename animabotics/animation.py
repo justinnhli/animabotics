@@ -41,12 +41,6 @@ class Shape(Transformable, metaclass=CachedMetaclass):
             line_color=self.line_color,
         )
 
-    @cached_property
-    def transformed_geometry(self):
-        # type: () -> Geometry
-        """The transformed Geometry."""
-        return self.transform @ self.polygon
-
 
 OneOrMoreShapes = Sequence[Shape] | Shape
 
