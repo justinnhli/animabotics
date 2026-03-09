@@ -67,6 +67,12 @@ class PhysicsObject(GameObject):
         """Calculate the kinetic energy."""
         return 0.5 * self.mass * self.velocity.magnitude ** 2
 
+    def moment_of_inertia(self, center_of_rotation):
+        # type: (Point2D) -> float
+        """Calculate the moment of inertia for a given center of rotation."""
+        # FIXME simplify to point mass for now
+        return self.mass * (self.center_of_mass - center_of_rotation).magnitude ** 2
+
     def update(self, elapsed_msec, elapsed_msec_squared):
         # type: (int, int) -> None
         """Update the velocity and the position."""
