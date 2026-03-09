@@ -55,7 +55,7 @@ class PhysicsObject(GameObject):
         # type: () -> None
         """Initialize the PhysicsObject."""
         super().__init__()
-        self.center_of_mass = Point2D() # FIXME
+        self.center_of_mass = self.collision_geometry.centroid
         self.mass = 1
         self.velocity = Vector2D()
         self.angular_velocity = 0.0
