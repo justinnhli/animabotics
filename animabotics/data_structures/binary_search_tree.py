@@ -551,7 +551,7 @@ class SortedSet(MutableSet[KT]):
 
     def add(self, value):
         # type: (KT) -> None
-        """Add an element to the SortedDict (set)."""
+        """Add an element to the SortedSet."""
         self.tree[value] = None
 
     def remove(self, value):
