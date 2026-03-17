@@ -22,22 +22,28 @@ def test_point():
     assert point.centroid == point
     assert point.convex_partitions == (point,)
     assert -point == Point2D(-1, -2)
+    assert point + Vector2D(1, 2) == Point2D(2, 4)
     assert point + Vector2D(-1, -2) == Point2D()
     assert point - point == Vector2D()
+    assert point - Vector2D(-1, -2) == Point2D(2, 4)
     assert point.distance(Point2D(4, 6)) == 5
     vector = Vector2D(1, 2)
     assert point.to_vector() == vector
     assert Vector2D.from_matrix(vector.matrix) == vector
     assert str(vector) == 'Vector2D(1, 2)'
     assert bool(vector)
+    assert bool(Vector2D(1, 0))
+    assert bool(Vector2D(0, 1))
     assert not bool(Vector2D(0, 0))
     assert -vector == Vector2D(-1, -2)
     assert vector + Point2D(-1, -2) == Point2D()
+    assert vector + Point2D(1, 2) == Point2D(2, 4)
     assert vector + Vector2D(-1, -2) == Vector2D()
+    assert vector - Vector2D(-1, -2) == Vector2D(2, 4)
     assert 2 * vector == Vector2D(2, 4)
     assert vector * 2 == Vector2D(2, 4)
     assert vector / 2 == Vector2D(0.5, 1)
-    assert vector // 2 == Vector2D(0, 1)
+    assert Vector2D(3, 5) // 2 == Vector2D(1, 2)
     assert point - vector == Point2D()
     assert vector - vector == Vector2D()
     assert vector.to_point() == point

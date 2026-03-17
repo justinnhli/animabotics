@@ -24,6 +24,7 @@ def test_sorteddict():
     size = 7
     for permutation in permutations(range(size)):
         sorted_dict = SortedDict()
+        assert not sorted_dict
         for key in permutation:
             try:
                 sorted_dict[key] += 1
@@ -32,6 +33,7 @@ def test_sorteddict():
                 pass
             if key % 2 == 0:
                 sorted_dict[key] = key
+                assert sorted_dict
             else:
                 assert sorted_dict.setdefault(key, key) == key
             sorted_dict[key] = key * key
@@ -49,6 +51,7 @@ def test_sorteddict():
             assert sorted_dict.get(num) == num * num
         for num in range(size):
             if num % 2 == 0:
+                assert sorted_dict
                 del sorted_dict[num]
             else:
                 assert sorted_dict.pop(num) == num * num
@@ -56,8 +59,15 @@ def test_sorteddict():
             assert len(sorted_dict) == size - num - 1
             assert sorted_dict.get(num, -1) == -1
             assert sorted_dict.pop(num, -1) == -1
+        assert not sorted_dict
     src_dict = {num: num * num for num in range(101)}
     assert SortedDict.from_dict(src_dict).to_dict() == src_dict
+    dst_dict = SortedDict()
+    dst_dict.update(src_dict)
+    assert dst_dict.to_dict() == src_dict
+    dst_dict = SortedDict()
+    dst_dict.update(src_dict.items())
+    assert dst_dict.to_dict() == src_dict
     # defaultdict check
     sorted_dict_set = SortedDict(factory=set) # type: SortedDict[int, set[int]]
     for i in range(10):
