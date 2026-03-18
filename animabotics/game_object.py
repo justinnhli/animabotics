@@ -3,7 +3,7 @@
 from typing import Sequence
 
 from .animation import AnimationController, Sprite
-from .simplex import Point2D, Vector2D
+from .simplex import Geometry, Point2D, Vector2D
 from .transformable import Collidable
 
 
@@ -12,12 +12,13 @@ class GameObject(Collidable):
 
     def __init__(
         self,
+        collision_geometry,
         position=None, rotation=0,
         collision_groups=None,
     ): # pylint: disable = unused-argument
-        # type: (Point2D, float, Sequence[str]) -> None
+        # type: (Geometry, Point2D, float, Sequence[str]) -> None
         """Initialize the GameObject."""
-        super().__init__(position, rotation, collision_groups)
+        super().__init__(collision_geometry, position, rotation, collision_groups)
         self.animation = None # type: AnimationController
         self.children = [] # type: list[GameObject]
         self.z_level = 0
@@ -51,12 +52,18 @@ class GameObject(Collidable):
 class PhysicsObject(GameObject):
     """A game object with kinematics."""
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(
+        self,
+        collision_geometry,
+        position=None, rotation=0,
+        collision_groups=None,
+        mass=1,
+    ):
+        # type: (Geometry, Point2D, float, Sequence[str], float) -> None
         """Initialize the PhysicsObject."""
-        super().__init__()
+        super().__init__(collision_geometry, position, rotation, collision_groups)
         self.center_of_mass = self.collision_geometry.centroid
-        self.mass = 1
+        self.mass = mass
         self.velocity = Vector2D()
         self.angular_velocity = 0.0
         self.forces = [] # type: list[tuple[Vector2D, Point2D]]

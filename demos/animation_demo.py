@@ -25,9 +25,7 @@ class Ball(PhysicsObject, Collidable):
 
     def __init__(self):
         # type: () -> None
-        super().__init__()
-        self.collision_geometry = Ball.ELLIPSE
-        self.collision_radius = Ball.RADIUS
+        super().__init__(Ball.ELLIPSE)
         self.velocity = Vector2D(0, 0)
         self.acceleration = Vector2D(0, -0.001)
 
@@ -108,14 +106,12 @@ class Ground(GameObject):
 
     def __init__(self):
         # type: () -> None
-        super().__init__()
         self.width = 575
         self.height = 30
-        self.collision_geometry = Polygon.rectangle(self.width, self.height)
+        super().__init__(Polygon.rectangle(self.width, self.height))
         self.animation = AnimationController.create_static_animation(
             Shape(self.collision_geometry),
         )
-        self.collision_radius = max(self.width, self.height) / 2
 
 
 class AnimationDemo(Game):

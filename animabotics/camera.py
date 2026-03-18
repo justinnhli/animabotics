@@ -28,7 +28,7 @@ class Camera(Collidable):
     def __init__(self, canvas, zoom_level=0):
         # type: (Canvas, int) -> None
         """Initialize the Camera."""
-        super().__init__()
+        super().__init__(None)
         self.canvas = canvas
         self._zoom_level = zoom_level
         self.origin_transform = Transform(

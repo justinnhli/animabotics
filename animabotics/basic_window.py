@@ -16,18 +16,12 @@ class DummyGameObject(GameObject):
     def __init__(self, geometry, fill_color=None, line_color=None):
         # type: (Geometry, Color, Color) -> None
         """Initialize the DummyGameObject."""
-        super().__init__()
-        self.collision_geometry = geometry
+        super().__init__(geometry)
         self.animation = AnimationController.create_static_animation(Sprite([Shape(
             self.collision_geometry,
             fill_color,
             line_color,
         )]))
-        # TODO solve the smallest-circle problem instead
-        self.collision_radius = max(
-            point.distance(self.position)
-            for point in geometry.points
-        )
 
 
 class BasicWindow(Game):

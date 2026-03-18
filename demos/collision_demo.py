@@ -26,8 +26,7 @@ class Ball(PhysicsObject, Collidable):
 
     def __init__(self):
         # type: () -> None
-        super().__init__()
-        self.collision_geometry = Ball.ELLIPSE
+        super().__init__(Ball.ELLIPSE)
         self.animation = AnimationController.create_static_animation(Ball.SHAPE)
 
     def bounce_vertical(self, _):
@@ -46,10 +45,9 @@ class Wall(GameObject):
 
     def __init__(self, width, height):
         # type: (int, int) -> None
-        super().__init__()
+        super().__init__(Polygon.rectangle(width, height))
         self.width = width
         self.height = height
-        self.collision_geometry = Polygon.rectangle(width, height)
         self.animation = AnimationController.create_static_animation(
             Shape(self.collision_geometry),
         )

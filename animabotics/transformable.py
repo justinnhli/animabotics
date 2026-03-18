@@ -73,26 +73,40 @@ class Collidable(Transformable):
 
     def __init__(
         self,
+        collision_geometry,
         position=None, rotation=0,
         collision_groups=None,
     ):
-        # type: (Point2D, float, Sequence[str]) -> None
+        # type: (Geometry, Point2D, float, Sequence[str]) -> None
         super().__init__(position, rotation)
-        self.collision_geometry = None # type: Geometry
+        self._collision_geometry = collision_geometry
         if collision_groups:
             self._collision_groups = frozenset(collision_groups) # type: frozenset[str]
         else:
             self._collision_groups = frozenset()
         self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
 
+    @property
+    def collision_geometry(self):
+        # type: () -> Geometry
+        """Get the collision geometry."""
+        return self._collision_geometry
+
+    @collision_geometry.setter
+    def collision_geometry(self, collision_geometry):
+        # type: (Geometry) -> None
+        """Set the collision geometry."""
+        self._collision_geometry = collision_geometry
+        self.__dict__.pop('collision_radius', None)
+
     @cached_property
     def collision_radius(self):
         # type: () -> float
         """Calculate the maximum radius of the collision geometry."""
+        # TODO solve the smallest-circle problem instead
         max_distance = 0.0
         for point in self.collision_geometry.points:
-            distance = (point - self.position).magnitude
-            max_distance = max(max_distance, distance)
+            max_distance = max(max_distance, point.to_vector().magnitude)
         return max_distance
 
     @cached_property
