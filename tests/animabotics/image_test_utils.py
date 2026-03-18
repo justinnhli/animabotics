@@ -57,7 +57,7 @@ def check_image(image, filename):
     width, height, ppm_pixels = read_ppm(ppm_path)
     assert image.width == width
     assert image.height == height
-    pixels = image.getdata()
+    pixels = image.get_flattened_data()
     for x in range(width):
         for y in range(height):
             index = y * width + x
