@@ -362,6 +362,16 @@ class Matrix(metaclass=CachedMetaclass): # pylint: disable = too-many-public-met
             (0, 0, 0, 1),
         )) @ self
 
+    @staticmethod
+    def from_list(width, height, numbers):
+        # type: (int, int, list[float]) -> Matrix
+        """Create a Matrix from a list of numbers."""
+        assert len(numbers) == width * height
+        return Matrix(tuple(
+            tuple(numbers[r * width:(r + 1) * width])
+            for r in range(height)
+        ))
+
 
 @cache
 def identity(size=4):
