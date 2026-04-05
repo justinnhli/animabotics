@@ -9,9 +9,6 @@ from math import floor, ceil, sqrt, sin, cos
 from .metaprogramming import CachedMetaclass
 
 
-EPSILON = 0.00001
-
-
 @dataclass(frozen=True, order=True)
 class Matrix(metaclass=CachedMetaclass): # pylint: disable = too-many-public-methods
     """A matrix."""
