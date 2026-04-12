@@ -1,3 +1,4 @@
 pillow
 pytest
 coverage
+hypothesis
