@@ -60,6 +60,7 @@ class Game:
         self.objects.add(game_object)
 
     def remove_object(self, game_object):
+        """Remove an object from the scene."""
         self.objects.remove(game_object)
 
     def bind(self, input_event, callback):
