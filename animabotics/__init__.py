@@ -6,7 +6,7 @@ from .basic_window import BasicWindow
 from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
 from .color import Color
-from .data_structures import SortedDict, SortedSet, PriorityQueue
+from .data_structures import HashGrid, SortedDict, SortedSet, PriorityQueue
 from .game import Game, HookTrigger
 from .game_object import GameObject, PhysicsObject
 from .matrix import Matrix, identity
@@ -14,6 +14,7 @@ from .metaprogramming import CachedMetaclass
 from .polygon import ConvexPolygon, Polygon
 from .scene import HierarchicalHashGrid
 from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
+from .timing import get_msec
 from .transform import Transform
 from .transformable import Transformable, Collidable
 
@@ -25,7 +26,7 @@ __all__ = [
     'Camera',
     'Canvas', 'Input', 'EventCallback', 'Canvas',
     'Color',
-    'SortedDict', 'SortedSet', 'PriorityQueue',
+    'HashGrid', 'SortedDict', 'SortedSet', 'PriorityQueue',
     'Game', 'HookTrigger',
     'GameObject', 'PhysicsObject',
     'Matrix', 'identity',
@@ -33,6 +34,7 @@ __all__ = [
     'Polygon',
     'HierarchicalHashGrid',
     'Geometry', 'Point2D', 'Vector2D', 'Segment', 'Triangle',
+    'get_msec',
     'Transform',
     'Transformable', 'Collidable',
 ]
