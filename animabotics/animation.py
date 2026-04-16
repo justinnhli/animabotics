@@ -5,28 +5,20 @@ from inspect import signature
 from typing import Any, Callable, Iterator, Sequence
 
 from .color import Color
-from .simplex import Geometry, Point2D
 from .metaprogramming import CachedMetaclass
+from .simplex import Geometry
 from .transform import Transform
-from .transformable import Transformable
 
 
-class Shape(Transformable, metaclass=CachedMetaclass):
+class Shape(metaclass=CachedMetaclass):
     """A colored geometry."""
     geometry: Geometry
     fill_color: Color
     line_color: Color
 
-    def __init__(
-            self,
-            geometry,
-            fill_color=None,
-            line_color=None,
-            position=None, rotation=0,
-        ):
-        # type: (Geometry, Color, Color, Point2D, float) -> None
+    def __init__(self, geometry, fill_color=None, line_color=None):
+        # type: (Geometry, Color, Color) -> None
         """Initialize the Shape."""
-        Transformable.__init__(self, position, rotation)
         self.geometry = geometry
         self.fill_color = fill_color
         self.line_color = line_color
