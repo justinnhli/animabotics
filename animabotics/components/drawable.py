@@ -15,13 +15,14 @@ class Drawable(Positionable):
         super().__init__(**kwargs)
         self.z_level = z_level
 
-    def get_sprite(self):
+    @property
+    def sprite(self):
         # type: () -> Sprite
         """Get the current sprite."""
         raise NotImplementedError
 
     def transformed_sprite(self):
-        return self.transform @ self.get_sprite()
+        return self.transform @ self.sprite
 
 
 class Unanimated(Drawable):
@@ -31,13 +32,14 @@ class Unanimated(Drawable):
         # type: (OneOrMoreShapes | Sprite, **Any) -> None
         super().__init__(**kwargs)
         if isinstance(sprite_or_shapes, Sprite):
-            self.sprite = sprite_or_shapes
+            self._sprite = sprite_or_shapes
         else:
-            self.sprite = Sprite(sprite_or_shapes)
+            self._sprite = Sprite(sprite_or_shapes)
 
-    def get_sprite(self):
+    @property
+    def sprite(self):
         # type: () -> Sprite
-        return self.sprite
+        return self._sprite
 
 
 class Animated(Drawable, NeedsUpdates):
@@ -48,7 +50,8 @@ class Animated(Drawable, NeedsUpdates):
         super().__init__(**kwargs)
         self.animation = animation_controller
 
-    def get_sprite(self):
+    @property
+    def sprite(self):
         # type: () -> Sprite
         return self.animation.get_sprite()
 
