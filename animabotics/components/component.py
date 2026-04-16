@@ -14,6 +14,11 @@ class Component:
             if issubclass(cls, Component)
         )
 
+    def _clear_cached_property(self, property_name):
+        # type: (str) -> None
+        """Clear the cached value of a specific property."""
+        self.__dict__.pop(property_name, None)
+
     def _clear_cache(self, **kwargs):
         # type: (**Any) -> None
         """Clear the cache of data used by this class."""

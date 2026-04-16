@@ -42,7 +42,7 @@ class Positionable(Component):
         # type: (**Any) -> None
         """Clear the cached_property cache."""
         # pylint: disable = unused-argument
-        self.__dict__.pop('transform', None)
+        self._clear_cached_property('transform')
 
     def move_to(self, point):
         # type: (Point2D) -> None
@@ -93,7 +93,7 @@ class HasPhysicsGeometry(Component):
         # type: (Geometry) -> None
         """Set the physics geometry."""
         self._physics_geometry = physics_geometry
-        self.__dict__.pop('physics_radius', None)
+        self.clear_cache(__class__)
 
     @cached_property
     def physics_radius(self):
@@ -104,6 +104,9 @@ class HasPhysicsGeometry(Component):
         for point in self.physics_geometry.points:
             max_distance = max(max_distance, point.to_vector().magnitude)
         return max_distance
+
+    def _clear_cache(self, **kwargs):
+        self._clear_cached_property('physics_radius')
 
 
 class Newtonian(Positionable, HasPhysicsGeometry, NeedsUpdates):
@@ -239,10 +242,10 @@ class Collidable(Positionable, HasPhysicsGeometry):
         # type: (**Any) -> None
         """Clear the cached_property cache."""
         super()._clear_cache(**kwargs)
-        self.__dict__.pop('transformed_collision_geometry', None)
+        self._clear_cached_property('transformed_collision_geometry')
         self._projection_cache.clear()
         if kwargs.get('rotated', False):
-            self.__dict__.pop('segment_normals', None)
+            self._clear_cached_property('segment_normals')
 
     def add_to_collision_group(self, group):
         # type: (str) -> None
