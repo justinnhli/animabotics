@@ -103,7 +103,6 @@ class Game:
         for entity in self.get_component_entities(Collidable):
             assert isinstance(entity, Collidable)
             self.scene.add(entity)
-        self.scene.add(self.camera)
         # collect collisions
         new_collisions = set()
         call_back = set()
