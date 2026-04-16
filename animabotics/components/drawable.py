@@ -3,10 +3,11 @@
 from typing import Any
 
 from .component import Component, NeedsUpdates
+from .positionable import Positionable
 from ..animation import OneOrMoreShapes, Sprite, AnimationController
 
 
-class Drawable(Component):
+class Drawable(Positionable):
     """A component for entities that can be drawn on screen."""
 
     def __init__(self, z_level=0, **kwargs):

@@ -10,7 +10,7 @@ from .components import Positionable, Unanimated
 from .simplex import Geometry, Point2D, Vector2D
 
 
-class DummyGameObject(Positionable, Unanimated):
+class DummyGameObject(Unanimated):
     """A dummy game object to hold a static geometry."""
 
     def __init__(self, geometry, fill_color=None, line_color=None):
