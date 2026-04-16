@@ -32,7 +32,6 @@ class Game:
         self.canvas = Canvas(window_width, window_height)
         self.camera = Camera(self.canvas)
         # entities
-        self.entities = set() # type: set[Component]
         self.component_entities_map = defaultdict(set) # type: dict[type, set[Component]]
         self.scene = HierarchicalHashGrid()
         self.collision_callbacks = {} # type: dict[tuple[str, str], CollisionCallback]
@@ -48,6 +47,10 @@ class Game:
         """Add an entity to the game."""
         for component_cls in entity.components:
             self.component_entities_map[component_cls].add(entity)
+
+    @property
+    def entities(self):
+        return self.get_component_entities(Component)
 
     def get_component_entities(self, *components):
         # type: (*type[Component]) -> set[Component]
