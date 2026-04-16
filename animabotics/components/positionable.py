@@ -38,36 +38,35 @@ class Positionable(Component):
         """The transform defined by the position of this object."""
         return Transform(self.position.x, self.position.y, self.rotation)
 
-    def _clear_cache(self, rotated=False):
-        # type: (bool) -> None
+    def _clear_cache(self, **kwargs):
+        # type: (**Any) -> None
         """Clear the cached_property cache."""
         # pylint: disable = unused-argument
-        # need to provide a default to avoid KeyError
         self.__dict__.pop('transform', None)
 
     def move_to(self, point):
         # type: (Point2D) -> None
         """Move the object to the point."""
         self._position = point
-        self._clear_cache()
+        self.clear_cache(__class__)
 
     def move_by(self, vector):
         # type: (Vector2D) -> None
         """Move the object by the vector."""
         self._position += vector
-        self._clear_cache()
+        self.clear_cache(__class__)
 
     def rotate_to(self, rotation):
         # type: (float) -> None
         """Rotate the object to the angle."""
         self._rotation = rotation
-        self._clear_cache(rotated=True)
+        self.clear_cache(__class__, rotated=True)
 
     def rotate_by(self, rotation):
         # type: (float) -> None
         """Rotate the object by the angle."""
         self._rotation += rotation
-        self._clear_cache(rotated=True)
+        self.clear_cache(__class__, rotated=True)
 
     def squared_distance(self, other):
         # type: (Positionable) -> float
@@ -235,14 +234,13 @@ class Collidable(Positionable, HasPhysicsGeometry):
         """Get the collision groups of the object."""
         return self._collision_groups
 
-    def _clear_cache(self, rotated=False):
-        # type: (bool) -> None
+    def _clear_cache(self, **kwargs):
+        # type: (**Any) -> None
         """Clear the cached_property cache."""
-        super()._clear_cache(rotated=rotated)
-        # need to provide a default to avoid KeyError
+        super()._clear_cache(**kwargs)
         self.__dict__.pop('transformed_collision_geometry', None)
         self._projection_cache.clear()
-        if rotated:
+        if kwargs.get('rotated', False):
             self.__dict__.pop('segment_normals', None)
 
     def add_to_collision_group(self, group):

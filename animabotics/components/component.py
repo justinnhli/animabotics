@@ -1,5 +1,7 @@
 """The base class for all components."""
 
+from typing import Any
+
 class Component:
     """The base class for all components."""
 
@@ -11,6 +13,21 @@ class Component:
             cls for cls in type(self).mro()
             if issubclass(cls, Component)
         )
+
+    def _clear_cache(self, **kwargs):
+        # type: (**Any) -> None
+        """Clear the cache of data used by this class."""
+        # pylint: disable = unused-argument
+        pass
+
+    def clear_cache(self, root_cls, **kwargs):
+        # type: (type, **Any) -> None
+        """Clear the cache up to the root class."""
+        # pylint: disable = protected-access
+        assert issubclass(root_cls, Component)
+        for cls in type(self).mro():
+            if issubclass(cls, root_cls):
+                cls._clear_cache(self, **kwargs)
 
 
 class NeedsUpdates(Component):
