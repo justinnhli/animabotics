@@ -134,7 +134,7 @@ class Game:
     def draw_recursive(self, entity):
         # type: (Drawable) -> None
         """Recursively draw an entity and its children."""
-        self.camera.draw_sprite(entity.get_sprite())
+        self.camera.draw_sprite(entity.transformed_sprite())
         if hasattr(entity, 'children'):
             for child in entity.children:
                 self.draw_recursive(child)

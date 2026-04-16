@@ -20,6 +20,9 @@ class Drawable(Positionable):
         """Get the current sprite."""
         raise NotImplementedError
 
+    def transformed_sprite(self):
+        return self.transform @ self.get_sprite()
+
 
 class Unanimated(Drawable):
     """A component for entities with a static appearance."""
