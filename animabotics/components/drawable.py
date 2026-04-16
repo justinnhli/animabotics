@@ -1,8 +1,8 @@
 
 from typing import Any
 
-from .component import Component
 from ..animation import AnimationController, Sprite, OneOrMoreShapes, Shape
+from .component import Component, NeedsUpdates
 
 
 class Drawable(Component):
@@ -32,7 +32,7 @@ class Unanimated(Drawable):
         return self.sprite
 
 
-class Animated(Drawable):
+class Animated(Drawable, NeedsUpdates):
 
     def __init__(self, animation_controller, **kwargs):
         # type: (AnimationController, **Any) -> None
@@ -43,6 +43,6 @@ class Animated(Drawable):
         # type: () -> Sprite
         return self.animation.get_sprite()
 
-    def advance_animation(self, elapsed_msec):
-        # type: (int) -> None
+    def update(self, elapsed_msec, _):
+        # type: (int, int) -> None
         self.animation.advance_state(elapsed_msec)

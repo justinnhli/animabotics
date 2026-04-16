@@ -3,7 +3,7 @@
 from functools import cached_property
 from typing import Any, Iterator, Sequence
 
-from .component import Component
+from .component import Component, NeedsUpdates
 from ..simplex import Geometry, Point2D, Vector2D
 from ..transform import Transform
 
@@ -106,7 +106,7 @@ class HasPhysicsGeometry(Component):
         return max_distance
 
 
-class Newtonian(Positionable, HasPhysicsGeometry):
+class Newtonian(Positionable, HasPhysicsGeometry, NeedsUpdates):
     """A component for objects following Newtonian mechanics."""
 
     def __init__(
@@ -146,7 +146,7 @@ class Newtonian(Positionable, HasPhysicsGeometry):
         """Calculate the moment of inertia for a given center of rotation as a point mass."""
         return self.mass * (self.center_of_mass - center_of_rotation).magnitude ** 2
 
-    def advance_newtonian(self, elapsed_msec, elapsed_msec_squared):
+    def update(self, elapsed_msec, elapsed_msec_squared):
         # type: (int, int) -> None
         """Update the velocity and the position."""
         net_force, net_torque = self.sum_forces(self.forces)
