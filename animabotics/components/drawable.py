@@ -1,11 +1,13 @@
+"""Component hierarchy begining with Drawable."""
 
 from typing import Any
 
-from ..animation import AnimationController, Sprite, OneOrMoreShapes, Shape
 from .component import Component, NeedsUpdates
+from ..animation import OneOrMoreShapes, Sprite, AnimationController
 
 
 class Drawable(Component):
+    """A component for entities that can be drawn on screen."""
 
     def __init__(self, z_level=0, **kwargs):
         # type: (int, **Any) -> None
@@ -14,10 +16,12 @@ class Drawable(Component):
 
     def get_sprite(self):
         # type: () -> Sprite
+        """Get the current sprite."""
         raise NotImplementedError
 
 
 class Unanimated(Drawable):
+    """A component for entities with a static appearance."""
 
     def __init__(self, sprite_or_shapes, **kwargs):
         # type: (OneOrMoreShapes | Sprite, **Any) -> None
@@ -33,6 +37,7 @@ class Unanimated(Drawable):
 
 
 class Animated(Drawable, NeedsUpdates):
+    """A component for entities with a changing appearance."""
 
     def __init__(self, animation_controller, **kwargs):
         # type: (AnimationController, **Any) -> None
@@ -45,4 +50,5 @@ class Animated(Drawable, NeedsUpdates):
 
     def update(self, elapsed_msec, _):
         # type: (int, int) -> None
+        """Advance the animation state."""
         self.animation.advance_state(elapsed_msec)

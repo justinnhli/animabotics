@@ -75,6 +75,7 @@ class Positionable(Component):
 
 
 class HasPhysicsGeometry(Component):
+    """A component for objects with a physics geometry."""
 
     def __init__(self, physics_geometry, **kwargs):
         # type: (Geometry, **Any) -> None
