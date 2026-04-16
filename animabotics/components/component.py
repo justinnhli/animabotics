@@ -2,4 +2,12 @@
 
 class Component:
     """The base class for all components."""
-    pass
+
+    @property
+    def components(self):
+        # type: () -> tuple[type, ...]
+        """List all components."""
+        return tuple(
+            cls for cls in type(self).mro()
+            if issubclass(cls, Component)
+        )
