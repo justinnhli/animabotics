@@ -6,6 +6,9 @@ from .basic_window import BasicWindow
 from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
 from .color import Color
+from .components.component import Component, NeedsUpdates
+from .components.drawable import Drawable, Unanimated, Animated
+from .components.positionable import Positionable, HasPhysicsGeometry, Newtonian, Collidable
 from .data_structures import HashGrid, SortedDict, SortedSet, PriorityQueue
 from .game import Game, HookTrigger
 from .game_object import GameObject, PhysicsObject
@@ -26,6 +29,9 @@ __all__ = [
     'Camera',
     'Canvas', 'Input', 'EventCallback', 'Canvas',
     'Color',
+    'Component', 'NeedsUpdates',
+    'Drawable', 'Unanimated', 'Animated',
+    'Positionable', 'HasPhysicsGeometry', 'Newtonian', 'Collidable',
     'HashGrid', 'SortedDict', 'SortedSet', 'PriorityQueue',
     'Game', 'HookTrigger',
     'GameObject', 'PhysicsObject',
