@@ -6,7 +6,7 @@ from typing import Iterator, Iterable
 
 from .data_structures import HashGrid as OGHashGrid
 from .simplex import Point2D
-from .transformable import Collidable
+from .components import Collidable
 
 CollisionGroups = frozenset[str]
 CollisionGroupPair = tuple[str, str]
@@ -144,11 +144,11 @@ class HierarchicalHashGrid:
 
     def _get_exponent(self, game_object):
         # type: (Collidable) -> int
-        if game_object.collision_radius == 0:
+        if game_object.physics_radius == 0:
             return self.min_exponent
         else:
             return min(
-                max(ceil(log2(game_object.collision_radius)), self.min_exponent),
+                max(ceil(log2(game_object.physics_radius)), self.min_exponent),
                 self.max_exponent,
             )
 
