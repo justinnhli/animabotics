@@ -3,13 +3,13 @@
 from collections import defaultdict
 from random import Random
 
-from animabotics.transformable import Transformable
+from animabotics.components import Positionable
 from animabotics.simplex import Point2D
 from animabotics.data_structures import HashGrid
 
 
-class TransformablePoint(Transformable):
-    """A wrapper around Point2D to make it Transformable."""
+class TransformablePoint(Positionable):
+    """A wrapper around Point2D to make it Positionable."""
 
     def __init__(self, position):
         # type: (Point2D) -> None
