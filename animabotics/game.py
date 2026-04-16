@@ -50,6 +50,8 @@ class Game:
 
     @property
     def entities(self):
+        # type: () -> set[Component]
+        """Get all entities."""
         return self.get_component_entities(Component)
 
     def get_component_entities(self, *components):
@@ -60,6 +62,7 @@ class Game:
         ))
 
     def remove_entity(self, entity):
+        # type: (Component) -> None
         """Remove an entity from the game."""
         for component_cls in entity.components:
             self.component_entities_map[component_cls].remove(entity)

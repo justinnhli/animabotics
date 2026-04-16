@@ -2,7 +2,7 @@
 
 from typing import Any, Union
 
-from .component import Component, NeedsUpdates
+from .component import NeedsUpdates
 from .positionable import Positionable
 from ..animation import Shape, Sprite, AnimationController
 from ..utilitypes import MaybeSequence
@@ -23,6 +23,8 @@ class Drawable(Positionable):
         raise NotImplementedError
 
     def transformed_sprite(self):
+        # type: () -> Sprite
+        """Get the transformed sprite."""
         return self.transform @ self.sprite
 
 

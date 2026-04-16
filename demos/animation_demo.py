@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from animabotics import Game, HookTrigger
 from animabotics import Collidable, Animated, Unanimated, Newtonian
+from animabotics import Component
 from animabotics import Polygon
 from animabotics import Point2D, Vector2D
 from animabotics import AnimationController, Clip, Sprite, Shape
@@ -34,13 +35,14 @@ class Ball(Newtonian, Collidable):
         )
 
     def bounce_vertical(self, ground):
-        # type: (Ground) -> None
+        # type: (Component) -> None
         """Bounce the ball vertically.
 
         This function cheats physics a bit by:
         * forcibly putting the ball above ground, to avoid visual glitches
         * hard-coding the bounce velocity to obey conservation of energy
         """
+        assert isinstance(ground, Ground)
         self.move_to(Point2D(
             self.position.x,
             ground.position.y + ground.height / 2 + Ball.RADIUS,

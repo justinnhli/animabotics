@@ -6,7 +6,7 @@ from .animation import Shape
 from .canvas import Input
 from .color import Color
 from .game import Game
-from .components import Positionable, Unanimated
+from .components import Unanimated
 from .simplex import Geometry, Point2D, Vector2D
 
 

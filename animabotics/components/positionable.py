@@ -1,7 +1,7 @@
 """An abstract class for something that is transformable."""
 
 from functools import cached_property
-from typing import Any, Iterator, Sequence
+from typing import Any, Iterator
 
 from .component import Component, NeedsUpdates
 from ..simplex import Geometry, Point2D, Vector2D
@@ -107,6 +107,8 @@ class HasPhysicsGeometry(Component):
         return max_distance
 
     def _clear_cache(self, **kwargs):
+        # type: (**Any) -> None
+        # pylint: disable = unused-argument
         self._clear_cached_property('physics_radius')
 
 

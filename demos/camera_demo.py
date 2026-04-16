@@ -1,10 +1,11 @@
 #!/home/justinnhli/.local/share/venv/animabotics/bin/python3
 """Demo for camera movement and controls."""
 
+# pylint: disable = wrong-import-position
+
 import sys
 from math import sqrt
 from pathlib import Path
-from random import Random
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 

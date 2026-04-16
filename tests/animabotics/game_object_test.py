@@ -3,22 +3,16 @@
 from math import pi as PI
 
 from animabotics import Collidable
-from animabotics import Color
 from animabotics import Point2D, Polygon, Geometry
 
 
 class CollidingGameObject(Collidable):
     """A dummy game object to hold a static geometry."""
 
-    def __init__(self, physics_geometry, position=None):
-        # type: (Geometry, Color, Color) -> None
+    def __init__(self, physics_geometry):
+        # type: (Geometry) -> None
         """Initialize the CollidingGameObject."""
-        if position is None:
-            position = Point2D()
-        super().__init__(
-            position=position,
-            physics_geometry=physics_geometry,
-        )
+        super().__init__(physics_geometry=physics_geometry)
 
 
 def colliding_and_commutes(obj1, obj2):

@@ -1,7 +1,6 @@
 """Tests for scene.py."""
 
 from collections import Counter
-from typing import Sequence
 
 from animabotics.components import Collidable
 from animabotics.polygon import Polygon
@@ -13,7 +12,7 @@ class DummyGameObject(Collidable):
     """A dummy game object to hold a static geometry."""
 
     def __init__(self, physics_geometry, position, collision_groups):
-        # type: (Geometry, Point2D, Sequence[str]) -> None
+        # type: (Geometry, Point2D, list[str]) -> None
         """Initialize the DummyGameObject."""
         super().__init__(
             physics_geometry=physics_geometry,

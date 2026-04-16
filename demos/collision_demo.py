@@ -50,7 +50,7 @@ class Wall(Collidable, Unanimated):
     """A boundary wall."""
 
     def __init__(self, width, height, position, collision_groups):
-        # type: (int, int, Point2D, Sequence[str]) -> None
+        # type: (int, int, Point2D, list[str]) -> None
         geometry = Polygon.rectangle(width, height)
         super().__init__(
             position=position,
