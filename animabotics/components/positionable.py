@@ -189,21 +189,14 @@ class Newtonian(Positionable, HasPhysicsGeometry, NeedsUpdates):
 class Collidable(Positionable, HasPhysicsGeometry):
     """A component for collidable objects."""
 
-    def __init__(self, collision_geometry, collision_groups=None, **kwargs):
-        # type: (Geometry, Sequence[str], **Any) -> None
+    def __init__(self, collision_groups=None, **kwargs):
+        # type: (Sequence[str], **Any) -> None
         super().__init__(**kwargs)
-        self._collision_geometry = collision_geometry
         if collision_groups:
             self._collision_groups = frozenset(collision_groups) # type: frozenset[str]
         else:
             self._collision_groups = frozenset()
         self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
-
-    @property
-    def collision_geometry(self):
-        # type: () -> Geometry
-        """Return the collision geometry."""
-        return self._collision_geometry
 
     @cached_property
     def segment_normals(self):
@@ -234,7 +227,7 @@ class Collidable(Positionable, HasPhysicsGeometry):
     def transformed_collision_geometry(self):
         # type: () -> Geometry
         """The transformed Geometry."""
-        return self.transform @ self.collision_geometry
+        return self.transform @ self.physics_geometry
 
     @property
     def collision_groups(self):
