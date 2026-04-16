@@ -212,7 +212,10 @@ class Canvas:
         """Draw a pixel."""
         if fill_color is None:
             fill_color = Color(0, 0, 0)
-        self.image.putpixel((round(point[0]), round(point[1])), fill_color.to_rgba_tuple())
+        self.draw.point(
+            (round(point[0]), round(point[1])),
+            fill=fill_color.to_rgba_tuple(),
+        )
 
     def draw_line(self, point1, point2, line_color=None):
         # type: (FloatCoord, FloatCoord, Color) -> None
