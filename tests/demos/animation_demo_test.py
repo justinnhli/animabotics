@@ -24,7 +24,7 @@ def test_animation_demo():
     bouncy = AnimationDemo()
     bouncy.prestart()
     assert_object_attributes(
-        bouncy.objects,
+        bouncy.entities,
         {
             'Ground': [{'position': Point2D(0, -65)}],
             'StoicBall': [{'position': Point2D(-200, 825)}],
@@ -34,7 +34,7 @@ def test_animation_demo():
     assert_ball_size(bouncy.anime_ball, 100, 100)
     bouncy.run_for_msec(200)
     assert_object_attributes(
-        bouncy.objects,
+        bouncy.entities,
         {
             'Ground': [{'position': Point2D(0, -65)}],
             'StoicBall': [{'position': Point2D(-200, 805)}],
@@ -43,7 +43,7 @@ def test_animation_demo():
     )
     bouncy.run_for_msec(800)
     assert_object_attributes(
-        bouncy.objects,
+        bouncy.entities,
         {
             'Ground': [{'position': Point2D(0, -65)}],
             'StoicBall': [{'position': Point2D(-200, 325)}],
@@ -52,7 +52,7 @@ def test_animation_demo():
     )
     bouncy.run_for_msec(280)
     assert_object_attributes(
-        bouncy.objects,
+        bouncy.entities,
         {
             'Ground': [{'position': Point2D(0, -65)}],
             'StoicBall': [{'position': Point2D(-200, 5.8)}],
@@ -61,7 +61,7 @@ def test_animation_demo():
     )
     bouncy.run_for_msec(40)
     assert_object_attributes(
-        bouncy.objects,
+        bouncy.entities,
         {
             'Ground': [{'position': Point2D(0, -65)}],
             'StoicBall': [{'position': Point2D(-200, 0)}],
@@ -71,7 +71,7 @@ def test_animation_demo():
     assert_ball_size(bouncy.anime_ball, 120, 60)
     bouncy.run_for_msec(1200)
     assert_object_attributes(
-        bouncy.objects,
+        bouncy.entities,
         {
             'Ground': [{'position': Point2D(0, -65)}],
             'StoicBall': [{'position': Point2D(-200, 810)}],
@@ -80,7 +80,7 @@ def test_animation_demo():
     )
     bouncy.run_for_msec(200)
     assert_object_attributes(
-        bouncy.objects,
+        bouncy.entities,
         {
             'Ground': [{'position': Point2D(0, -65)}],
             'StoicBall': [{'position': Point2D(-200, 805)}],

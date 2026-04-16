@@ -38,14 +38,14 @@ def test_collision_demo():
     ]
     for position in positions:
         assert_object_attributes(
-            demo.objects,
+            demo.entities,
             {
                 'Ball': [{'position': position}],
             },
         )
         demo.run_for_msec(1000)
     assert_object_attributes(
-        demo.objects,
+        demo.entities,
         {
             'Ball': [{'position': Point2D(-34.4, 32)}],
         },

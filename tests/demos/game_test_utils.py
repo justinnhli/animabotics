@@ -3,11 +3,11 @@
 from collections import defaultdict
 from typing import Any, Sequence
 
-from animabotics import GameObject
+from animabotics import Component
 
 
 def assert_object_attributes(objects, attributes):
-    # type: (Sequence[GameObject], dict[str, list[dict[str, Any]]]) -> None
+    # type: (Sequence[Component], dict[str, list[dict[str, Any]]]) -> None
     """Check that objects have the specified attributes and values."""
     # organize the attributes so they can be easily matched with objects
     class_keys = {}
