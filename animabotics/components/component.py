@@ -5,6 +5,17 @@ from typing import Any
 class Component:
     """The base class for all components."""
 
+    def __init__(self, **kwargs):
+        # type: (**Any) -> None
+        """Initialize the Component.
+
+        This constructor exists purely to give meaningful errors.
+        All keyword arguments should be consumed at this point,
+        so having remaining arguments should give an error.
+        """
+        if kwargs:
+            raise ValueError(f'unconsumed keyword argument to Component (potential typo?): {sorted(kwargs)}')
+
     @property
     def components(self):
         # type: () -> tuple[type, ...]
