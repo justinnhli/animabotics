@@ -6,6 +6,7 @@ from typing import Any, Iterator, Sequence
 from .component import Component, NeedsUpdates
 from ..simplex import Geometry, Point2D, Vector2D
 from ..transform import Transform
+from ..utilitypes import MaybeSequence, unwrap_maybe_sequence
 
 
 class Positionable(Component):
@@ -193,12 +194,9 @@ class Collidable(Positionable, HasPhysicsGeometry):
     """A component for collidable objects."""
 
     def __init__(self, collision_groups=None, **kwargs):
-        # type: (Sequence[str], **Any) -> None
+        # type: (MaybeSequence[str], **Any) -> None
         super().__init__(**kwargs)
-        if collision_groups:
-            self._collision_groups = frozenset(collision_groups) # type: frozenset[str]
-        else:
-            self._collision_groups = frozenset()
+        self._collision_groups = frozenset(unwrap_maybe_sequence(collision_groups))
         self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
 
     @cached_property

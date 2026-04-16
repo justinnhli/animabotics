@@ -1,10 +1,11 @@
 """Component hierarchy begining with Drawable."""
 
-from typing import Any
+from typing import Any, Union
 
 from .component import Component, NeedsUpdates
 from .positionable import Positionable
-from ..animation import OneOrMoreShapes, Sprite, AnimationController
+from ..animation import Shape, Sprite, AnimationController
+from ..utilitypes import MaybeSequence
 
 
 class Drawable(Positionable):
@@ -29,7 +30,7 @@ class Unanimated(Drawable):
     """A component for entities with a static appearance."""
 
     def __init__(self, sprite_or_shapes, **kwargs):
-        # type: (OneOrMoreShapes | Sprite, **Any) -> None
+        # type: (Union[Sprite, MaybeSequence[Shape]], **Any) -> None
         super().__init__(**kwargs)
         if isinstance(sprite_or_shapes, Sprite):
             self._sprite = sprite_or_shapes

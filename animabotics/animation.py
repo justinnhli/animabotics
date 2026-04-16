@@ -2,12 +2,13 @@
 
 from collections import defaultdict
 from inspect import signature
-from typing import Any, Callable, Iterator, Sequence
+from typing import Any, Callable, Iterator
 
 from .color import Color
 from .metaprogramming import CachedMetaclass
 from .simplex import Geometry
 from .transform import Transform
+from .utilitypes import MaybeSequence, unwrap_maybe_sequence
 
 
 class Shape(metaclass=CachedMetaclass):
@@ -33,18 +34,12 @@ class Shape(metaclass=CachedMetaclass):
         )
 
 
-OneOrMoreShapes = Sequence[Shape] | Shape
-
-
 class Sprite:
     """Multiple shapes that make up a single image."""
 
     def __init__(self, shapes):
-        # type: (OneOrMoreShapes) -> None
-        if isinstance(shapes, Shape):
-            self.shapes = (shapes,) # type: tuple[Shape, ...]
-        else:
-            self.shapes = tuple(shapes)
+        # type: (MaybeSequence[Shape]) -> None
+        self.shapes = unwrap_maybe_sequence(shapes) # type: tuple[Shape, ...]
 
     def __iter__(self):
         # type: () -> Iterator[Shape]
