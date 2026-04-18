@@ -115,7 +115,7 @@ class Camera(Collidable):
         # type: (Shape) -> None
         """Draw a Shape."""
         self.draw_geometry(
-            geometry=shape.polygon,
+            geometry=shape.geometry,
             fill_color=shape.fill_color,
             line_color=shape.line_color,
         )

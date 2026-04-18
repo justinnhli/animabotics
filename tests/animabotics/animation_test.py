@@ -23,15 +23,15 @@ def test_clip():
         ),
     )
     assert (
-        round(clip.get_sprite(0).shapes[0].polygon).points
+        round(clip.get_sprite(0).shapes[0].geometry).points
         == (Point2D(60, -20), Point2D(0, 10), Point2D(-60, -20), Point2D(0, -50))
     )
     assert (
-        round(clip.get_sprite(250).shapes[0].polygon).points
+        round(clip.get_sprite(250).shapes[0].geometry).points
         == (Point2D(55, -10), Point2D(0, 30), Point2D(-55, -10), Point2D(0, -50))
     )
     assert (
-        round(clip.get_sprite(500).shapes[0].polygon).points
+        round(clip.get_sprite(500).shapes[0].geometry).points
         == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(0, -50))
     )
     # static clip
@@ -39,11 +39,11 @@ def test_clip():
         Shape(Polygon.ellipse(50, 50, num_points=4)),
     )
     assert (
-        round(clip.get_sprite(0).shapes[0].polygon).points
+        round(clip.get_sprite(0).shapes[0].geometry).points
         == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(0, -50))
     )
     assert (
-        round(clip.get_sprite(500).shapes[0].polygon).points
+        round(clip.get_sprite(500).shapes[0].geometry).points
         == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(0, -50))
     )
     # extraneous variable
@@ -89,7 +89,7 @@ def test_animation_controller():
         Shape(Polygon.ellipse(50, 50, num_points=4)),
     )
     assert (
-        round(controller.get_sprite().shapes[0].polygon).points
+        round(controller.get_sprite().shapes[0].geometry).points
         == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(-0, -50))
     )
     # real animation
@@ -126,36 +126,36 @@ def test_animation_controller():
     assert controller.elapsed_msec == 0
     assert controller.state == '0'
     assert (
-        round(controller.get_sprite().shapes[0].polygon).points
+        round(controller.get_sprite().shapes[0].geometry).points
         == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(-0, -50))
     )
     assert (
-        round(controller.get_sprite(40).shapes[0].polygon).points
+        round(controller.get_sprite(40).shapes[0].geometry).points
         == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(-0, -50))
     )
     assert controller.elapsed_msec == 40
     controller.set_state('2')
     assert (
-        round(controller.get_sprite().shapes[0].polygon).points
+        round(controller.get_sprite().shapes[0].geometry).points
         == (Point2D(200, 0), Point2D(0, 200), Point2D(-200, 0), Point2D(-0, -200))
     )
     controller.advance_state(50)
     assert (
-        round(controller.get_sprite().shapes[0].polygon).points
+        round(controller.get_sprite().shapes[0].geometry).points
         == (Point2D(175, 0), Point2D(0, 175), Point2D(-175, 0), Point2D(-0, -175))
     )
     controller.advance_state(150)
     assert controller.state == '1'
     assert (
-        round(controller.get_sprite().shapes[0].polygon).points
+        round(controller.get_sprite().shapes[0].geometry).points
         == (Point2D(100, 0), Point2D(0, 100), Point2D(-100, 0), Point2D(-0, -100))
     )
     controller.advance_state(100)
     assert (
-        round(controller.get_sprite().shapes[0].polygon).points
+        round(controller.get_sprite().shapes[0].geometry).points
         == (Point2D(75, 0), Point2D(0, 75), Point2D(-75, 0), Point2D(-0, -75))
     )
     assert (
-        round(controller.get_sprite(100).shapes[0].polygon).points
+        round(controller.get_sprite(100).shapes[0].geometry).points
         == (Point2D(50, 0), Point2D(0, 50), Point2D(-50, 0), Point2D(-0, -50))
     )

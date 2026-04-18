@@ -9,11 +9,11 @@ from game_test_utils import assert_object_attributes # pylint: disable = wrong-i
 def assert_ball_size(anime_ball, len_x, len_y):
     # type: (AnimatedBall, int, int) -> None
     """Check the sprite of the animated ball."""
-    polygon = anime_ball.sprite.shapes[0].polygon
-    max_x = max(point.x for point in polygon.points)
-    min_x = min(point.x for point in polygon.points)
-    max_y = max(point.y for point in polygon.points)
-    min_y = min(point.y for point in polygon.points)
+    geometry = anime_ball.sprite.shapes[0].geometry
+    max_x = max(point.x for point in geometry.points)
+    min_x = min(point.x for point in geometry.points)
+    max_y = max(point.y for point in geometry.points)
+    min_y = min(point.y for point in geometry.points)
     assert max_x - min_x == len_x
     assert max_y - min_y == len_y
 
