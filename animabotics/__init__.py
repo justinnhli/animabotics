@@ -11,7 +11,6 @@ from .components.drawable import Drawable, Unanimated, Animated
 from .components.positionable import Positionable, HasPhysicsGeometry, Newtonian, Collidable
 from .data_structures import HashGrid, SortedDict, SortedSet, PriorityQueue
 from .game import Game, HookTrigger
-from .game_object import GameObject, PhysicsObject
 from .matrix import Matrix, identity
 from .metaprogramming import CachedMetaclass
 from .polygon import ConvexPolygon, Polygon
@@ -19,7 +18,6 @@ from .scene import HierarchicalHashGrid
 from .simplex import Geometry, Point2D, Vector2D, Segment, Triangle
 from .timing import get_msec, InterruptibleAlgorithm
 from .transform import Transform
-from .transformable import Transformable, Collidable
 
 
 __all__ = [
@@ -34,7 +32,6 @@ __all__ = [
     'Positionable', 'HasPhysicsGeometry', 'Newtonian', 'Collidable',
     'HashGrid', 'SortedDict', 'SortedSet', 'PriorityQueue',
     'Game', 'HookTrigger',
-    'GameObject', 'PhysicsObject',
     'Matrix', 'identity',
     'CachedMetaclass',
     'Polygon',
@@ -42,5 +39,4 @@ __all__ = [
     'Geometry', 'Point2D', 'Vector2D', 'Segment', 'Triangle',
     'get_msec', 'InterruptibleAlgorithm',
     'Transform',
-    'Transformable', 'Collidable',
 ]
