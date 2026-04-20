@@ -1,13 +1,13 @@
 """Utilities for checking game objects."""
 
 from collections import defaultdict
-from typing import Any, Sequence
+from typing import Any, Iterable
 
-from animabotics import GameObject
+from animabotics import Component
 
 
 def assert_object_attributes(objects, attributes):
-    # type: (Sequence[GameObject], dict[str, list[dict[str, Any]]]) -> None
+    # type: (Iterable[Component], dict[str, list[dict[str, Any]]]) -> None
     """Check that objects have the specified attributes and values."""
     # organize the attributes so they can be easily matched with objects
     class_keys = {}
@@ -17,7 +17,7 @@ def assert_object_attributes(objects, attributes):
         sorted_keys = sorted(keys)
         for obj_attributes in class_attributes:
             assert keys == set(obj_attributes.keys())
-            values = [obj_attributes[key] for key in sorted_keys] # type: Sequence[Any]
+            values = [obj_attributes[key] for key in sorted_keys] # type: list[Any]
             attr_counts[(class_name, tuple(values))] += 1
         class_keys[class_name] = sorted(keys)
     # organize the objects so they can be easily matched with attributes

@@ -1,17 +1,20 @@
 """An abstract class for something that is transformable."""
 
 from functools import cached_property
-from typing import Iterator, Sequence
+from typing import Any, Iterator
 
-from .simplex import Geometry, Point2D, Vector2D
-from .transform import Transform
+from .component import Component, NeedsUpdates
+from ..simplex import Geometry, Point2D, Vector2D
+from ..transform import Transform
+from ..utilitypes import MaybeSequence, unwrap_maybe_sequence
 
 
-class Transformable:
-    """An abstract class for something that is transformable."""
+class Positionable(Component):
+    """A component for position and rotation."""
 
-    def __init__(self, position=None, rotation=0):
-        # type: (Point2D, float) -> None
+    def __init__(self, position=None, rotation=0, **kwargs):
+        # type: (Point2D, float, **Any) -> None
+        super().__init__(**kwargs)
         if position is None:
             self._position = Point2D()
         else:
@@ -36,78 +39,167 @@ class Transformable:
         """The transform defined by the position of this object."""
         return Transform(self.position.x, self.position.y, self.rotation)
 
-    def _clear_cache(self, rotated=False):
-        # type: (bool) -> None
+    def _clear_cache(self, **kwargs):
+        # type: (**Any) -> None
         """Clear the cached_property cache."""
         # pylint: disable = unused-argument
-        # need to provide a default to avoid KeyError
-        self.__dict__.pop('transform', None)
+        self._clear_cached_property('transform')
 
     def move_to(self, point):
         # type: (Point2D) -> None
         """Move the object to the point."""
         self._position = point
-        self._clear_cache()
+        self.clear_cache(__class__)
 
     def move_by(self, vector):
         # type: (Vector2D) -> None
         """Move the object by the vector."""
         self._position += vector
-        self._clear_cache()
+        self.clear_cache(__class__)
 
     def rotate_to(self, rotation):
         # type: (float) -> None
         """Rotate the object to the angle."""
         self._rotation = rotation
-        self._clear_cache(rotated=True)
+        self.clear_cache(__class__, rotated=True)
 
     def rotate_by(self, rotation):
         # type: (float) -> None
         """Rotate the object by the angle."""
         self._rotation += rotation
-        self._clear_cache(rotated=True)
+        self.clear_cache(__class__, rotated=True)
+
+    def squared_distance(self, other):
+        # type: (Positionable) -> float
+        """Calculate the squared distance to another object."""
+        return self.position.squared_distance(other.position)
 
 
-class Collidable(Transformable):
-    """An object with a collision geometry."""
+class HasPhysicsGeometry(Component):
+    """A component for objects with a physics geometry."""
 
-    def __init__(
-        self,
-        collision_geometry,
-        position=None, rotation=0,
-        collision_groups=None,
-    ):
-        # type: (Geometry, Point2D, float, Sequence[str]) -> None
-        super().__init__(position, rotation)
-        self._collision_geometry = collision_geometry
-        if collision_groups:
-            self._collision_groups = frozenset(collision_groups) # type: frozenset[str]
-        else:
-            self._collision_groups = frozenset()
-        self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
+    def __init__(self, physics_geometry, **kwargs):
+        # type: (Geometry, **Any) -> None
+        super().__init__(**kwargs)
+        self._physics_geometry = physics_geometry
 
     @property
-    def collision_geometry(self):
+    def physics_geometry(self):
         # type: () -> Geometry
-        """Get the collision geometry."""
-        return self._collision_geometry
+        """Get the physics geometry."""
+        return self._physics_geometry
 
-    @collision_geometry.setter
-    def collision_geometry(self, collision_geometry):
+    @physics_geometry.setter
+    def physics_geometry(self, physics_geometry):
         # type: (Geometry) -> None
-        """Set the collision geometry."""
-        self._collision_geometry = collision_geometry
-        self.__dict__.pop('collision_radius', None)
+        """Set the physics geometry."""
+        self._physics_geometry = physics_geometry
+        self.clear_cache(__class__)
 
     @cached_property
-    def collision_radius(self):
+    def physics_radius(self):
         # type: () -> float
-        """Calculate the maximum radius of the collision geometry."""
+        """Calculate the maximum radius of the physics geometry."""
         # TODO solve the smallest-circle problem instead
         max_distance = 0.0
-        for point in self.collision_geometry.points:
+        for point in self.physics_geometry.points:
             max_distance = max(max_distance, point.to_vector().magnitude)
         return max_distance
+
+    def _clear_cache(self, **kwargs):
+        # type: (**Any) -> None
+        # pylint: disable = unused-argument
+        self._clear_cached_property('physics_radius')
+
+
+class Newtonian(Positionable, HasPhysicsGeometry, NeedsUpdates):
+    """A component for objects following Newtonian mechanics."""
+
+    def __init__(
+            self,
+            mass,
+            velocity=None,
+            angular_velocity=None,
+            center_of_mass=None,
+            **kwargs
+        ):
+        # type: (float, Vector2D, float, Point2D, **Any) -> None
+        super().__init__(**kwargs)
+        assert mass is not None
+        self.mass = mass
+        if velocity is None:
+            self.velocity = Vector2D()
+        else:
+            self.velocity = velocity
+        if angular_velocity is None:
+            self.angular_velocity = 0.0
+        else:
+            self.angular_velocity = angular_velocity
+        if center_of_mass is None:
+            self.center_of_mass = Point2D()
+        else:
+            self.center_of_mass = center_of_mass
+        self.forces = [] # type: list[tuple[Vector2D, Point2D]]
+
+    @property
+    def kinetic_energy(self):
+        # type: () -> float
+        """Calculate the kinetic energy."""
+        return 0.5 * self.mass * self.velocity.magnitude ** 2
+
+    def moment_of_inertia(self, center_of_rotation):
+        # type: (Point2D) -> float
+        """Calculate the moment of inertia for a given center of rotation as a point mass."""
+        return self.mass * (self.center_of_mass - center_of_rotation).magnitude ** 2
+
+    def update(self, elapsed_msec, elapsed_msec_squared):
+        # type: (int, int) -> None
+        """Update the velocity and the position."""
+        net_force, net_torque = self.sum_forces(self.forces)
+        # translate net force into global coordinates
+        net_force = self.transform @ net_force
+        self.forces.clear()
+        acceleration = net_force / self.mass
+        angular_acceleration = net_torque / self.mass
+        if self.velocity or acceleration:
+            self.move_by(
+                self.velocity * elapsed_msec
+                + 0.5 * acceleration * elapsed_msec_squared
+            )
+        if self.angular_velocity or angular_acceleration:
+            self.rotate_by(
+                self.angular_velocity * elapsed_msec
+                + 0.5 * angular_acceleration * elapsed_msec_squared
+            )
+        self.velocity += acceleration * elapsed_msec
+        self.angular_velocity += angular_acceleration * elapsed_msec
+
+    def apply_force(self, vector, position=None):
+        # type: (Vector2D, Point2D) -> None
+        """Apply a local force."""
+        if position is None:
+            position = Point2D()
+        self.forces.append((vector, position))
+
+    def sum_forces(self, forces):
+        # type: (list[tuple[Vector2D, Point2D]]) -> tuple[Vector2D, float]
+        """Sum up forces to determine net force and net torque."""
+        net_force = Vector2D()
+        net_torque = 0.0
+        for force, position in forces:
+            net_force += force
+            net_torque += position.matrix.cross(force.matrix).z
+        return net_force, net_torque
+
+
+class Collidable(Positionable, HasPhysicsGeometry):
+    """A component for collidable objects."""
+
+    def __init__(self, collision_groups=None, **kwargs):
+        # type: (MaybeSequence[str], **Any) -> None
+        super().__init__(**kwargs)
+        self._collision_groups = frozenset(unwrap_maybe_sequence(collision_groups))
+        self._projection_cache = {} # type: dict[tuple[Geometry, Vector2D], tuple[float, float]]
 
     @cached_property
     def segment_normals(self):
@@ -138,7 +230,7 @@ class Collidable(Transformable):
     def transformed_collision_geometry(self):
         # type: () -> Geometry
         """The transformed Geometry."""
-        return self.transform @ self.collision_geometry
+        return self.transform @ self.physics_geometry
 
     @property
     def collision_groups(self):
@@ -146,15 +238,14 @@ class Collidable(Transformable):
         """Get the collision groups of the object."""
         return self._collision_groups
 
-    def _clear_cache(self, rotated=False):
-        # type: (bool) -> None
+    def _clear_cache(self, **kwargs):
+        # type: (**Any) -> None
         """Clear the cached_property cache."""
-        super()._clear_cache(rotated=rotated)
-        # need to provide a default to avoid KeyError
-        self.__dict__.pop('transformed_collision_geometry', None)
+        super()._clear_cache(**kwargs)
+        self._clear_cached_property('transformed_collision_geometry')
         self._projection_cache.clear()
-        if rotated:
-            self.__dict__.pop('segment_normals', None)
+        if kwargs.get('rotated', False):
+            self._clear_cached_property('segment_normals')
 
     def add_to_collision_group(self, group):
         # type: (str) -> None

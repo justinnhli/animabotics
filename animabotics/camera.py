@@ -5,11 +5,11 @@ from functools import lru_cache
 from .animation import Sprite, Shape
 from .canvas import Canvas
 from .color import Color
+from .components import Collidable
 from .matrix import Matrix
 from .polygon import Polygon
 from .simplex import Geometry, Point2D
 from .transform import Transform
-from .transformable import Collidable
 
 
 @lru_cache
@@ -28,7 +28,12 @@ class Camera(Collidable):
     def __init__(self, canvas, zoom_level=0):
         # type: (Canvas, int) -> None
         """Initialize the Camera."""
-        super().__init__(None)
+        super().__init__(
+            physics_geometry=Polygon.rectangle(
+                canvas.width,
+                canvas.height,
+            ),
+        )
         self.canvas = canvas
         self._zoom_level = zoom_level
         self.origin_transform = Transform(

@@ -2,10 +2,23 @@
 
 from collections import Counter
 
-from animabotics.game_object import GameObject
+from animabotics.components import Collidable
 from animabotics.polygon import Polygon
 from animabotics.scene import HierarchicalHashGrid
-from animabotics.simplex import Point2D
+from animabotics.simplex import Point2D, Geometry
+
+
+class DummyGameObject(Collidable):
+    """A dummy game object to hold a static geometry."""
+
+    def __init__(self, physics_geometry, position, collision_groups):
+        # type: (Geometry, Point2D, list[str]) -> None
+        """Initialize the DummyGameObject."""
+        super().__init__(
+            physics_geometry=physics_geometry,
+            position=position,
+            collision_groups=collision_groups,
+        )
 
 
 def test_hierarchical_hash_grid():
@@ -23,7 +36,7 @@ def test_hierarchical_hash_grid():
         (60, 170, 35, 6),
     ]
     for x, y, radius, _ in data:
-        obj = GameObject(
+        obj = DummyGameObject(
             Polygon.ellipse(radius, radius),
             position=Point2D(x, y),
             collision_groups=['test'],
@@ -41,7 +54,7 @@ def test_hierarchical_hash_grid():
         assert obj in grid_objects
     collisions = list(hhg.collisions)
     assert len(collisions) == 4
-    colliding_objects = Counter() # type: Counter[GameObject]
+    colliding_objects = Counter() # type: Counter[Collidable]
     for obj1, obj2, _ in collisions:
         colliding_objects.update([obj1])
         colliding_objects.update([obj2])

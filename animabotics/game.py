@@ -6,9 +6,8 @@ from typing import Any, Callable
 
 from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
-from .game_object import GameObject
+from .components import Component, Collidable, Drawable, NeedsUpdates
 from .scene import HierarchicalHashGrid
-from .transformable import Collidable
 
 
 HookCallback = Callable[[int], Any]
@@ -32,8 +31,8 @@ class Game:
         # components
         self.canvas = Canvas(window_width, window_height)
         self.camera = Camera(self.canvas)
-        # objects
-        self.objects = set() # type: set[GameObject]
+        # entities
+        self.component_entities_map = defaultdict(set) # type: dict[type, set[Component]]
         self.scene = HierarchicalHashGrid()
         self.collision_callbacks = {} # type: dict[tuple[str, str], CollisionCallback]
         self.bouncing_collision_group_pairs = set() # type: set[tuple[str, str]]
@@ -41,27 +40,32 @@ class Game:
         self.keybinds = {} # type: dict[Input, EventCallback]
         self.hooks = defaultdict(list) # type: dict[HookTrigger, list[HookCallback]]
         # state
-        self.prev_collisions = set() # type: set[tuple[GameObject, GameObject, tuple[str, str]]]
-        self.in_camera_objects = defaultdict(list) # type: dict[int, list[GameObject]]
-        # initialization
-        self.camera.add_to_collision_group('_camera')
-        self.on_collision(
-            '_camera',
-            None,
-            (lambda _, game_object:
-                self.in_camera_objects[game_object.z_level].append(game_object)
-            ),
-            debounce=False,
-        )
+        self.prev_collisions = set() # type: set[tuple[Collidable, Collidable, tuple[str, str]]]
 
-    def add_object(self, game_object):
-        # type: (GameObject) -> None
-        """Add an object to the scene."""
-        self.objects.add(game_object)
+    def add_entity(self, entity):
+        # type: (Component) -> None
+        """Add an entity to the game."""
+        for component_cls in entity.components:
+            self.component_entities_map[component_cls].add(entity)
 
-    def remove_object(self, game_object):
-        """Remove an object from the scene."""
-        self.objects.remove(game_object)
+    @property
+    def entities(self):
+        # type: () -> set[Component]
+        """Get all entities."""
+        return self.get_component_entities(Component)
+
+    def get_component_entities(self, *components):
+        # type: (*type[Component]) -> set[Component]
+        """Get all entities with the given components."""
+        return set.union(*(
+            self.component_entities_map[component] for component in components
+        ))
+
+    def remove_entity(self, entity):
+        # type: (Component) -> None
+        """Remove an entity from the game."""
+        for component_cls in entity.components:
+            self.component_entities_map[component_cls].remove(entity)
 
     def bind(self, input_event, callback):
         # type: (Input, EventCallback) -> None
@@ -97,16 +101,19 @@ class Game:
         # call all pre-update hooks
         for callback in self.hooks[HookTrigger.PRE_UPDATE]:
             callback(elapsed_msec)
-        # update all objects
-        for obj in self.objects:
-            obj.update(elapsed_msec, elapsed_msec_squared)
-            self.scene.add(obj)
-        self.scene.add(self.camera)
+        # update entities
+        for entity in self.get_component_entities(NeedsUpdates):
+            assert isinstance(entity, NeedsUpdates)
+            entity.update(elapsed_msec, elapsed_msec_squared)
+        # add all collidable entities to the scene
+        for entity in self.get_component_entities(Collidable):
+            assert isinstance(entity, Collidable)
+            self.scene.add(entity)
         # collect collisions
         new_collisions = set()
         call_back = set()
         for key in self.scene.collisions:
-            obj1, obj2, group_pair = key
+            entity1, entity2, group_pair = key
             new_collisions.add(key)
             trigger_callback = (
                 key not in self.prev_collisions
@@ -117,23 +124,25 @@ class Game:
         self.scene.clear()
         self.prev_collisions = new_collisions
         # trigger collision callbacks
-        for obj1, obj2, group_pair in call_back:
-            self.collision_callbacks[group_pair](obj1, obj2)
-        # draw all objects
-        for _, game_objects in sorted(self.in_camera_objects.items()):
-            for game_object in game_objects:
-                self.draw_recursive(game_object)
-        self.in_camera_objects.clear()
+        for entity1, entity2, group_pair in call_back:
+            self.collision_callbacks[group_pair](entity1, entity2)
+        # draw entities
+        # FIXME need to separate drawing from collision
+        # in its simplest form: do a separate hierarchical grid for Drawables
+        # this is inefficient: collision is many-to-many, while culling is one to many
+        for entity in self.get_component_entities(Drawable):
+            assert isinstance(entity, Drawable)
+            self.draw_recursive(entity)
         # call all post-update hooks
         for callback in self.hooks[HookTrigger.POST_UPDATE]:
             callback(elapsed_msec)
 
-    def draw_recursive(self, game_object):
-        # type: (GameObject) -> None
-        """Recursively draw a GameObject and its children."""
-        self.camera.draw_sprite(game_object.sprite)
-        if hasattr(game_object, 'children'):
-            for child in game_object.children:
+    def draw_recursive(self, entity):
+        # type: (Drawable) -> None
+        """Recursively draw an entity and its children."""
+        self.camera.draw_sprite(entity.transformed_sprite())
+        if hasattr(entity, 'children'):
+            for child in entity.children:
                 self.draw_recursive(child)
 
     def prestart(self):

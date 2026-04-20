@@ -2,31 +2,24 @@
 
 from collections import defaultdict
 from inspect import signature
-from typing import Any, Callable, Iterator, Sequence
+from typing import Any, Callable, Iterator
 
 from .color import Color
-from .simplex import Geometry, Point2D
 from .metaprogramming import CachedMetaclass
+from .simplex import Geometry
 from .transform import Transform
-from .transformable import Transformable
+from .utilitypes import MaybeSequence, unwrap_maybe_sequence
 
 
-class Shape(Transformable, metaclass=CachedMetaclass):
+class Shape(metaclass=CachedMetaclass):
     """A colored geometry."""
     geometry: Geometry
     fill_color: Color
     line_color: Color
 
-    def __init__(
-            self,
-            geometry,
-            fill_color=None,
-            line_color=None,
-            position=None, rotation=0,
-        ):
-        # type: (Geometry, Color, Color, Point2D, float) -> None
+    def __init__(self, geometry, fill_color=None, line_color=None):
+        # type: (Geometry, Color, Color) -> None
         """Initialize the Shape."""
-        Transformable.__init__(self, position, rotation)
         self.geometry = geometry
         self.fill_color = fill_color
         self.line_color = line_color
@@ -41,18 +34,12 @@ class Shape(Transformable, metaclass=CachedMetaclass):
         )
 
 
-OneOrMoreShapes = Sequence[Shape] | Shape
-
-
 class Sprite:
     """Multiple shapes that make up a single image."""
 
     def __init__(self, shapes):
-        # type: (OneOrMoreShapes) -> None
-        if isinstance(shapes, Shape):
-            self.shapes = (shapes,) # type: tuple[Shape, ...]
-        else:
-            self.shapes = tuple(shapes)
+        # type: (MaybeSequence[Shape]) -> None
+        self.shapes = unwrap_maybe_sequence(shapes) # type: tuple[Shape, ...]
 
     def __iter__(self):
         # type: () -> Iterator[Shape]

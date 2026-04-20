@@ -2,26 +2,23 @@
 
 from math import sin, cos, pi as PI
 
-from .animation import AnimationController, Sprite, Shape
+from .animation import Shape
 from .canvas import Input
 from .color import Color
 from .game import Game
-from .game_object import GameObject
+from .components import Unanimated
 from .simplex import Geometry, Point2D, Vector2D
 
 
-class DummyGameObject(GameObject):
+class DummyGameObject(Unanimated):
     """A dummy game object to hold a static geometry."""
 
     def __init__(self, geometry, fill_color=None, line_color=None):
         # type: (Geometry, Color, Color) -> None
         """Initialize the DummyGameObject."""
-        super().__init__(geometry)
-        self.animation = AnimationController.create_static_animation(Sprite([Shape(
-            self.collision_geometry,
-            fill_color,
-            line_color,
-        )]))
+        super().__init__(
+            sprite_or_shapes=Shape(geometry, fill_color, line_color),
+        )
 
 
 class BasicWindow(Game):
@@ -43,7 +40,7 @@ class BasicWindow(Game):
             line_color=line_color,
         )
         obj.z_level = z_level
-        self.add_object(obj)
+        self.add_entity(obj)
 
     def key_callback(self, input_event, _):
         # type: (Input, Point2D) -> None

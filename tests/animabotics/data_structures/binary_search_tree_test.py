@@ -62,7 +62,7 @@ def test_sorteddict():
         assert not sorted_dict
     src_dict = {num: num * num for num in range(101)}
     assert SortedDict.from_dict(src_dict).to_dict() == src_dict
-    dst_dict = SortedDict() # type: dict[int, int]
+    dst_dict = SortedDict() # type: SortedDict[int, int]
     dst_dict.update(src_dict)
     assert dst_dict.to_dict() == src_dict
     dst_dict = SortedDict()

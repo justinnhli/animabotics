@@ -5,7 +5,7 @@ from itertools import chain, groupby
 from typing import Iterator
 
 from ..simplex import Point2D, Vector2D
-from ..transformable import Transformable
+from ..components import Positionable
 
 
 class HashGrid:
@@ -30,7 +30,7 @@ class HashGrid:
         # type: (int) -> None
         self.grid_size = grid_size
         self.num_objects = 0
-        self.cells = defaultdict(list) # type: dict[Point2D, list[Transformable]]
+        self.cells = defaultdict(list) # type: dict[Point2D, list[Positionable]]
         self.clear()
 
     def __bool__(self):
@@ -42,13 +42,13 @@ class HashGrid:
         return self.num_objects
 
     def __contains__(self, obj):
-        # type: (Transformable) -> bool
+        # type: (Positionable) -> bool
         coord = self.to_cell_coord(obj.position)
         return obj in self.cells[coord]
 
     @property
     def objects(self):
-        # type: () -> Iterator[Transformable]
+        # type: () -> Iterator[Positionable]
         """Get all objects in the grid."""
         for cell in self.cells.values():
             yield from cell
@@ -68,14 +68,14 @@ class HashGrid:
         )
 
     def add(self, obj):
-        # type: (Transformable) -> None
+        # type: (Positionable) -> None
         """Add an object to the grid."""
         coord = self.to_cell_coord(obj.position)
         self.cells[coord].append(obj)
         self.num_objects += 1
 
     def remove(self, obj, position=None):
-        # type: (Transformable, Point2D) -> None
+        # type: (Positionable, Point2D) -> None
         """Remove an object to the grid."""
         if position is None:
             position = obj.position
@@ -86,7 +86,7 @@ class HashGrid:
             del self.cells[coord]
 
     def nearest_neighbors(self, target, k=1):
-        # type: (Point2D, int) -> Iterator[Transformable]
+        # type: (Point2D, int) -> Iterator[Positionable]
         """Get the k nearest objects to a target Point2D."""
         # special case if all objects are "nearest"
         if len(self) <= k:
@@ -105,7 +105,7 @@ class HashGrid:
             key=(lambda pair: pair[0]),
         )
         num_results = 0
-        holding_area = [] # type: list[tuple[float, Transformable]]
+        holding_area = [] # type: list[tuple[float, Positionable]]
         for min_dist, coords in coord_dists:
             for _, coord in coords:
                 holding_area.extend(
