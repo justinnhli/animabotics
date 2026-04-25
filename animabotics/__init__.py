@@ -3,7 +3,7 @@
 from .algorithms import bentley_ottmann, triangulate_polygon
 from .animation import AnimationController, Clip, Sprite, Shape
 from .basic_window import BasicWindow
-from .caching import CachedMetaclass, LRUCache, method_cache
+from .caching import CachedMetaclass, LRUCache, cached_method
 from .camera import Camera
 from .canvas import Input, EventCallback, Canvas
 from .color import Color
@@ -24,7 +24,7 @@ __all__ = [
     'bentley_ottmann', 'triangulate_polygon',
     'AnimationController', 'Clip', 'Sprite', 'Shape',
     'BasicWindow',
-    'CachedMetaclass', 'LRUCache', 'method_cache',
+    'CachedMetaclass', 'LRUCache', 'cached_method',
     'Camera',
     'Input', 'EventCallback', 'Canvas',
     'Color',

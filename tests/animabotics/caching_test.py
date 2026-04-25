@@ -3,7 +3,7 @@
 from collections import defaultdict
 from functools import cached_property
 
-from animabotics.caching import CachedMetaclass, LRUCache, method_cache
+from animabotics.caching import CachedMetaclass, LRUCache, cached_method
 
 
 class CachedClassDummy(metaclass=CachedMetaclass):
@@ -89,42 +89,42 @@ def test_lrucache():
 
 
 class MethCacheTestDummy:
-    """A class to test the method_cache decorator."""
+    """A class to test the cached_method decorator."""
 
     def __init__(self, n=1):
         # type: (int) -> None
         self.n = n
         self.log = defaultdict(int)
 
-    @method_cache(is_property=True)
+    @cached_method(is_property=True)
     def add_0(self):
         # type: () -> int
         """Add one to the value."""
         self.log['add_0'] += 1
         return self.n
 
-    @method_cache(is_property=True)
+    @cached_method(is_property=True)
     def add_1(self):
         # type: () -> int
         """Add one to the value."""
         self.log['add_1'] += 1
         return self.n + 1
 
-    @method_cache()
+    @cached_method()
     def add_2(self):
         # type: () -> int
         """Add one to the value."""
         self.log['add_2'] += 1
         return self.n + 2
 
-    @method_cache()
+    @cached_method()
     def add_n(self, n):
         # type: (int) -> int
         """Add n to the value."""
         self.log['add_n'] += 1
         return self.n + n
 
-    @method_cache()
+    @cached_method()
     def add_nm(self, n, m=2):
         # type: (int, int) -> int
         """Add n and m to the value."""
@@ -132,7 +132,7 @@ class MethCacheTestDummy:
         return self.n + n + m
 
 
-def test_autocache():
+def test_cached_method():
     # type: () -> None
     """Run the test function."""
     t = MethCacheTestDummy(0)

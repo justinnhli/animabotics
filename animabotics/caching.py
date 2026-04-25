@@ -134,7 +134,7 @@ P = ParamSpec('P') # parameters
 R = TypeVar('R') # return
 
 
-class method_cache(Generic[T, P, R]): # pylint: disable = invalid-name
+class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
     """A caching class that implements the Descriptor protocol."""
 
     def __init__(self, is_property:bool=False, max_size:int=1024):
@@ -164,7 +164,7 @@ class method_cache(Generic[T, P, R]): # pylint: disable = invalid-name
     def __delete__(self, instance:T) -> None:
         self.cache.clear()
 
-    def __call__(self, func:Callable[Concatenate[T, P], R]) -> method_cache[T, P, R]:
+    def __call__(self, func:Callable[Concatenate[T, P], R]) -> cached_method[T, P, R]:
         self.func = func
         return self
 
