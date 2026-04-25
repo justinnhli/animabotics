@@ -4,7 +4,7 @@ from collections import defaultdict
 from inspect import signature
 from typing import Any, Callable, Iterator
 
-from .caching import CachedMetaclass
+from .caching import CachedMetaclass, cached_method
 from .color import Color
 from .simplex import Geometry
 from .transform import Transform
@@ -45,6 +45,7 @@ class Sprite:
         # type: () -> Iterator[Shape]
         yield from self.shapes
 
+    @cached_method()
     def __rmatmul__(self, other):
         # type: (Transform) -> Sprite
         assert isinstance(other, Transform)
