@@ -346,13 +346,15 @@ class Canvas:
 
         return callback
 
-    def start(self, update_fn, msecs):
-        # type: (Callable[[int], None], int) -> None
+    def start(self, update_fn, msecs, *delayed_callbacks):
+        # type: (Callable[[int], Any], int, *tuple[int, Callable[[], Any]]) -> None
         """Display the canvas."""
         self.create_tk()
         self.canvas.focus_set()
         self.prev_msec = get_msec()
         self.tk.after(msecs, self._create_update_callback(update_fn, msecs))
+        for delay_msec, callback in delayed_callbacks:
+            self.tk.after(delay_msec, callback)
         self.canvas.mainloop()
 
     @staticmethod

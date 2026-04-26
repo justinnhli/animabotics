@@ -158,10 +158,15 @@ class Game:
         """
         self.scene.set_collision_group_pairs(self.collision_callbacks.keys())
 
-    def start(self):
-        # type: () -> None
+    def start(self, *delayed_callbacks):
+        # type: (*tuple[int, Callable[[], Any]]) -> None
         """Start the game."""
         for input_event, callback in self.keybinds.items():
             self.canvas.bind(input_event, callback)
         self.prestart()
-        self.canvas.start(self.dispatch_tick, 40)
+        self.canvas.start(self.dispatch_tick, 40, *delayed_callbacks)
+
+    def stop(self):
+        # type: () -> None
+        """Stop the game."""
+        self.canvas.tk.destroy()
