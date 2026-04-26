@@ -2,6 +2,7 @@
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+from functools import cached_property
 
 from ._okhsv import RGB as _RGB, HSV as _HSV
 from ._okhsv import okhsv_to_rgb as _okhsv_to_rgb, rgb_to_okhsv as _rgb_to_okhsv
@@ -58,17 +59,21 @@ class Color(metaclass=CachedMetaclass):
         else:
             return rgba
 
+    @cached_property
+    def _rgba_hex(self):
+        return '#' + ''.join(
+            f'{n:02X}' for n in self.to_rgba_tuple(integer=True)
+        )
+
     def to_rgb_hex(self):
         # type: () -> str
         """Convert the color to a RGB hexcode."""
-        return self.to_rgba_hex()[:7]
+        return self._rgba_hex[:7]
 
     def to_rgba_hex(self):
         # type: () -> str
         """Convert the color to a RGBA hexcode."""
-        return '#' + ''.join(
-            f'{n:02X}' for n in self.to_rgba_tuple(integer=True)
-        )
+        return self._rgba_hex
 
     @staticmethod
     def from_rgba(r, g, b, a=1):
