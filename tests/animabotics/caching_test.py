@@ -199,3 +199,11 @@ def test_cached_method():
         assert False
     except AttributeError:
         pass
+
+
+def test_cached_method_multiple_objects():
+    """Test the caches are not shared between instances."""
+    dummy1 = CachedMethodDummy(1)
+    dummy2 = CachedMethodDummy(2)
+    assert dummy1.add_0 == 1
+    assert dummy2.add_0 == 2
