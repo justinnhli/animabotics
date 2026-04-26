@@ -88,7 +88,7 @@ def test_lrucache():
     assert_lrucache_contents(cache, ())
 
 
-class MethCacheTestDummy:
+class CachedMethodDummy:
     """A class to test the cached_method decorator."""
 
     def __init__(self, n=1):
@@ -135,7 +135,7 @@ class MethCacheTestDummy:
 def test_cached_method():
     # type: () -> None
     """Run the test function."""
-    t = MethCacheTestDummy(0)
+    t = CachedMethodDummy(0)
     # test setting a property before a normal call
     t.add_0 = 2
     assert t.log['add_0'] == 0
