@@ -157,11 +157,11 @@ class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
         assert self.attr_name
         assert instance is not None
         if self.is_property:
-            cache = self.get_cache(instance)
-            if () not in cache:
+            # if it's a property, skip using LRUCache entirely
+            if self.attr_name not in instance.__dict__:
                 assert self.func is not None
-                cache[()] = self.func(instance) # pyright: ignore
-            return cache[()]
+                instance.__dict__[self.attr_name] = self.func(instance) # pyright: ignore
+            return instance.__dict__[self.attr_name]
         else:
             return (lambda *args, **kwargs: self.wrapper_func(instance, *args, **kwargs))
 
@@ -169,10 +169,14 @@ class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
         assert instance is not None
         if not self.is_property:
             raise AttributeError('trying to set method')
-        self.get_cache(instance)[()] = value
+        instance.__dict__[self.attr_name] = value
 
     def __delete__(self, instance:T) -> None:
-        self.get_cache(instance).clear()
+        if self.is_property:
+            if self.attr_name in instance.__dict__:
+                del instance.__dict__[self.attr_name]
+        else:
+            self.get_cache(instance).clear()
 
     def __call__(self, func:Callable[Concatenate[T, P], R]) -> cached_method[T, P, R]:
         self.func = func
