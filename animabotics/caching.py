@@ -139,7 +139,7 @@ class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
 
     def __init__(self, is_property:bool=False, max_size:int=1024):
         self.is_property = is_property
-        self.cache: LRUCache[tuple[object | tuple[str, object], ...], R] = LRUCache(max_size)
+        self.max_size = max_size
         self.func: Optional[Callable[Concatenate[T, P], R]] = None
         self.attr_name = ''
         self.__doc__ = ''
@@ -154,25 +154,25 @@ class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
             assert self.attr_name == name
 
     def __get__(self, instance:T, objtype:Any) -> Union[R, Callable[P, R]]:
-        if self.instance is None:
-            self.instance = instance
+        assert self.attr_name
+        assert instance is not None
         if self.is_property:
-            if () not in self.cache:
+            cache = self.get_cache(instance)
+            if () not in cache:
                 assert self.func is not None
-                self.cache[()] = self.func(self.instance) # pyright: ignore
-            return self.cache[()]
+                cache[()] = self.func(instance) # pyright: ignore
+            return cache[()]
         else:
-            return self.wrapper_func
+            return (lambda *args, **kwargs: self.wrapper_func(instance, *args, **kwargs))
 
     def __set__(self, instance:T, value:R) -> None:
-        if self.instance is None:
-            self.instance = instance
+        assert instance is not None
         if not self.is_property:
             raise AttributeError('trying to set method')
-        self.cache[()] = value
+        self.get_cache(instance)[()] = value
 
     def __delete__(self, instance:T) -> None:
-        self.cache.clear()
+        self.get_cache(instance).clear()
 
     def __call__(self, func:Callable[Concatenate[T, P], R]) -> cached_method[T, P, R]:
         self.func = func
@@ -180,15 +180,22 @@ class cached_method(Generic[T, P, R]): # pylint: disable = invalid-name
         self.__module__ = func.__module__
         return self
 
-    def wrapper_func(self, *args:P.args, **kwargs:P.kwargs) -> R:
+    def get_cache(self, instance:T) -> LRUCache[tuple[object | tuple[str, object], ...], R]:
+        """Get the cache of the instance."""
+        assert self.attr_name
+        if self.attr_name not in instance.__dict__:
+            instance.__dict__[self.attr_name] = LRUCache(self.max_size)
+        return instance.__dict__[self.attr_name]
+
+    def wrapper_func(self, instance:T, *args:P.args, **kwargs:P.kwargs) -> R:
         """Call the wrapped function and cache its results if necessary."""
         key = (
             *args,
             *sorted(kwargs.items()),
         )
         assert self.func is not None
-        assert self.instance is not None
-        if key not in self.cache:
-            self.cache[key] = self.func(self.instance, *args, **kwargs)
-        return self.cache[key]
-
+        assert instance is not None
+        cache = self.get_cache(instance)
+        if key not in cache:
+            cache[key] = self.func(instance, *args, **kwargs)
+        return cache[key]
