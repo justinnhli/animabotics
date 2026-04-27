@@ -2,13 +2,16 @@
 
 from collections import defaultdict
 from itertools import chain, groupby
-from typing import Iterator
+from typing import TypeVar, Generic, Iterator
 
 from ..simplex import Point2D, Vector2D
 from ..components import Positionable
 
 
-class HashGrid:
+KT = TypeVar('KT', bound=Positionable)
+
+
+class HashGrid(Generic[KT]):
     """A hash grid."""
 
     HALF_OFFSETS = [
@@ -30,7 +33,7 @@ class HashGrid:
         # type: (int) -> None
         self.grid_size = grid_size
         self.num_objects = 0
-        self.cells = defaultdict(list) # type: dict[Point2D, list[Positionable]]
+        self.cells = defaultdict(list) # type: dict[Point2D, list[KT]]
         self.clear()
 
     def __len__(self):
@@ -42,13 +45,13 @@ class HashGrid:
         return self.num_objects > 0
 
     def __contains__(self, obj):
-        # type: (Positionable) -> bool
+        # type: (KT) -> bool
         coord = self.to_cell_coord(obj.position)
         return obj in self.cells[coord]
 
     @property
     def objects(self):
-        # type: () -> Iterator[Positionable]
+        # type: () -> Iterator[KT]
         """Get all objects in the grid."""
         for cell in self.cells.values():
             yield from cell
@@ -68,14 +71,14 @@ class HashGrid:
         )
 
     def add(self, obj):
-        # type: (Positionable) -> None
+        # type: (KT) -> None
         """Add an object to the grid."""
         coord = self.to_cell_coord(obj.position)
         self.cells[coord].append(obj)
         self.num_objects += 1
 
     def remove(self, obj, position=None):
-        # type: (Positionable, Point2D) -> None
+        # type: (KT, Point2D) -> None
         """Remove an object to the grid."""
         if position is None:
             position = obj.position
@@ -86,7 +89,7 @@ class HashGrid:
             del self.cells[coord]
 
     def nearest_neighbors(self, target, k=1):
-        # type: (Point2D, int) -> Iterator[Positionable]
+        # type: (Point2D, int) -> Iterator[KT]
         """Get the k nearest objects to a target Point2D."""
         # special case if all objects are "nearest"
         if len(self) <= k:
@@ -105,7 +108,7 @@ class HashGrid:
             key=(lambda pair: pair[0]),
         )
         num_results = 0
-        holding_area = [] # type: list[tuple[float, Positionable]]
+        holding_area = [] # type: list[tuple[float, KT]]
         for min_dist, coords in coord_dists:
             for _, coord in coords:
                 holding_area.extend(
