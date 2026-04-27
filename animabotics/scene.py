@@ -4,7 +4,7 @@ from functools import cached_property
 from math import ceil, log2
 from typing import Iterator, Iterable
 
-from .data_structures import HashGrid as OGHashGrid
+from .data_structures import HashGrid
 from .simplex import Point2D
 from .components import Collidable
 
@@ -13,8 +13,8 @@ CollisionGroupPair = tuple[str, str]
 CollisionGroupsPair = tuple[frozenset[str], frozenset[str]]
 
 
-class HashGrid(OGHashGrid):
-    """A hash grid."""
+class CollisionHashGrid(HashGrid[Collidable]):
+    """A hash grid specifically for collision detection."""
 
     def __init__(self, grid_size, hierarhical_hash_grid):
         # type: (int, HierarchicalHashGrid) -> None
@@ -42,9 +42,9 @@ class HashGrid(OGHashGrid):
             return
         coord = self.to_cell_coord(game_object.position)
         if half_neighbors:
-            offsets = HashGrid.HALF_OFFSETS
+            offsets = CollisionHashGrid.HALF_OFFSETS
         else:
-            offsets = HashGrid.FULL_OFFSETS
+            offsets = CollisionHashGrid.FULL_OFFSETS
         for offset in offsets:
             neighbor_coord = coord + offset
             if neighbor_coord not in self.cells:
@@ -68,17 +68,17 @@ class HierarchicalHashGrid:
             max_exponent = min_exponent + 10
         self.min_exponent = min_exponent
         self.max_exponent = max_exponent
-        self.grids = [] # type: list[HashGrid]
+        self.grids = [] # type: list[CollisionHashGrid]
         for exponent in range(min_exponent):
             self.grids.append(None)
         for exponent in range(min_exponent, max_exponent + 1):
-            self.grids.append(HashGrid(2 ** exponent, self))
+            self.grids.append(CollisionHashGrid(2 ** exponent, self))
         self.collision_group_pairs = set() # type: set[CollisionGroupPair]
         self.collision_groups_cache = {} # type: dict[CollisionGroupsPair, tuple[CollisionGroupPair, ...]]
 
     @cached_property
     def exponent_grids(self):
-        # type: () -> list[tuple[int, HashGrid]]
+        # type: () -> list[tuple[int, CollisionHashGrid]]
         """Build a list of grids and their exponents."""
         return list(zip(
             range(self.min_exponent, self.max_exponent + 1),
