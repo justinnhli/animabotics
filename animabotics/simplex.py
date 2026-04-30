@@ -285,7 +285,7 @@ class Vector2D(PointsMatrix, metaclass=CachedMetaclass):
     def normalized(self):
         # type: () -> Vector2D
         """The normalized vector."""
-        if self.magnitude == 0:
+        if self.x == 0 and self.y == 0:
             return self
         else:
             return self / self.magnitude
