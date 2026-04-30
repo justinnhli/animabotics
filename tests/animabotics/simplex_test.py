@@ -2,8 +2,22 @@
 
 from math import floor, ceil, pi as PI, inf as INF
 
+from hypothesis import strategies as strats
+
 from animabotics.simplex import Point2D, Vector2D, Segment, Triangle
 from animabotics.transform import Transform
+
+from hypostrats import rationals, affine_space_metatest, abelian_group_metatest
+
+
+def points():
+    # type: () -> strats.SearchStrategy[Point2D]
+    return strats.builds(Point2D, rationals(), rationals())
+
+
+def vectors():
+    # type: () -> strats.SearchStrategy[Vector2D]
+    return strats.builds(Vector2D, rationals(), rationals())
 
 
 def test_point():
@@ -57,6 +71,14 @@ def test_point():
     assert Vector2D(0, -1).project(Vector2D(0, -1)) == (Vector2D(0, -1), Vector2D(0, 0))
     assert Vector2D(4, 3).project(Vector2D(1, 0)) == (Vector2D(4, 0), Vector2D(0, 3))
     assert Vector2D(4, 3).project(Vector2D(-1, 0)) == (Vector2D(4, 0), Vector2D(0, 3))
+
+
+def test_point_vector_algebriac():
+    # type: () -> None
+    """Test the algebraic properties of Point2D and Vector2D."""
+    abelian_group_metatest(vectors(), Vector2D(0, 0))
+    affine_space_metatest(points(), vectors(), Vector2D(0, 0))
+    affine_space_metatest(vectors(), vectors(), Vector2D(0, 0))
 
 
 def test_segment():
