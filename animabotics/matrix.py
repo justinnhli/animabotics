@@ -381,3 +381,10 @@ def identity(size=4):
         (i * (0.0,)) + (1.0,) + (size - i - 1) * (0.0,)
         for i in range(size)
     ))
+
+
+@lru_cache
+def ones(size=4):
+    # type: (int) -> Matrix
+    """Create a matrix of ones."""
+    return Matrix(tuple(size * (1,) for i in range(size)))
