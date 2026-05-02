@@ -3,7 +3,32 @@
 from math import floor, ceil
 from fractions import Fraction
 
-from animabotics.matrix import Matrix, identity
+from hypothesis import strategies as strats, given
+
+from animabotics.matrix import Matrix, identity, ones
+
+from hypostrats import rationals, abelian_group_metatest
+
+
+def sized_matrices(height, width, strategy=None):
+    # type: (int, int) -> strats.SearchStrategy[Matrix]
+    if strategy is None:
+        strategy = rationals
+    elements = []
+    for _ in range(height):
+        row = []
+        for _ in range(width):
+            row.append(strategy())
+        elements.append(strats.tuples(*row))
+    return strats.builds(Matrix, strats.tuples(*elements))
+
+
+@strats.composite
+def matrices(draw, strategy=None):
+    # type: (strats.DrawFn, strats.SearchStrategy[Matrix]) -> Matrix
+    height = draw(strats.integers(1, 10))
+    width = draw(strats.integers(1, 10))
+    return draw(sized_matrices(height, width, strategy=strategy))
 
 
 def test_matrix():
@@ -104,49 +129,89 @@ def test_matrix():
     assert identity(4).shear(0, 0, 0, 0, 0, 1) @ Matrix(((2, 3, 4, 1),)).transpose == Matrix(((2, 3, 7, 1),)).transpose
 
 
+def test_matrix_abelian():
+    # type: () -> None
+    """Test the algebraic properties of Matrix."""
+    abelian_group_metatest(
+        sized_matrices(4, 4),
+        0 * ones(),
+    )
+
+
 def test_rref():
     # type: () -> None
     """Test Matrix row-reduced echelon form."""
     # pylint: disable = line-too-long
     testcases = [
         (
-            Matrix(((2, 0, 0), (0, 3, 0),)),
-            Matrix(((1, 0, 0), (0, 1, 0),)),
+            ((2, 0, 0), (0, 3, 0)),
+            ((1, 0, 0), (0, 1, 0)),
         ),
         (
-            Matrix(((2, 4), (1, 2), (3, 6),)),
-            Matrix(((1, 2), (0, 0), (0, 0),)),
+            ((2, 4), (1, 2), (3, 6)),
+            ((1, 2), (0, 0), (0, 0)),
         ),
         (
-            Matrix(((1, 0), (1, 0), (0, 1),)),
-            Matrix(((1, 0), (0, 1), (0, 0),)),
+            ((1, 0), (1, 0), (0, 1)),
+            ((1, 0), (0, 1), (0, 0)),
         ),
         (
-            Matrix(((2, 6, 3, 6), (0, 0, 1, 2), (0, 0, 0, 0),)),
-            Matrix(((1, 3, 0, 0), (0, 0, 1, 2), (0, 0, 0, 0),)),
+            ((2, 6, 3, 6), (0, 0, 1, 2), (0, 0, 0, 0)),
+            ((1, 3, 0, 0), (0, 0, 1, 2), (0, 0, 0, 0)),
         ),
         (
-            Matrix(((1, 1, 1), (0, 0, 1), (0, 0, 1), (0, 1, 0))),
-            Matrix(((1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, 0))),
+            ((1, 1, 1), (0, 0, 1), (0, 0, 1), (0, 1, 0)),
+            ((1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, 0)),
         ),
         (
             # from https://kirkmcdonald.github.io/posts/calculation.html
-            Matrix((
-                (Fraction(-40),  Fraction(0),    Fraction(30),    Fraction(10),    Fraction(0),  Fraction(0),  Fraction(10)),
-                (Fraction(30),   Fraction(-30),  Fraction(30),    Fraction(45),    Fraction(0),  Fraction(0),  Fraction(0)),
-                (Fraction(0),    Fraction(20),   Fraction(40),    Fraction(55),    Fraction(0),  Fraction(0),  Fraction(45)),
-                (Fraction(-30),  Fraction(-30),  Fraction(0),     Fraction(-50),   Fraction(1),  Fraction(0),  Fraction(0)),
-                (Fraction(0),    Fraction(0),    Fraction(-100),  Fraction(-100),  Fraction(0),  Fraction(1),  Fraction(0)),
-            )),
-            Matrix((
-                (Fraction(1), Fraction(0), Fraction(0), Fraction(0), Fraction(0), Fraction(-13, 400), Fraction(-23, 12)),
-                (Fraction(0), Fraction(1), Fraction(0), Fraction(0), Fraction(0), Fraction(-7, 400), Fraction(-1, 4)),
-                (Fraction(0), Fraction(0), Fraction(1), Fraction(0), Fraction(0), Fraction(-3, 50), Fraction(-10, 3)),
-                (Fraction(0), Fraction(0), Fraction(0), Fraction(1), Fraction(0), Fraction(1, 20), Fraction(10, 3)),
-                (Fraction(0), Fraction(0), Fraction(0), Fraction(0), Fraction(1), Fraction(1), Fraction(305, 3)),
-            )),
+            (
+                (-40,  0,    30,    10,    0,  0,  10),
+                (30,   -30,  30,    45,    0,  0,  0),
+                (0,    20,   40,    55,    0,  0,  45),
+                (-30,  -30,  0,     -50,   1,  0,  0),
+                (0,    0,    -100,  -100,  0,  1,  0),
+            ),
+            (
+                (1,  0,  0,  0,  0,  Fraction(-13, 400),  Fraction(-23, 12)),
+                (0,  1,  0,  0,  0,  Fraction(-7, 400),   Fraction(-1, 4)),
+                (0,  0,  1,  0,  0,  Fraction(-3, 50),    Fraction(-10, 3)),
+                (0,  0,  0,  1,  0,  Fraction(1, 20),     Fraction(10, 3)),
+                (0,  0,  0,  0,  1,  1,                   Fraction(305, 3)),
+            ),
         ),
     ]
-    for matrix, expect in testcases:
+    for elements, expect in testcases:
+        matrix = Matrix(tuple(
+            tuple(Fraction(element) for element in row)
+            for row in elements
+        ))
         actual = matrix.rref
-        assert expect == actual
+        assert Matrix(expect) == actual
+
+
+# test with Fractions to avoid floating points from division in RREF algorithm
+@given(matrices(strats.fractions))
+def test_rref_hypothesis(matrix):
+    # type: (Matrix) -> None
+    """Test Matrix.rref using hypothesis."""
+    rref = matrix.rref
+    rows = rref.rows
+    cols = rref.cols
+    # check row echelon form and each row has a leading 1
+    first_col = -1
+    ones_coords = []
+    for r, row in enumerate(rows):
+        for c, element in enumerate(row):
+            assert c >= first_col or element == 0, (matrix, rref)
+            if element != 0:
+                assert element == 1, (matrix, rref)
+                first_col = c
+                ones_coords.append((r, c))
+                break
+    # check columns with leading 1 only has 0 otherwise
+    for r, c in ones_coords:
+        col = cols[c]
+        assert all(element == 0 for element in col[:r])
+        assert cols[c][r] == 1
+        assert all(element == 0 for element in col[r+1:])

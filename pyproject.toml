@@ -9,6 +9,7 @@ dependencies = [
   "pillow",
   "pytest",
   "coverage",
+  "hypothesis",
 ]
 requires-python = ">=3.11" # for typing.Self
 authors = [
