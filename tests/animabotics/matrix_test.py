@@ -3,7 +3,32 @@
 from math import floor, ceil
 from fractions import Fraction
 
-from animabotics.matrix import Matrix, identity
+from hypothesis import strategies as strats, given
+
+from animabotics.matrix import Matrix, identity, ones
+
+from hypostrats import rationals, abelian_group_metatest
+
+
+def sized_matrices(height, width, strategy=None):
+    # type: (int, int) -> strats.SearchStrategy[Matrix]
+    if strategy is None:
+        strategy = rationals
+    elements = []
+    for _ in range(height):
+        row = []
+        for _ in range(width):
+            row.append(strategy())
+        elements.append(strats.tuples(*row))
+    return strats.builds(Matrix, strats.tuples(*elements))
+
+
+@strats.composite
+def matrices(draw, strategy=None):
+    # type: (strats.DrawFn, strats.SearchStrategy[Matrix]) -> Matrix
+    height = draw(strats.integers(1, 10))
+    width = draw(strats.integers(1, 10))
+    return draw(sized_matrices(height, width, strategy=strategy))
 
 
 def test_matrix():
@@ -104,6 +129,15 @@ def test_matrix():
     assert identity(4).shear(0, 0, 0, 0, 0, 1) @ Matrix(((2, 3, 4, 1),)).transpose == Matrix(((2, 3, 7, 1),)).transpose
 
 
+def test_matrix_abelian():
+    # type: () -> None
+    """Test the algebraic properties of Matrix."""
+    abelian_group_metatest(
+        sized_matrices(4, 4),
+        0 * ones(),
+    )
+
+
 def test_rref():
     # type: () -> None
     """Test Matrix row-reduced echelon form."""
@@ -154,3 +188,30 @@ def test_rref():
         ))
         actual = matrix.rref
         assert Matrix(expect) == actual
+
+
+# test with Fractions to avoid floating points from division in RREF algorithm
+@given(matrices(strats.fractions))
+def test_rref_hypothesis(matrix):
+    # type: (Matrix) -> None
+    """Test Matrix.rref using hypothesis."""
+    rref = matrix.rref
+    rows = rref.rows
+    cols = rref.cols
+    # check row echelon form and each row has a leading 1
+    first_col = -1
+    ones_coords = []
+    for r, row in enumerate(rows):
+        for c, element in enumerate(row):
+            assert c >= first_col or element == 0, (matrix, rref)
+            if element != 0:
+                assert element == 1, (matrix, rref)
+                first_col = c
+                ones_coords.append((r, c))
+                break
+    # check columns with leading 1 only has 0 otherwise
+    for r, c in ones_coords:
+        col = cols[c]
+        assert all(element == 0 for element in col[:r])
+        assert cols[c][r] == 1
+        assert all(element == 0 for element in col[r+1:])
