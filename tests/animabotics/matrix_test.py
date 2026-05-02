@@ -110,43 +110,47 @@ def test_rref():
     # pylint: disable = line-too-long
     testcases = [
         (
-            Matrix(((2, 0, 0), (0, 3, 0),)),
-            Matrix(((1, 0, 0), (0, 1, 0),)),
+            ((2, 0, 0), (0, 3, 0)),
+            ((1, 0, 0), (0, 1, 0)),
         ),
         (
-            Matrix(((2, 4), (1, 2), (3, 6),)),
-            Matrix(((1, 2), (0, 0), (0, 0),)),
+            ((2, 4), (1, 2), (3, 6)),
+            ((1, 2), (0, 0), (0, 0)),
         ),
         (
-            Matrix(((1, 0), (1, 0), (0, 1),)),
-            Matrix(((1, 0), (0, 1), (0, 0),)),
+            ((1, 0), (1, 0), (0, 1)),
+            ((1, 0), (0, 1), (0, 0)),
         ),
         (
-            Matrix(((2, 6, 3, 6), (0, 0, 1, 2), (0, 0, 0, 0),)),
-            Matrix(((1, 3, 0, 0), (0, 0, 1, 2), (0, 0, 0, 0),)),
+            ((2, 6, 3, 6), (0, 0, 1, 2), (0, 0, 0, 0)),
+            ((1, 3, 0, 0), (0, 0, 1, 2), (0, 0, 0, 0)),
         ),
         (
-            Matrix(((1, 1, 1), (0, 0, 1), (0, 0, 1), (0, 1, 0))),
-            Matrix(((1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, 0))),
+            ((1, 1, 1), (0, 0, 1), (0, 0, 1), (0, 1, 0)),
+            ((1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, 0)),
         ),
         (
             # from https://kirkmcdonald.github.io/posts/calculation.html
-            Matrix((
-                (Fraction(-40),  Fraction(0),    Fraction(30),    Fraction(10),    Fraction(0),  Fraction(0),  Fraction(10)),
-                (Fraction(30),   Fraction(-30),  Fraction(30),    Fraction(45),    Fraction(0),  Fraction(0),  Fraction(0)),
-                (Fraction(0),    Fraction(20),   Fraction(40),    Fraction(55),    Fraction(0),  Fraction(0),  Fraction(45)),
-                (Fraction(-30),  Fraction(-30),  Fraction(0),     Fraction(-50),   Fraction(1),  Fraction(0),  Fraction(0)),
-                (Fraction(0),    Fraction(0),    Fraction(-100),  Fraction(-100),  Fraction(0),  Fraction(1),  Fraction(0)),
-            )),
-            Matrix((
-                (Fraction(1), Fraction(0), Fraction(0), Fraction(0), Fraction(0), Fraction(-13, 400), Fraction(-23, 12)),
-                (Fraction(0), Fraction(1), Fraction(0), Fraction(0), Fraction(0), Fraction(-7, 400), Fraction(-1, 4)),
-                (Fraction(0), Fraction(0), Fraction(1), Fraction(0), Fraction(0), Fraction(-3, 50), Fraction(-10, 3)),
-                (Fraction(0), Fraction(0), Fraction(0), Fraction(1), Fraction(0), Fraction(1, 20), Fraction(10, 3)),
-                (Fraction(0), Fraction(0), Fraction(0), Fraction(0), Fraction(1), Fraction(1), Fraction(305, 3)),
-            )),
+            (
+                (-40,  0,    30,    10,    0,  0,  10),
+                (30,   -30,  30,    45,    0,  0,  0),
+                (0,    20,   40,    55,    0,  0,  45),
+                (-30,  -30,  0,     -50,   1,  0,  0),
+                (0,    0,    -100,  -100,  0,  1,  0),
+            ),
+            (
+                (1,  0,  0,  0,  0,  Fraction(-13, 400),  Fraction(-23, 12)),
+                (0,  1,  0,  0,  0,  Fraction(-7, 400),   Fraction(-1, 4)),
+                (0,  0,  1,  0,  0,  Fraction(-3, 50),    Fraction(-10, 3)),
+                (0,  0,  0,  1,  0,  Fraction(1, 20),     Fraction(10, 3)),
+                (0,  0,  0,  0,  1,  1,                   Fraction(305, 3)),
+            ),
         ),
     ]
-    for matrix, expect in testcases:
+    for elements, expect in testcases:
+        matrix = Matrix(tuple(
+            tuple(Fraction(element) for element in row)
+            for row in elements
+        ))
         actual = matrix.rref
-        assert expect == actual
+        assert Matrix(expect) == actual
