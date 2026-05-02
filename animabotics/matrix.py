@@ -3,7 +3,7 @@
 # pylint: disable = too-many-lines
 
 from dataclasses import dataclass
-from functools import lru_cache as cache, cached_property
+from functools import lru_cache, cached_property
 from math import floor, ceil, sqrt, sin, cos
 
 from .caching import CachedMetaclass
@@ -373,7 +373,7 @@ class Matrix(metaclass=CachedMetaclass): # pylint: disable = too-many-public-met
         ))
 
 
-@cache
+@lru_cache
 def identity(size=4):
     # type: (int) -> Matrix
     """Create an identity matrix."""
