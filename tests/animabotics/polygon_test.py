@@ -26,6 +26,19 @@ def test_polygon():
     ])
 
 
+def test_polygon_orientation():
+    """Test Polygon will raise error on clockwise points."""
+    try:
+        polygon = Polygon((
+            Point2D(0, 10),
+            Point2D(10, 0),
+            Point2D(-10, 0),
+        ))
+        assert False
+    except ValueError:
+        pass
+
+
 def test_simplify_perimeter():
     # type: () -> None
     """Test simplifying a polygon."""

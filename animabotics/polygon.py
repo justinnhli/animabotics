@@ -62,6 +62,21 @@ class Polygon(Geometry, metaclass=CachedMetaclass):
     def __init__(self, points=None, matrix=None):
         # type: (Sequence[Point2D], Matrix) -> None
         if matrix is None:
+            # check orientation of the points
+            point_index = 0
+            point_tuple = (points[0].x, points[0].y)
+            for index, other in enumerate(points):
+                other_tuple = (other.x, other.y)
+                if other_tuple < point_tuple:
+                    point_index = index
+                    point_tuple = other_tuple
+            orientation = Segment.orientation(
+                points[point_index - 1],
+                points[point_index],
+                points[(point_index + 1) % len(points)],
+            )
+            if orientation != -1:
+                raise ValueError(f'polygon is not counterclockwise: {points}')
             matrix = Matrix(tuple(
                 (point.x, point.y, 0, 1)
                 for point in points
