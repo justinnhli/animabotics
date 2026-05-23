@@ -54,10 +54,10 @@ class Ball(Newtonian, Collidable):
         """Print kinetic and potential energy after updating."""
         super().update(tick_start_msec, elapsed_msec, elapsed_msec_squared)
         ke = self.kinetic_energy
-        pe = self.mass * abs(self.acceleration.y) * self.position.y
+        pe = self.mass * AnimationDemo.GRAVITY.magnitude * self.position.y
         print(f'y={self.position.y:.5f}, v={self.velocity.y:.5f}')
         print(f'KE = {ke:.5f} = 0.5 * {abs(self.velocity.y):.5f} ** 2')
-        print(f'PE = {pe:.5f} = {abs(self.acceleration.y):.5f} * {self.position.y:.5f}')
+        print(f'PE = {pe:.5f} = {AnimationDemo.GRAVITY.magnitude:.5f} * {self.position.y:.5f}')
         print(f'\u03A3E = {ke + pe:.5f}')
         print()
 
@@ -133,6 +133,8 @@ class Ground(Collidable, Unanimated):
 class AnimationDemo(Game):
     """A bouncing ball animation demonstration."""
 
+    GRAVITY = Vector2D(0, -0.001)
+
     def __init__(self):
         # type: () -> None
         super().__init__(600, 800)
@@ -176,8 +178,8 @@ class AnimationDemo(Game):
     def apply_gravity(self, _1, _2, _3):
         # type: (int, int, int) -> None
         """Apply gravity to the balls."""
-        self.stoic_ball.apply_force(Vector2D(0, -0.001))
-        self.anime_ball.apply_force(Vector2D(0, -0.001))
+        self.stoic_ball.apply_force(AnimationDemo.GRAVITY)
+        self.anime_ball.apply_force(AnimationDemo.GRAVITY)
 
 
 def main(): # pragma: no cover
