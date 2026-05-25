@@ -30,6 +30,18 @@ S = TypeVar('S')
 T = TypeVar('T')
 
 
+def involution_metatest(strategy, function):
+    # type: (strats.SearchStrategy[T], Callable[[T], T]) -> None
+    """Test that applying the function twice returns the original."""
+    # pylint: disable = no-value-for-parameter
+
+    @given(strategy)
+    def test_involution(instance):
+        assert instance == function(function(instance))
+
+    test_involution()
+
+
 def affine_space_metatest(point_strategy, vector_strategy, vector_identity):
     # type: (strats.SearchStrategy[S], strats.SearchStrategy[T], T) -> None
     """Test that objects form an affine space and an associated vector space."""

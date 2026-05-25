@@ -7,7 +7,7 @@ from hypothesis import strategies as strats, given
 
 from animabotics.matrix import Matrix, identity, ones
 
-from hypostrats import rationals, abelian_group_metatest
+from hypostrats import rationals, involution_metatest, abelian_group_metatest
 
 
 def sized_matrices(height, width, strategy=None):
@@ -22,6 +22,48 @@ def sized_matrices(height, width, strategy=None):
             row.append(strategy())
         elements.append(strats.tuples(*row))
     return strats.builds(Matrix, strats.tuples(*elements))
+
+
+def diagonal_matrices(size, strategy=None):
+    if strategy is None:
+        strategy = rationals
+    diagonal = [strategy().filter(lambda n: n != 0) for _ in range(size)]
+    return strats.builds(
+        (lambda diag_nums: 
+            Matrix(tuple(
+                (
+                    *(0,) * i,
+                    num,
+                    *(0,) * (size - i - 1),
+                )
+                for i, num in enumerate(diag_nums)
+            ))
+         ),
+        strats.tuples(*diagonal),
+    )
+
+
+def upper_triangle_matrices(size, strategy=None):
+    if strategy is None:
+        strategy = rationals
+    diagonal = [strategy().filter(lambda n: n != 0) for _ in range(size)]
+    triangle = [strategy() for _ in range(size * (size - 1) // 2)]
+    return strats.builds(
+        (lambda numbers: 
+            Matrix(tuple(
+                (
+                    *(0,) * i,
+                    numbers[i],
+                    *numbers[
+                        size + (i * (2 * size - i - 1)) // 2
+                        :size + (i * (2 * size - i - 1)) // 2 + (size - i - 1)
+                    ]
+                )
+                for i in range(size)
+            ))
+         ),
+        strats.tuples(*diagonal, *triangle),
+    )
 
 
 @strats.composite
@@ -153,6 +195,17 @@ def test_matrix_abelian():
         sized_matrices(4, 4),
         0 * ones(),
     )
+
+
+def test_matrix_transpose_involution():
+    involution_metatest(matrices(), (lambda matrix: matrix.transpose))
+
+
+@given(diagonal_matrices(4, strategy=strats.fractions) | upper_triangle_matrices(4, strategy=strats.fractions))
+def test_matrix_inverse(matrix):
+    assert matrix.determinant != 0
+    assert matrix == matrix.inverse.inverse
+    assert matrix @ matrix.inverse == identity(4)
 
 
 def test_rref():
