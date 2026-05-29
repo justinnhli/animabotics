@@ -134,6 +134,8 @@ def test_sexp_parser_bad():
         '[abc123"',
         '(0)',
         '(cos)',
+        '"cos"',
+        '[list]',
     ]
     for sexp in sexps:
         parse = parser.parse_s_expression(sexp)

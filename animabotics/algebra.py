@@ -443,9 +443,9 @@ class Equation(SymbolicMath):
 
 class SExpression:
 
-    def __init__(self, function, *args):
-        # type: (Function, *SymbolicMath) -> None
-        self.function = function
+    def __init__(self, head, *args):
+        # type: (Variable|Literal, *SymbolicMath) -> None
+        self.head = head 
         self.args = args
 
     def __hash__(self):
@@ -475,7 +475,10 @@ Token = namedtuple('Token', 'token_class, string, index')
 class AlgebraParser:
     """A parser for algebraic expression and equations.
 
-    equation = add_exp "=" add_exp;
+    The grammar for algebraic expressions is below:
+
+    equation = expression "=" expression;
+    expression = add_exp;
     add_exp = mul_exp ( [+-] mul_exp )*;
     mul_exp = pow_exp ( [*/] pow_exp )*;
     pow_exp = term ( [^] term )?;
@@ -489,6 +492,20 @@ class AlgebraParser:
     parenthesis = "(" add_exp ")";
     operator = [+-*/^];
     number = -?[0-9]+;
+
+    This parser is also used for parsing s-expressions, which are used to
+    specify rewriting rules. The grammar has the following non-terminals:
+
+    s_expression = "(" s_head ( s_term )* ")";
+    s_head = variable
+           | literal
+           | operator;
+    s_term = s_list_var
+           | variable
+           | number
+           | s_expression;
+    s_list_var = "[" identifier "]";
+    literal = '"' identifier '"';
     """
 
     REGEXES = {
@@ -683,23 +700,11 @@ class AlgebraParser:
 
     def _parse_s_expression(self, tokens, index, depth):
         # type: (list[Token], int, int) -> tuple[Optional[SExpression], int]
-        #print(depth * '  ' + f's_exp@{index}')
+        #print(depth * '  ' + f's_expression@{index}')
         if not self._token_is(tokens, index, 'paren_left'):
             return None, index
-        arg_index = index + 1
-        good_next_token = any(
-            self._token_is(tokens, arg_index, token_class) for token_class
-            in ['quote', 'identifier', 'add_op', 'mul_op', 'pow_op']
-        )
-        if not good_next_token:
-            return None, index
-        arg_parse = None # type: SymbolicMath
         args = []
-        if tokens[arg_index].token_class.endswith('_op'):
-            arg_parse = Literal(tokens[arg_index].string)
-            arg_index += 1
-        else:
-            arg_parse, arg_index = self._parse_s_term(tokens, arg_index, depth + 1)
+        arg_parse, arg_index = self._parse_s_head(tokens, index + 1, depth + 1)
         if arg_parse is None:
             return arg_parse, index
         args.append(arg_parse)
@@ -713,6 +718,20 @@ class AlgebraParser:
         if not self._token_is(tokens, arg_index, 'paren_right'):
             return None, index
         return SExpression(*args), arg_index + 1
+
+    def _parse_s_head(self, tokens, index, depth):
+        # type: (list[Token], int, int) -> tuple[Optional[SExpression], int]
+        #print(depth * '  ' + f's_head@{index}')
+        if index >= len(tokens):
+            return None, index
+        if tokens[index].token_class == 'quote':
+            return self._parse_s_literal(tokens, index, depth + 1)
+        elif tokens[index].token_class == 'identifier':
+            return self._parse_variable(tokens, index, depth + 1)
+        elif tokens[index].token_class.endswith('_op'):
+            return Literal(tokens[index].string), index + 1
+        else:
+            return None, index
 
     def _parse_s_term(self, tokens, index, depth):
         # type: (list[Token], int, int) -> tuple[Optional[SymbolicMath], int]
@@ -728,9 +747,6 @@ class AlgebraParser:
         if parse is not None:
             return parse, new_index
         parse, new_index = self._parse_variable(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
-        parse, new_index = self._parse_s_literal(tokens, index, depth + 1)
         if parse is not None:
             return parse, new_index
         return None, index
@@ -792,8 +808,13 @@ class AlgebraParser:
         except TokenizationError:
             return None
         tokens = [token for token in tokens if token.token_class != 'space']
-        parse, index = self._parse_s_term(tokens, 0, 0)
-        if index != len(tokens):
-            return None
-        else:
+        parse, index = self._parse_s_expression(tokens, 0, 0)
+        if parse is not None and index == len(tokens):
             return parse
+        parse, index = self._parse_variable(tokens, 0, 0)
+        if parse is not None and index == len(tokens):
+            return parse
+        parse, index = self._parse_number(tokens, 0, 0)
+        if parse is not None and index == len(tokens):
+            return parse
+        return None
