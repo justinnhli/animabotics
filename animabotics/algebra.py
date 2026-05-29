@@ -152,6 +152,47 @@ class Number(Expression):
         return self.value
 
 
+class Literal(SymbolicMath):
+
+    def __init__(self, value):
+        # type: (str) -> None
+        self.value = value
+
+    def __hash__(self):
+        # type: () -> int
+        return hash(self.value)
+
+    def __eq__(self, other):
+        # type: (Any) -> bool
+        return isinstance(other, Literal) and self.value == other.value
+
+    def __repr__(self): # pragma: no cover
+        # type: () -> str
+        if len(self.value) == 1 and self.value in '+-*/^':
+            return self.value
+        else:
+            return f'"{self.value}"'
+
+
+class ListVar(SymbolicMath):
+
+    def __init__(self, name):
+        # type: (str) -> None
+        self.name = name
+
+    def __hash__(self):
+        # type: () -> int
+        return hash(self.name)
+
+    def __eq__(self, other):
+        # type: (Any) -> bool
+        return isinstance(other, ListVar) and self.name == other.name
+
+    def __repr__(self): # pragma: no cover
+        # type: () -> str
+        return f'[{self.name}]'
+
+
 _FUNCTION_REGISTRY = {} # type: dict[str, Callable[[*tuple[Fraction, ...]], Fraction]]
 
 
@@ -400,6 +441,30 @@ class Equation(SymbolicMath):
         raise NotImplementedError()
 
 
+class SExpression:
+
+    def __init__(self, function, *args):
+        # type: (Function, *SymbolicMath) -> None
+        self.function = function
+        self.args = args
+
+    def __hash__(self):
+        # type: () -> int
+        return hash((self.function, *self.args))
+
+    def __eq__(self, other):
+        # type: (Any) -> bool
+        return (
+            isinstance(other, SExpression)
+            and self.function == other.function
+            and self.args == other.args
+        )
+
+    def __repr__(self): # pragma: no cover
+        # type: () -> str
+        return f'({self.function} ' + ' '.join(repr(arg) for arg in self.args) + ')'
+
+
 class TokenizationError(Exception):
     """Tokenization Error."""
     pass
@@ -437,6 +502,9 @@ class AlgebraParser:
         'comma': re.compile(','),
         'paren_left': re.compile(r'\('),
         'paren_right': re.compile(r'\)'),
+        'quote': re.compile('"'),
+        'bracket_left': re.compile(r'\['),
+        'bracket_right': re.compile(r'\]'),
     }
 
     def _tokenize(self, string):
@@ -613,6 +681,84 @@ class AlgebraParser:
         else:
             return None, index
 
+    def _parse_s_expression(self, tokens, index, depth):
+        # type: (list[Token], int, int) -> tuple[Optional[SExpression], int]
+        #print(depth * '  ' + f's_exp@{index}')
+        if not self._token_is(tokens, index, 'paren_left'):
+            return None, index
+        arg_index = index + 1
+        good_next_token = any(
+            self._token_is(tokens, arg_index, token_class) for token_class
+            in ['quote', 'identifier', 'add_op', 'mul_op', 'pow_op']
+        )
+        if not good_next_token:
+            return None, index
+        arg_parse = None # type: SymbolicMath
+        args = []
+        if tokens[arg_index].token_class.endswith('_op'):
+            arg_parse = Literal(tokens[arg_index].string)
+            arg_index += 1
+        else:
+            arg_parse, arg_index = self._parse_s_term(tokens, arg_index, depth + 1)
+        if arg_parse is None:
+            return arg_parse, index
+        args.append(arg_parse)
+        while arg_index < len(tokens):
+            arg_parse, arg_index = self._parse_s_term(tokens, arg_index, depth + 1)
+            if arg_parse is None:
+                break
+            args.append(arg_parse)
+        if len(args) == 1:
+            return None, index
+        if not self._token_is(tokens, arg_index, 'paren_right'):
+            return None, index
+        return SExpression(*args), arg_index + 1
+
+    def _parse_s_term(self, tokens, index, depth):
+        # type: (list[Token], int, int) -> tuple[Optional[SymbolicMath], int]
+        #print(depth * '  ' + f's_term@{index}')
+        parse = None # type: SymbolicMath
+        parse, new_index = self._parse_s_expression(tokens, index, depth + 1)
+        if parse is not None:
+            return parse, new_index
+        parse, new_index = self._parse_s_list_var(tokens, index, depth + 1)
+        if parse is not None:
+            return parse, new_index
+        parse, new_index = self._parse_number(tokens, index, depth + 1)
+        if parse is not None:
+            return parse, new_index
+        parse, new_index = self._parse_variable(tokens, index, depth + 1)
+        if parse is not None:
+            return parse, new_index
+        parse, new_index = self._parse_s_literal(tokens, index, depth + 1)
+        if parse is not None:
+            return parse, new_index
+        return None, index
+
+    def _parse_s_list_var(self, tokens, index, depth):
+        # type: (list[Token], int, int) -> tuple[Optional[ListVar], int]
+        #print(depth * '  ' + f's_list_var@{index}')
+        if not self._token_is(tokens, index, 'bracket_left'):
+            return None, index
+        parse, new_index = self._parse_variable(tokens, index + 1, depth + 1)
+        if parse is None:
+            return None, index
+        if not self._token_is(tokens, new_index, 'bracket_right'):
+            return None, index
+        return ListVar(parse.name), new_index + 1
+
+    def _parse_s_literal(self, tokens, index, depth):
+        # type: (list[Token], int, int) -> tuple[Optional[Literal], int]
+        #print(depth * '  ' + f'literal@{index}')
+        if not self._token_is(tokens, index, 'quote'):
+            return None, index
+        parse, new_index = self._parse_variable(tokens, index + 1, depth + 1)
+        if parse is None:
+            return None, index
+        if not self._token_is(tokens, new_index, 'quote'):
+            return None, index
+        return Literal(parse.name), new_index + 1
+
     def parse_equation(self, string):
         # type: (str) -> Optional[Equation]
         try:
@@ -634,6 +780,19 @@ class AlgebraParser:
             return None
         tokens = [token for token in tokens if token.token_class != 'space']
         parse, index = self._parse_expression(tokens, 0, 0)
+        if index != len(tokens):
+            return None
+        else:
+            return parse
+
+    def parse_s_expression(self, string):
+        # type: (str) -> Optional[SExpression]
+        try:
+            tokens = self._tokenize(string)
+        except TokenizationError:
+            return None
+        tokens = [token for token in tokens if token.token_class != 'space']
+        parse, index = self._parse_s_term(tokens, 0, 0)
         if index != len(tokens):
             return None
         else:

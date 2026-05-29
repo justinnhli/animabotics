@@ -89,6 +89,57 @@ def test_parser_bad():
         assert parse is None, (equation, parse)
 
 
+def test_sexp_parser_good():
+    parser = AlgebraParser()
+    sexps = [
+        '0',
+        'b',
+        ' ( + 1 1 ) ',
+        ' ( + 1 (+ 1 1) ) ',
+        '(/ a)',
+        '(* [a] 0 [b])',
+        '(+ [a] 0 [b])',
+        '(* [a] 1 [b])',
+        '(* [a] [b])',
+        '(+ [a] [b])',
+        '(+ [a] [b] [c])',
+        '(+ [a] (- x) [b] x [c])',
+        '(+ [a] x [b] (- x) [c])',
+        '(op [a] [b] [c])',
+        '(op [a] [b] [c] z)',
+        '(op [a] (op [b]) [c])',
+        '(op [a] x [b] y [c])',
+        '(+ (^ ("cos" theta) 2) (^ ("sin" theta) 2))',
+    ]
+    for sexp in sexps:
+        parse = parser.parse_s_expression(sexp)
+        assert parse is not None, sexp
+        assert parser.parse_s_expression(str(parse)) == parse, (
+            sexp,
+            parse,
+            str(parse),
+            parser.parse_s_expression(str(parse)),
+        )
+
+
+def test_sexp_parser_bad():
+    parser = AlgebraParser()
+    sexps = [
+        '+',
+        '(+ +)',
+        '"123 abc"',
+        '"abc123]',
+        '[123 abc]',
+        '[abc123"',
+        '[abc123"',
+        '(0)',
+        '(cos)',
+    ]
+    for sexp in sexps:
+        parse = parser.parse_s_expression(sexp)
+        assert parse is None, (sexp, parse)
+
+
 def test_evaluate():
     parser = AlgebraParser()
     assert parser.parse_expression('1').evaluate() == 1
