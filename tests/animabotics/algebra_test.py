@@ -368,6 +368,8 @@ def test_rewrite_conditions():
 
 
 def test_simplification():
+    # type: () -> None
+    """Test simplify()."""
     tests = (
         ('(+ 1 2 3)', '6'),
         ('(+ 0)', '0'),

@@ -24,10 +24,12 @@ from fractions import Fraction
 from functools import reduce, lru_cache
 from math import prod
 from typing import Any, Union, Iterator, Callable
+from typing import cast
 
 
 BuiltInNumber = Union[int, float, Fraction]
-Bindings = dict[str, Union['Expression', tuple['Expression', ...]]]
+ExpressionTuple = tuple['Expression', ...]
+Bindings = dict[str, Union['Expression', ExpressionTuple]]
 
 
 class Pattern:
@@ -748,11 +750,11 @@ class RewriteRule:
         else:
             self.after = after
         if condition is None:
-            self.condition = _true
+            self.condition = _true # type: ConditionsFunction
         else:
             self.condition = condition
         if results is None:
-            self.results = _identity
+            self.results = _identity # type: ResultsFunction
         else:
             self.results = results
 
@@ -857,7 +859,7 @@ SIMPLIFICATION_RULESET = (
             and bindings['a'].value < 0
         ),
         results=(lambda rule, expression, bindings: {
-            'b': Number(abs(bindings['a'].value)),
+            'b': Number(abs(cast(Number, bindings['a']).value)),
         }),
     ),
     # fold constants
@@ -865,22 +867,34 @@ SIMPLIFICATION_RULESET = (
         '(+ [terms])',
         '(+ number [non_numbers])',
         condition=(lambda rule, expression, bindings:
-            sum(1 for term in bindings['terms'] if isinstance(term, Number)) > 1
+            sum(1 for term in cast(ExpressionTuple, bindings['terms']) if isinstance(term, Number)) > 1
         ),
         results=(lambda rule, expression, bindings: {
-            'number': Number(sum(term.value for term in bindings['terms'] if isinstance(term, Number))),
-            'non_numbers': tuple(term for term in bindings['terms'] if not isinstance(term, Number)),
+            'number': Number(sum(
+                term.value for term in cast(ExpressionTuple, bindings['terms'])
+                if isinstance(term, Number)
+            )),
+            'non_numbers': tuple(
+                term for term in cast(ExpressionTuple, bindings['terms'])
+                if not isinstance(term, Number)
+            ),
         }),
     ),
     RewriteRule(
         '(* [terms])',
         '(* number [non_numbers])',
         condition=(lambda rule, expression, bindings:
-            sum(1 for term in bindings['terms'] if isinstance(term, Number)) > 1
+            sum(1 for term in cast(ExpressionTuple, bindings['terms']) if isinstance(term, Number)) > 1
         ),
         results=(lambda rule, expression, bindings: {
-            'number': Number(prod(term.value for term in bindings['terms'] if isinstance(term, Number))),
-            'non_numbers': tuple(term for term in bindings['terms'] if not isinstance(term, Number)),
+            'number': Number(prod(
+                term.value for term in cast(ExpressionTuple, bindings['terms'])
+                if isinstance(term, Number)
+            )),
+            'non_numbers': tuple(
+                term for term in cast(ExpressionTuple, bindings['terms'])
+                if not isinstance(term, Number)
+            ),
         }),
     ),
     # reduce the zero product
@@ -912,11 +926,11 @@ SIMPLIFICATION_RULESET = (
             'd': tuple(
                 FunctionCallExpression(
                     Function('*'),
-                    *bindings['a'],
+                    *cast(ExpressionTuple, bindings['a']),
                     expression,
-                    *bindings['c'],
+                    *cast(ExpressionTuple, bindings['c']),
                 )
-                for expression in bindings['b']
+                for expression in cast(ExpressionTuple, bindings['b'])
             ),
         }),
     ),
@@ -946,6 +960,7 @@ SIMPLIFICATION_RULESET = (
 @lru_cache(maxsize=2**20)
 def simplify(expression):
     # type: (Expression) -> Expression
+    """Simplify an algebraic expression."""
     for rule in SIMPLIFICATION_RULESET:
         expression = rule.apply_all_no_recur(expression)
     if isinstance(expression, FunctionCallExpression):
@@ -953,10 +968,9 @@ def simplify(expression):
             expression.head,
             *(simplify(term) for term in expression.args),
         )
-    changed = True
-    while changed:
+    old_expression = None
+    while old_expression != expression:
         old_expression = expression
         for rule in SIMPLIFICATION_RULESET:
             expression = rule.apply_all(expression)
-        changed = (expression != old_expression)
     return expression
