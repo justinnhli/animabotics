@@ -193,6 +193,24 @@ class Function(Expression):
         else:
             raise ValueError(f'unknown function "{self.name}()"')
 
+    @_register
+    @staticmethod
+    def _e(*_):
+        # type: (*Fraction) -> Fraction
+        return Fraction(
+            27182818284590452353602874713526,
+            10000000000000000000000000000000,
+        )
+
+    @_register
+    @staticmethod
+    def _pi(*_):
+        # type: (*Fraction) -> Fraction
+        return Fraction(
+            31415926535897932384626433832795,
+            10000000000000000000000000000000,
+        )
+
     @_register('+')
     @staticmethod
     def _sum(*terms):
@@ -574,16 +592,15 @@ class AlgebraParser:
             return None, index
         args = []
         arg_parse, arg_index = self._parse_expression(tokens, index + 2, depth + 1)
-        if arg_parse is None:
-            return None, index
-        args.append(arg_parse)
-        while arg_index < len(tokens):
-            if not self._token_is(tokens, arg_index, 'comma'):
-                break
-            arg_parse, arg_index = self._parse_expression(tokens, arg_index + 1, depth + 1)
-            if arg_parse is None:
-                return None, index
+        if arg_parse is not None:
             args.append(arg_parse)
+            while arg_index < len(tokens):
+                if not self._token_is(tokens, arg_index, 'comma'):
+                    break
+                arg_parse, arg_index = self._parse_expression(tokens, arg_index + 1, depth + 1)
+                if arg_parse is None:
+                    return None, index
+                args.append(arg_parse)
         if not self._token_is(tokens, arg_index, 'paren_right'):
             return None, index
         return FunctionCall(function, *args), arg_index + 1

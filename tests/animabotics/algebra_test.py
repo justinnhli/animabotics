@@ -26,6 +26,7 @@ def test_parser_good():
         'long_variable_name = long + variable + name',
         'z = func(x, y)',
         'y = relu(sum(xs)) + b',
+        'const = pi()',
     ]
     for equation in equations:
         sides = equation.split('=')
@@ -59,7 +60,6 @@ def test_parser_bad():
         '1 * 2 *',
         '1 ^ 2 ^',
         '1 = 1', # expressions should not have equal signs
-        'abs()',
         '+1',
         '+',
         'sin(x',
