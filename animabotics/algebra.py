@@ -10,7 +10,10 @@ BuiltInNumber = Union[int, float, Fraction]
 
 
 class SymbolicMath:
-    pass
+
+    def substitute(self, bindings):
+        # type: (dict[Expression, Expression]) -> Expression
+        raise NotImplementedError()
 
 
 class Expression(SymbolicMath):
@@ -108,6 +111,10 @@ class Expression(SymbolicMath):
             return Number(other) ** self
         else:
             raise TypeError(f'unsupported operand type(s) for **: {type(other)} and {type(self)}')
+
+    def evaluate(self):
+        # type: () -> BuiltInNumber
+        raise NotImplementedError()
 
 
 class Number(Expression):
@@ -257,6 +264,9 @@ class Equation(SymbolicMath):
         # type: () -> str
         return f'(= {repr(self.lhs)} {repr(self.rhs)})'
 
+    def solve_for(self, variable):
+        # type: (str) -> Expression
+        raise NotImplementedError()
 
 
 class TokenizationError(Exception):
