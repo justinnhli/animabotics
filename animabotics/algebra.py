@@ -3,7 +3,8 @@
 import re
 from collections import namedtuple
 from fractions import Fraction
-from typing import Any, Optional, Union
+from functools import reduce
+from typing import Any, Optional, Union, Callable
 
 
 BuiltInNumber = Union[int, float, Fraction]
@@ -146,8 +147,28 @@ class Number(Expression):
         else:
             return f'{self.value.numerator}/{self.value.denominator}'
 
+    def evaluate(self):
+        # type: () -> BuiltInNumber
+        return self.value
+
+
+_FUNCTION_REGISTRY = {} # type: dict[str, Callable[[*tuple[Fraction, ...]], Fraction]]
+
+
+def _register(func, extra_name=None):
+    # type: (Callable[[*tuple[Fraction, ...]], Fraction], str) -> None
+    names = []
+    names.append(func.__name__.strip('_'))
+    if extra_name is not None:
+        names.append(extra_name)
+    for name in names:
+        assert name not in _FUNCTION_REGISTRY
+        _FUNCTION_REGISTRY[name] = func
+
 
 class Function(Expression):
+
+    TAYLOR_TERMS = 10
 
     def __init__(self, name):
         # type: (str) -> None
@@ -161,13 +182,95 @@ class Function(Expression):
         # type: (Any) -> bool
         return isinstance(other, Function) and self.name == other.name
 
-    def __str__(self):
-        # type: () -> str
-        return self.name
-
     def __repr__(self): # pragma: no cover
         # type: () -> str
         return self.name
+
+    def evaluate(self):
+        # type: () -> Callable[[*tuple[Fraction, ...]], Fraction]
+        if self.name in _FUNCTION_REGISTRY:
+            return _FUNCTION_REGISTRY[self.name]
+        else:
+            raise ValueError(f'unknown function "{self.name}()"')
+
+    @_register('+')
+    @staticmethod
+    def _sum(*terms):
+        # type: (*Fraction) -> Fraction
+        return reduce((lambda x, y: x + y), terms, initial=Fraction(0))
+
+    @_register('-')
+    @staticmethod
+    def _negate(*terms):
+        # type: (*Fraction) -> Fraction
+        assert len(terms) == 1
+        return -terms[0]
+
+    @_register('*')
+    @staticmethod
+    def _product(*terms):
+        # type: (*Fraction) -> Fraction
+        return reduce((lambda x, y: x * y), terms, initial=Fraction(1))
+
+    @_register('/')
+    @staticmethod
+    def _inverse(*terms):
+        # type: (*Fraction) -> Fraction
+        assert len(terms) == 1
+        return Fraction(1, terms[0])
+
+    @_register('^')
+    @staticmethod
+    def _exponentiate(*terms):
+        # type: (*Fraction) -> Fraction
+        assert len(terms) == 2
+        return terms[0] ** terms[1]
+
+    @_register()
+    @staticmethod
+    def _fact(*terms):
+        # type: (*Fraction) -> Fraction
+        assert len(terms) == 1
+        n = terms[0]
+        assert n.is_integer() and n >= 0
+        if n == 0:
+            return Fraction(1)
+        else:
+            return _FUNCTION_REGISTRY['*'](*range(1, int(n) + 1))
+
+    @_register()
+    @staticmethod
+    def _sin(*terms):
+        # type: (*Fraction) -> Fraction
+        assert len(terms) == 1
+        theta = terms[0]
+        return sum(
+            (
+                Fraction(
+                    ((-1) ** n) * theta**(2 * n + 1),
+                    Function._fact(2 * n + 1),
+                )
+                for n in range(Function.TAYLOR_TERMS)
+            ),
+            start=Fraction(0),
+        )
+
+    @_register()
+    @staticmethod
+    def _cos(*terms):
+        # type: (*Fraction) -> Fraction
+        assert len(terms) == 1
+        theta = terms[0]
+        return sum(
+            (
+                Fraction(
+                    ((-1) ** n) * theta**(2 * n),
+                    Function._fact(2 * n ),
+                )
+                for n in range(Function.TAYLOR_TERMS)
+            ),
+            start=Fraction(0),
+        )
 
 
 class Variable(Expression):
@@ -187,6 +290,10 @@ class Variable(Expression):
     def __repr__(self): # pragma: no cover
         # type: () -> str
         return self.name
+
+    def evaluate(self):
+        # type: () -> BuiltInNumber
+        raise ValueError(f'no value given for variable "{self.name}"')
 
 
 class FunctionCall(Expression):
@@ -239,6 +346,12 @@ class FunctionCall(Expression):
     def __repr__(self): # pragma: no cover
         # type: () -> str
         return f'({self.function}' + ''.join(f' {repr(arg)}' for arg in self.args) + ')'
+
+    def evaluate(self):
+        # type: () -> BuiltInNumber
+        return self.function.evaluate()(*(
+            arg.evaluate() for arg in self.args
+        ))
 
 
 class Equation(SymbolicMath):

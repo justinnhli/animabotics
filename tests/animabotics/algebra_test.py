@@ -1,4 +1,7 @@
+from fractions import Fraction
+
 from animabotics import AlgebraParser
+from animabotics.algebra import FunctionCall, Function, Number
 
 
 def test_parser_good():
@@ -84,3 +87,25 @@ def test_parser_bad():
     for equation in equations:
         parse = parser.parse_equation(equation)
         assert parse is None, (equation, parse)
+
+
+def test_evaluate():
+    parser = AlgebraParser()
+    assert parser.parse_expression('1').evaluate() == 1
+    assert parser.parse_expression('2 + 3').evaluate() == 5
+    assert parser.parse_expression('2 - 3').evaluate() == -1
+    assert parser.parse_expression('2 * 3').evaluate() == 6
+    assert parser.parse_expression('2 / 3').evaluate() == Fraction(2, 3)
+    assert parser.parse_expression('2 ^ 3').evaluate() == 8
+    assert parser.parse_expression('2^(-1 + -1)').evaluate() == Fraction(1, 4)
+    assert parser.parse_expression('(2 / 3)^2').evaluate() == Fraction(4, 9)
+    try:
+        print(parser.parse_expression('a').evaluate())
+        assert False
+    except ValueError:
+        pass
+    try:
+        print(parser.parse_expression('asdf(0)').evaluate())
+        assert False
+    except ValueError:
+        pass
