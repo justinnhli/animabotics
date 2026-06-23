@@ -242,3 +242,57 @@ def test_pattern_matching():
             for bindings in pattern.matches(expression, {})
         )
         assert actual_matches == expect_matches, (pattern_str, expression_str, actual_matches)
+
+
+def test_substitute_good():
+    tests = (
+        ('1', {}, '1'),
+        ('x', {}, 'x'),
+        ('x', {'x': '1'}, '1'),
+        ('(+ x 1)', {'x': '2'}, '(+ 2 1)'),
+        ('(+ x y)', {'x': '1', 'y': '2'}, '(+ 1 2)'),
+        ('(+ x y)', {'x': '1', 'y': '(+ 2 3)'}, '(+ 1 (+ 2 3))'),
+        ('(+ x x y)', {'x': '1', 'y': '(+ 2 3)'}, '(+ 1 1 (+ 2 3))'),
+        ('(+ [p])', {'p': ('1', '2', '3')}, '(+ 1 2 3)'),
+        ('(+ [p] [p])', {'p': ('1', '2', '3')}, '(+ 1 2 3 1 2 3)'),
+        ('(+ [p] [q])', {'p': ('1', '2'), 'q': ('3',)}, '(+ 1 2 3)'),
+        ('(cos x)', {'cos': 'sin'}, '(cos x)'),
+        ('(+ p)', {}, '(+ p)'),
+    )
+    for pattern_str, bindings_str, result_str in tests:
+        bindings = {
+            key: (
+                tuple(parse_expression(value) for value in values)
+                if isinstance(values, tuple)
+                else parse_expression(values)
+            )
+            for key, values in bindings_str.items()
+        }
+        pattern = parse_pattern(pattern_str)
+        result = parse_expression(result_str)
+        actual = pattern.substitute(bindings)
+        assert actual == result, (pattern, bindings, result, actual)
+
+
+def test_substitute_bad():
+    tests = (
+        ('p', {'p': ('1',)}),
+        ('(+ p)', {'p': ('1', '2', '3')}),
+        ('(+ [p])', {'p': '1'}),
+        ('(+ [p])', {}),
+    )
+    for pattern_str, bindings_str in tests:
+        bindings = {
+            key: (
+                tuple(parse_expression(value) for value in values)
+                if isinstance(values, tuple)
+                else parse_expression(values)
+            )
+            for key, values in bindings_str.items()
+        }
+        pattern = parse_pattern(pattern_str)
+        try:
+            print(pattern.substitute(bindings))
+            assert False
+        except ValueError:
+            pass

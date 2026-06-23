@@ -37,6 +37,11 @@ class Pattern:
         """Match this pattern to the expression."""
         raise NotImplementedError()
 
+    def substitute(self, bindings):
+        # type: (Bindings) -> Expression
+        """Substitute the bindings into this pattern."""
+        raise NotImplementedError()
+
 
 class Expression(Pattern):
     """An expression."""
@@ -180,6 +185,10 @@ class Number(Expression):
         if isinstance(expression, Number) and expression.value == self.value:
             yield bindings
 
+    def substitute(self, _):
+        # type: (Bindings) -> Number
+        return self
+
 
 class Variable(Expression):
     """A variable."""
@@ -212,6 +221,19 @@ class Variable(Expression):
         elif bindings[self.name] == expression:
             yield bindings
 
+    def substitute(self, bindings):
+        # type: (Bindings) -> Expression
+        if self.name in bindings:
+            value = bindings[self.name]
+            if not isinstance(value, Expression):
+                raise ValueError(' '.join([
+                    f'expected variable {self.name} to be an Expression,',
+                    f'but got a {type(value).__name__}: {value}',
+                ]))
+            return value
+        else:
+            return self
+
 
 class ListVariable(Pattern):
     """A list variable."""
@@ -235,6 +257,10 @@ class ListVariable(Pattern):
 
     def matches(self, expression, bindings):
         # type: (Expression, Bindings) -> Iterator[Bindings]
+        assert False
+
+    def substitute(self, bindings):
+        # type: (Bindings) -> Expression
         assert False
 
 
@@ -292,6 +318,10 @@ class Function(Expression):
         # type: (Expression, Bindings) -> Iterator[Bindings]
         if isinstance(expression, Function) and expression.name == self.name:
             yield bindings
+
+    def substitute(self, _):
+        # type: (Bindings) -> Function
+        return self
 
     @_register()
     @staticmethod
@@ -473,6 +503,27 @@ class FunctionCallPattern(Pattern):
                 return
             for new_bindings in patterns[0].matches(expressions[0], bindings):
                 yield from self._matches(patterns[1:], expressions[1:], new_bindings)
+
+    def substitute(self, bindings):
+        # type: (Bindings) -> Expression
+        new_head = self.head.substitute(bindings)
+        new_args = [] # type: list[Expression]
+        for arg in self.args:
+            if isinstance(arg, ListVariable):
+                if arg.name not in bindings:
+                    # unbound list variables are not allowed, in order to return an Expression
+                    # FIXME note discrepancy with non-list variables
+                    raise ValueError(f'variable {arg.name} not bound')
+                values = bindings[arg.name]
+                if not isinstance(values, tuple):
+                    raise ValueError(' '.join([
+                        f'expected variable {arg.name} to be a tuple of Expressions,',
+                        f'but got a {type(values).__name__}: {values}',
+                    ]))
+                new_args.extend(value for value in values)
+            else:
+                new_args.append(arg.substitute(bindings))
+        return FunctionCallExpression(new_head, *new_args)
 
 
 class FunctionCallExpression(FunctionCallPattern, Expression):
