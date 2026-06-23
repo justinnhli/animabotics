@@ -4,7 +4,7 @@ from fractions import Fraction
 
 from animabotics.algebra import FunctionCallExpression, Function, Number
 from animabotics.algebra import parse_expression, parse_pattern
-
+from animabotics.algebra import RewriteRule
 
 
 def test_interoperability():
@@ -296,3 +296,62 @@ def test_substitute_bad():
             assert False
         except ValueError:
             pass
+
+
+def test_rewrite_lists():
+    rule = RewriteRule(
+        parse_pattern('(+ [a] 0 [b])'),
+        parse_pattern('(+ [a] [b])'),
+    )
+    tests = (
+        ('1', '1'),
+        ('(+ 1 0)', '(+ 1)'),
+        ('(+ 0 1)', '(+ 1)'),
+        ('(+ 0 1 0)', '(+ 1)'),
+        ('(+ 0 1 0 2 0 0 0)', '(+ 1 2)'),
+        ('(+ 1 0 2 0 (+ 3 0 4))', '(+ 1 2 (+ 3 4))'),
+    )
+    for expression_str, result_str in tests:
+        assert rule.apply_all(parse_expression(expression_str)) == parse_expression(result_str)
+
+
+def test_rewrite_conditions():
+    rule = RewriteRule(
+        parse_pattern('(+ a b)'),
+        parse_pattern('c'),
+        condition=(lambda rule, expression, bindings: (
+            isinstance(bindings['a'], Number)
+            and isinstance(bindings['b'], Number)
+        )),
+        results=(lambda rule, expression, bindings: {
+            'c': bindings['a'].value + bindings['b'].value,
+        }),
+    )
+    tests = (
+        ('(+ 1 1)', '2'),
+        ('(+ n 1)', '(+ n 1)'),
+        ('(+ 1 1 1)', '(+ 1 1 1)'),
+    )
+    for expression_str, result_str in tests:
+        assert rule.apply_all(parse_expression(expression_str)) == parse_expression(result_str)
+    rule = RewriteRule(
+        parse_pattern('(+ [numbers])'),
+        parse_pattern('sum'),
+        condition=(lambda rule, expression, bindings: (
+            len(bindings['numbers']) > 0
+            and all(isinstance(value, Number) for value in bindings['numbers'])
+        )),
+        results=(lambda rule, expression, bindings: {
+            'sum': sum(number.value for number in bindings['numbers']),
+        }),
+    )
+    tests = (
+        ('(+)', '(+)'),
+        ('(+ 1)', '1'),
+        ('(+ 1 1)', '2'),
+        ('(+ n 1)', '(+ n 1)'),
+        ('(+ 1 1 1)', '3'),
+        ('(+ 1 2 4 (+ 3 5))', '15'),
+    )
+    for expression_str, result_str in tests:
+        assert rule.apply_all(parse_expression(expression_str)) == parse_expression(result_str)

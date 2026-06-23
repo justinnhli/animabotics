@@ -225,6 +225,8 @@ class Variable(Expression):
         # type: (Bindings) -> Expression
         if self.name in bindings:
             value = bindings[self.name]
+            if isinstance(value, (int, Fraction)):
+                return Number(value)
             if not isinstance(value, Expression):
                 raise ValueError(' '.join([
                     f'expected variable {self.name} to be an Expression,',
@@ -515,11 +517,12 @@ class FunctionCallPattern(Pattern):
                     # FIXME note discrepancy with non-list variables
                     raise ValueError(f'variable {arg.name} not bound')
                 values = bindings[arg.name]
-                if not isinstance(values, tuple):
+                if not isinstance(values, tuple): # FIXME deeper type check
                     raise ValueError(' '.join([
                         f'expected variable {arg.name} to be a tuple of Expressions,',
                         f'but got a {type(values).__name__}: {values}',
                     ]))
+                # FIXME allow for int and Fraction in the tuple
                 new_args.extend(value for value in values)
             else:
                 new_args.append(arg.substitute(bindings))
@@ -714,3 +717,69 @@ def parse_pattern(string):
     if parse is None or index != len(tokens):
         raise ValueError(f'parsing error: {string}')
     return parse
+
+
+ConditionsFunction = Callable[['RewriteRule', Expression, Bindings], bool]
+ResultsFunction = Callable[['RewriteRule', Expression, Bindings], Bindings]
+
+
+def _true(_1, _2, _3):
+    # type: (RewriteRule, Expression, Bindings) -> bool
+    return True
+
+
+def _identity(_1, _2, bindings):
+    # type: (RewriteRule, Expression, Bindings) -> Bindings
+    return bindings
+
+
+class RewriteRule:
+    """A rewrite rule."""
+
+    def __init__(self, before, after, condition=None, results=None):
+        # type: (Pattern, Pattern, ConditionsFunction, ResultsFunction) -> None
+        self.before = before
+        self.after = after
+        if condition is None:
+            self.condition = _true
+        else:
+            self.condition = condition
+        if results is None:
+            self.results = _identity
+        else:
+            self.results = results
+
+    def apply_all_no_recur(self, expression):
+        # type: (Expression) -> Expression
+        """Apply the rule at the top level exhaustively."""
+        while True:
+            bindings = None
+            for new_bindings in self.before.matches(expression, {}):
+                if self.condition(self, expression, new_bindings):
+                    bindings = new_bindings
+                    break
+            if bindings is None:
+                break
+            else:
+                expression = self.after.substitute({
+                    **bindings,
+                    **self.results(self, expression, bindings),
+                })
+        return expression
+
+    def apply_all(self, expression):
+        # type: (Expression) -> Expression
+        """Apply the rule exhaustively and recursively."""
+        # apply first to prune applications later
+        expression = self.apply_all_no_recur(expression)
+        # apply recursively
+        if isinstance(expression, FunctionCallExpression):
+            expression = FunctionCallExpression(
+                expression.head,
+                *(
+                    self.apply_all(subexpression)
+                    for subexpression in expression.args
+                ),
+            )
+        # apply again
+        return self.apply_all_no_recur(expression)
