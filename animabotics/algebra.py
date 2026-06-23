@@ -26,7 +26,7 @@ from typing import Any, Union, Iterator, Callable
 
 
 BuiltInNumber = Union[int, float, Fraction]
-Bindings = dict[str, tuple['Expression', ...]]
+Bindings = dict[str, Union['Expression', tuple['Expression', ...]]]
 
 
 class Expression:
@@ -208,8 +208,8 @@ class Variable(Expression, Pattern):
     def matches(self, expression, bindings):
         # type: (Expression, Bindings) -> Iterator[Bindings]
         if self.name not in bindings:
-            yield {**bindings, self.name: (expression,)}
-        elif bindings[self.name] == (expression,):
+            yield {**bindings, self.name: expression}
+        elif bindings[self.name] == expression:
             yield bindings
 
 
@@ -461,13 +461,13 @@ class FunctionCallPattern(FunctionCall[Pattern], Pattern):
 
     def _matches(self, patterns, expressions, bindings):
         # type: (tuple[Pattern, ...], tuple[Expression, ...], Bindings) -> Iterator[Bindings]
-        # base case: no more patterns to match, but expressions remaining
         if not patterns and expressions:
-            yield {}
-        # base case: both patterns and expressions are exhausted
-        if not patterns and not expressions:
+            # base case: no more patterns to match, but expressions remaining
+            return
+        elif not patterns and not expressions:
+            # base case: both patterns and expressions are exhausted
             yield bindings
-        if isinstance(patterns[0], ListVariable):
+        elif isinstance(patterns[0], ListVariable):
             # recursive case: first pattern is a ListVariable
             for i in range(len(expressions) + 1):
                 yield from self._matches(

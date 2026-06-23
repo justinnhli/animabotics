@@ -146,3 +146,99 @@ def test_evaluate():
         assert False
     except ValueError:
         pass
+
+
+def test_pattern_matching():
+    tests = [
+        ('1', '1', [{}]),
+        ('1', '0', []),
+        ('x', '1', [{'x': '1'}]),
+        ('x', 'y', [{'x': 'y'}]),
+        ('x', '(+ 1 1)', [{'x': '(+ 1 1)'}]),
+        ('(x)', '(+ 1 1)', []),
+        ('(x)', '1', []),
+        ('(+ 0 1)', '(* 0 1)', []),
+        ('(+ x y)', '(+ 1 1)', [{'x': '1', 'y': '1'}]),
+        ('(+ x y)', '(+ 1 2)', [{'x': '1', 'y': '2'}]),
+        ('(+ x x)', '(+ 1 1)', [{'x': '1'}]),
+        ('(+ x x)', '(+ 1 2)', []),
+        ('(+ x (+ x x))', '(+ 1 (+ 1 1))', [{'x': '1'}]),
+        ('(+ x (+ y y))', '(+ 1 (+ 1 1))', [{'x': '1', 'y': '1'}]),
+        ('(+ x (+ x y))', '(+ 1 (+ 1 1))', [{'x': '1', 'y': '1'}]),
+        ('(+ x (+ y y))', '(+ 1 (+ 2 2))', [{'x': '1', 'y': '2'}]),
+        ('(+ x (+ x y))', '(+ 1 (+ 2 1))', []),
+        ('(+ x x x)', '(+ 1 1 1)', [{'x': '1'}]),
+        (
+            '(+ [a] [b])',
+            '(+ 0)',
+            [
+                {'a': (), 'b': ('0',)},
+                {'a': ('0',), 'b': ()},
+            ],
+        ),
+        (
+            '(+ [a] [b])',
+            '(+ 0 1)',
+            [
+                {'a': (), 'b': ('0', '1')},
+                {'a': ('0',), 'b': ('1',)},
+                {'a': ('0', '1'), 'b': ()},
+            ],
+        ),
+        (
+            '(+ [a] [b])',
+            '(+ 0 1 2)',
+            [
+                {'a': (), 'b': ('0', '1', '2')},
+                {'a': ('0',), 'b': ('1', '2')},
+                {'a': ('0', '1'), 'b': ('2',)},
+                {'a': ('0', '1', '2'), 'b': ()},
+            ],
+        ),
+        (
+            '(+ [a] [b] [c])',
+            '(+ 0 1)',
+            [
+                {'a': (), 'b': (), 'c': ('0', '1')},
+                {'a': (), 'b': ('0',), 'c': ('1',)},
+                {'a': (), 'b': ('0', '1'), 'c': ()},
+                {'a': ('0',), 'b': (), 'c': ('1',)},
+                {'a': ('0',), 'b': ('1',), 'c': ()},
+                {'a': ('0', '1'), 'b': (), 'c': ()},
+            ],
+        ),
+        (
+            '(+ [a] x [b])',
+            '(+ 0 1)',
+            [
+                {'a': (), 'b': ('1',), 'x': '0'},
+                {'a': ('0',), 'b': (), 'x': '1'},
+            ],
+        ),
+        (
+            '(+ [a] 1 [b])',
+            '(+ 0 1)',
+            [{'a': ('0',), 'b': ()}],
+        ),
+    ]
+    for pattern_str, expression_str, expect_matches_list in tests:
+        pattern = parse_pattern(pattern_str)
+        assert pattern is not None, (pattern_str, pattern)
+        expression = parse_expression(expression_str)
+        assert expression is not None, (expression_str, expression)
+        expect_matches = set()
+        for bindings in expect_matches_list:
+            expression_bindings = {}
+            for variable, value in bindings.items():
+                if isinstance(value, str):
+                    expression_bindings[variable] = parse_expression(value)
+                elif isinstance(value, tuple):
+                    expression_bindings[variable] = tuple(parse_expression(val) for val in value)
+                else:
+                    raise ValueError()
+            expect_matches.add(tuple(sorted(expression_bindings.items())))
+        actual_matches = set(
+            tuple(sorted(bindings.items()))
+            for bindings in pattern.matches(expression, {})
+        )
+        assert actual_matches == expect_matches, (pattern_str, expression_str, actual_matches)
