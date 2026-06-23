@@ -1,38 +1,50 @@
-"""Symbolic algebra."""
+"""A computer algebra system.
+
+Both Expressions and Patterns are parsed from S-expression, with the following grammar:
+
+expression = number | variable | function_call_expression;
+function_call_expression = "(" function ( expression_arg )* ")";
+expression_arg = expression;
+
+pattern = number | variable | function_call_pattern;
+function_call_pattern = "(" function ( pattern_arg )* ")";
+pattern_arg = pattern | list_variable;
+
+function = identifier | operator;
+operator = [+-*/^];
+list_variable = "[" identifier "]";
+variable = identifier;
+number = -?[0-9]+;
+identifier = [a-z][a-z0-9_]+;
+"""
 
 import re
 from collections import namedtuple
 from fractions import Fraction
-from functools import reduce
-from typing import Any, Optional, Union, Callable
+from typing import Any, Union, Iterator
 
 
 BuiltInNumber = Union[int, float, Fraction]
+Bindings = dict[str, tuple['Expression', ...]]
 
 
-class SymbolicMath:
-
-    def substitute(self, bindings):
-        # type: (dict[Expression, Expression]) -> Expression
-        raise NotImplementedError()
-
-
-class Expression(SymbolicMath):
+class Expression:
+    """An expression."""
 
     def __neg__(self):
         # type: (Any) -> Any
-        return FunctionCall(Function('-'), self)
+        return FunctionCallExpression(Function('-'), self)
 
     def __add__(self, other):
         # type: (Any) -> Any
         if isinstance(other, (int, float, Fraction)):
-            return FunctionCall(Function('+'), self, Number(other))
-        if isinstance(other, (Number, Variable, FunctionCall)):
-            return FunctionCall(Function('+'), self, other)
+            return FunctionCallExpression(Function('+'), self, Number(other))
+        if isinstance(other, (Number, Variable, FunctionCallExpression)):
+            return FunctionCallExpression(Function('+'), self, other)
         if hasattr(other, '__radd__'):
             return other.__radd__(self)
         else:
-            return FunctionCall(Function('+'), self, other)
+            return FunctionCallExpression(Function('+'), self, other)
 
     def __radd__(self, other):
         # type: (BuiltInNumber) -> Any
@@ -44,13 +56,13 @@ class Expression(SymbolicMath):
     def __sub__(self, other):
         # type: (Any) -> Any
         if isinstance(other, (int, float, Fraction)):
-            return FunctionCall(Function('+'), self, Number(-other))
-        if isinstance(other, (Number, Variable, FunctionCall)):
-            return FunctionCall(Function('+'), self, FunctionCall(Function('-'), other))
+            return FunctionCallExpression(Function('-'), self, Number(other))
+        if isinstance(other, (Number, Variable, FunctionCallExpression)):
+            return FunctionCallExpression(Function('-'), self, other)
         if hasattr(other, '__rsub__'):
             return other.__rsub__(self)
         else:
-            return FunctionCall(Function('-'), self, other)
+            return FunctionCallExpression(Function('-'), self, other)
 
     def __rsub__(self, other):
         # type: (BuiltInNumber) -> Any
@@ -62,13 +74,13 @@ class Expression(SymbolicMath):
     def __mul__(self, other):
         # type: (Any) -> Any
         if isinstance(other, (int, float, Fraction)):
-            return FunctionCall(Function('*'), self, Number(other))
-        if isinstance(other, (Number, Variable, FunctionCall)):
-            return FunctionCall(Function('*'), self, other)
+            return FunctionCallExpression(Function('*'), self, Number(other))
+        if isinstance(other, (Number, Variable, FunctionCallExpression)):
+            return FunctionCallExpression(Function('*'), self, other)
         if hasattr(other, '__rmul__'):
             return other.__rmul__(self)
         else:
-            return FunctionCall(Function('*'), self, other)
+            return FunctionCallExpression(Function('*'), self, other)
 
     def __rmul__(self, other):
         # type: (BuiltInNumber) -> Any
@@ -80,13 +92,13 @@ class Expression(SymbolicMath):
     def __truediv__(self, other):
         # type: (Any) -> Any
         if isinstance(other, (int, float, Fraction)):
-            return FunctionCall(Function('*'), self, FunctionCall(Function('/'), Number(other)))
-        if isinstance(other, (Number, Variable, FunctionCall)):
-            return FunctionCall(Function('*'), self, FunctionCall(Function('/'), other))
+            return FunctionCallExpression(Function('/'), self, Number(other))
+        if isinstance(other, (Number, Variable, FunctionCallExpression)):
+            return FunctionCallExpression(Function('/'), self, other)
         if hasattr(other, '__rtruediv__'):
             return other.__rtruediv__(self)
         else:
-            return FunctionCall(Function('/'), self, other)
+            return FunctionCallExpression(Function('/'), self, other)
 
     def __rtruediv__(self, other):
         # type: (BuiltInNumber) -> Any
@@ -98,13 +110,13 @@ class Expression(SymbolicMath):
     def __pow__(self, other):
         # type: (Any) -> Any
         if isinstance(other, (int, float, Fraction)):
-            return FunctionCall(Function('^'), self, Number(other))
-        if isinstance(other, (Number, Variable, FunctionCall)):
-            return FunctionCall(Function('^'), self, other)
+            return FunctionCallExpression(Function('^'), self, Number(other))
+        if isinstance(other, (Number, Variable, FunctionCallExpression)):
+            return FunctionCallExpression(Function('^'), self, other)
         if hasattr(other, '__rpow__'):
             return other.__rpow__(self)
         else:
-            return FunctionCall(Function('^'), self, other)
+            return FunctionCallExpression(Function('^'), self, other)
 
     def __rpow__(self, other):
         # type: (BuiltInNumber) -> Any
@@ -114,14 +126,26 @@ class Expression(SymbolicMath):
             raise TypeError(f'unsupported operand type(s) for **: {type(other)} and {type(self)}')
 
     def evaluate(self):
-        # type: () -> BuiltInNumber
+        # type: () -> Any
+        """Evaluate this expression."""
         raise NotImplementedError()
 
 
-class Number(Expression):
+class Pattern:
+    """A pattern."""
+
+    def matches(self, expression, bindings):
+        # type: (Expression, Bindings) -> Iterator[Bindings]
+        """Match this pattern to the expression."""
+        raise NotImplementedError()
+
+
+class Number(Expression, Pattern):
+    """A number."""
 
     def __init__(self, value):
         # type: (BuiltInNumber) -> None
+        super().__init__()
         if isinstance(value, Fraction):
             self.value = value
         else:
@@ -135,207 +159,33 @@ class Number(Expression):
         # type: (Any) -> bool
         return isinstance(other, Number) and self.value == other.value
 
-    def __lt__(self, other):
-        # type: (Number) -> bool
-        assert isinstance(other, Number)
-        return self.value < other.value
-
-    def __repr__(self): # pragma: no cover
+    def __str__(self):
         # type: () -> str
         if self.value.is_integer():
             return str(self.value.numerator)
         else:
-            return f'{self.value.numerator}/{self.value.denominator}'
+            return f'(/ {self.value.numerator} {self.value.denominator})'
+
+    def __repr__(self):
+        # type: () -> str
+        return f'Number({self.value})'
 
     def evaluate(self):
-        # type: () -> BuiltInNumber
-        return self.value
+        # type: () -> Any
+        raise NotImplementedError()
+
+    def matches(self, expression, bindings):
+        # type: (Expression, Bindings) -> Iterator[Bindings]
+        if isinstance(expression, Number) and expression.value == self.value:
+            yield bindings
 
 
-class Literal(SymbolicMath):
-
-    def __init__(self, value):
-        # type: (str) -> None
-        self.value = value
-
-    def __hash__(self):
-        # type: () -> int
-        return hash(self.value)
-
-    def __eq__(self, other):
-        # type: (Any) -> bool
-        return isinstance(other, Literal) and self.value == other.value
-
-    def __repr__(self): # pragma: no cover
-        # type: () -> str
-        if len(self.value) == 1 and self.value in '+-*/^':
-            return self.value
-        else:
-            return f'"{self.value}"'
-
-
-class ListVar(SymbolicMath):
+class Variable(Expression, Pattern):
+    """A variable."""
 
     def __init__(self, name):
         # type: (str) -> None
-        self.name = name
-
-    def __hash__(self):
-        # type: () -> int
-        return hash(self.name)
-
-    def __eq__(self, other):
-        # type: (Any) -> bool
-        return isinstance(other, ListVar) and self.name == other.name
-
-    def __repr__(self): # pragma: no cover
-        # type: () -> str
-        return f'[{self.name}]'
-
-
-_FUNCTION_REGISTRY = {} # type: dict[str, Callable[[*tuple[Fraction, ...]], Fraction]]
-
-
-def _register(func, extra_name=None):
-    # type: (Callable[[*tuple[Fraction, ...]], Fraction], str) -> None
-    names = []
-    names.append(func.__name__.strip('_'))
-    if extra_name is not None:
-        names.append(extra_name)
-    for name in names:
-        assert name not in _FUNCTION_REGISTRY
-        _FUNCTION_REGISTRY[name] = func
-
-
-class Function(Expression):
-
-    TAYLOR_TERMS = 10
-
-    def __init__(self, name):
-        # type: (str) -> None
-        self.name = name
-
-    def __hash__(self):
-        # type: () -> int
-        return hash(self.name)
-
-    def __eq__(self, other):
-        # type: (Any) -> bool
-        return isinstance(other, Function) and self.name == other.name
-
-    def __repr__(self): # pragma: no cover
-        # type: () -> str
-        return self.name
-
-    def evaluate(self):
-        # type: () -> Callable[[*tuple[Fraction, ...]], Fraction]
-        if self.name in _FUNCTION_REGISTRY:
-            return _FUNCTION_REGISTRY[self.name]
-        else:
-            raise ValueError(f'unknown function "{self.name}()"')
-
-    @_register
-    @staticmethod
-    def _e(*_):
-        # type: (*Fraction) -> Fraction
-        return Fraction(
-            27182818284590452353602874713526,
-            10000000000000000000000000000000,
-        )
-
-    @_register
-    @staticmethod
-    def _pi(*_):
-        # type: (*Fraction) -> Fraction
-        return Fraction(
-            31415926535897932384626433832795,
-            10000000000000000000000000000000,
-        )
-
-    @_register('+')
-    @staticmethod
-    def _sum(*terms):
-        # type: (*Fraction) -> Fraction
-        return reduce((lambda x, y: x + y), terms, initial=Fraction(0))
-
-    @_register('-')
-    @staticmethod
-    def _negate(*terms):
-        # type: (*Fraction) -> Fraction
-        assert len(terms) == 1
-        return -terms[0]
-
-    @_register('*')
-    @staticmethod
-    def _product(*terms):
-        # type: (*Fraction) -> Fraction
-        return reduce((lambda x, y: x * y), terms, initial=Fraction(1))
-
-    @_register('/')
-    @staticmethod
-    def _inverse(*terms):
-        # type: (*Fraction) -> Fraction
-        assert len(terms) == 1
-        return Fraction(1, terms[0])
-
-    @_register('^')
-    @staticmethod
-    def _exponentiate(*terms):
-        # type: (*Fraction) -> Fraction
-        assert len(terms) == 2
-        return terms[0] ** terms[1]
-
-    @_register()
-    @staticmethod
-    def _fact(*terms):
-        # type: (*Fraction) -> Fraction
-        assert len(terms) == 1
-        n = terms[0]
-        assert n.is_integer() and n >= 0
-        if n == 0:
-            return Fraction(1)
-        else:
-            return _FUNCTION_REGISTRY['*'](*range(1, int(n) + 1))
-
-    @_register()
-    @staticmethod
-    def _sin(*terms):
-        # type: (*Fraction) -> Fraction
-        assert len(terms) == 1
-        theta = terms[0]
-        return sum(
-            (
-                Fraction(
-                    ((-1) ** n) * theta**(2 * n + 1),
-                    Function._fact(2 * n + 1),
-                )
-                for n in range(Function.TAYLOR_TERMS)
-            ),
-            start=Fraction(0),
-        )
-
-    @_register()
-    @staticmethod
-    def _cos(*terms):
-        # type: (*Fraction) -> Fraction
-        assert len(terms) == 1
-        theta = terms[0]
-        return sum(
-            (
-                Fraction(
-                    ((-1) ** n) * theta**(2 * n),
-                    Function._fact(2 * n ),
-                )
-                for n in range(Function.TAYLOR_TERMS)
-            ),
-            start=Fraction(0),
-        )
-
-
-class Variable(Expression):
-
-    def __init__(self, name):
-        # type: (str) -> None
+        super().__init__()
         self.name = name
 
     def __hash__(self):
@@ -346,475 +196,325 @@ class Variable(Expression):
         # type: (Any) -> bool
         return isinstance(other, Variable) and self.name == other.name
 
-    def __repr__(self): # pragma: no cover
+    def __str__(self):
         # type: () -> str
         return self.name
 
     def evaluate(self):
-        # type: () -> BuiltInNumber
-        raise ValueError(f'no value given for variable "{self.name}"')
+        # type: () -> Any
+        raise NotImplementedError()
+
+    def matches(self, expression, bindings):
+        # type: (Expression, Bindings) -> Iterator[Bindings]
+        if self.name not in bindings:
+            yield {**bindings, self.name: (expression,)}
+        elif bindings[self.name] == (expression,):
+            yield bindings
 
 
-class FunctionCall(Expression):
+class ListVariable(Pattern):
+    """A list variable."""
 
-    OPPOSITES = {
-        '+': '-',
-        '-': '+',
-        '*': '/',
-        '/': '*',
-    }
-
-    def __init__(self, function, *args):
-        # type: (Function, *Expression) -> None
-        self.function = function
-        self.args = args # type: tuple[Expression, ...]
-        if self.function.name in '-/':
-            assert len(self.args) == 1
-        if self.function.name == 'sqrt':
-            assert len(self.args) == 1
-            self.function = Function('^')
-            self.args = (self.args[0], Number(Fraction(1, 2)))
+    def __init__(self, name):
+        # type: (str) -> None
+        super().__init__()
+        self.name = name
 
     def __hash__(self):
         # type: () -> int
-        return hash((self.function, *self.args))
+        return hash(self.name)
+
+    def __eq__(self, other):
+        # type: (Any) -> bool
+        return isinstance(other, ListVariable) and self.name == other.name
+
+    def __str__(self):
+        # type: () -> str
+        return f'[{self.name}]'
+
+    def matches(self, expression, bindings):
+        # type: (Expression, Bindings) -> Iterator[Bindings]
+        assert False
+
+
+class Function(Expression, Pattern):
+    """A function."""
+
+    def __init__(self, name):
+        # type: (str) -> None
+        super().__init__()
+        self.name = name
+
+    def __hash__(self):
+        # type: () -> int
+        return hash(self.name)
+
+    def __eq__(self, other):
+        # type: (Any) -> bool
+        return isinstance(other, Function) and self.name == other.name
+
+    def __str__(self):
+        # type: () -> str
+        return self.name
+
+    def __repr__(self):
+        # type: () -> str
+        return f'Function({self.name})'
+
+    def evaluate(self):
+        # type: () -> Any
+        raise NotImplementedError()
+
+    def matches(self, expression, bindings):
+        # type: (Expression, Bindings) -> Iterator[Bindings]
+        if isinstance(expression, Function) and expression.name == self.name:
+            yield bindings
+
+
+class FunctionCall[T]:
+    """A function call."""
+
+    def __init__(self, head, *args):
+        # type: (Function, *T) -> None
+        self.head = head
+        self.args = args # type: tuple[T, ...]
+
+    def __hash__(self):
+        # type: () -> int
+        return hash((self.head, *self.args))
 
     def __eq__(self, other):
         # type: (Any) -> bool
         return (
-            isinstance(other, FunctionCall)
-            and self.function == other.function
+            isinstance(other, type(self))
+            and self.head == other.head
             and self.args == other.args
         )
 
     def __str__(self):
         # type: () -> str
-        if self.function.name not in '+-*/^':
-            return f'{self.function.name}(' + ', '.join(str(arg) for arg in self.args) + ')'
-        if self.function.name == '-':
-            # always unary
-            return f'-{self.args[0]}'
-        result = [str(self.args[0])]
-        for arg in self.args[1:]:
-            if isinstance(arg, FunctionCall) and arg.function.name == FunctionCall.OPPOSITES.get(self.function.name):
-                result.append(f'{arg.function.name} {arg.args[0]}')
-            else:
-                result.append(f'{self.function.name} {arg}')
-        return '(' + ' '.join(result) + ')'
+        return f'({self.head} {" ".join(str(arg) for arg in self.args)})'
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         # type: () -> str
-        return f'({self.function}' + ''.join(f' {repr(arg)}' for arg in self.args) + ')'
+        return f'FunctionCallExpression({self.head}, {", ".join(repr(arg) for arg in self.args)})'
+
+
+class FunctionCallExpression(FunctionCall[Expression], Expression):
+    """A function call (expression)."""
 
     def evaluate(self):
-        # type: () -> BuiltInNumber
-        return self.function.evaluate()(*(
-            arg.evaluate() for arg in self.args
-        ))
-
-
-class Equation(SymbolicMath):
-
-    def __init__(self, lhs, rhs):
-        # type: (Expression, Expression) -> None
-        self.lhs = lhs
-        self.rhs = rhs
-
-    def __eq__(self, other):
-        # type: (Any) -> bool
-        return (
-            isinstance(other, Equation)
-            and self.lhs == other.lhs
-            and self.rhs == other.rhs
-        )
-
-    def __str__(self):
-        # type: () -> str
-        return f'{self.lhs} = {self.rhs}'
-
-    def __repr__(self): # pragma: no cover
-        # type: () -> str
-        return f'(= {repr(self.lhs)} {repr(self.rhs)})'
-
-    def solve_for(self, variable):
-        # type: (str) -> Expression
+        # type: () -> Any
         raise NotImplementedError()
 
 
-class SExpression:
+class FunctionCallPattern(FunctionCall[Pattern], Pattern):
+    """A function call (pattern)."""
 
-    def __init__(self, head, *args):
-        # type: (Variable|Literal, *SymbolicMath) -> None
-        self.head = head 
-        self.args = args
+    def matches(self, expression, bindings):
+        # type: (Expression, Bindings) -> Iterator[Bindings]
+        if not isinstance(expression, FunctionCallExpression):
+            return
+        bindings_list = list(self.head.matches(expression.head, bindings))
+        if not bindings_list:
+            return
+        assert len(bindings_list) == 1
+        yield from self._matches(self.args, expression.args, bindings_list[0])
 
-    def __hash__(self):
-        # type: () -> int
-        return hash((self.function, *self.args))
+    def _matches(self, patterns, expressions, bindings):
+        # type: (tuple[Pattern, ...], tuple[Expression, ...], Bindings) -> Iterator[Bindings]
+        # base case: no more patterns to match, but expressions remaining
+        if not patterns and expressions:
+            yield {}
+        # base case: both patterns and expressions are exhausted
+        if not patterns and not expressions:
+            yield bindings
+        if isinstance(patterns[0], ListVariable):
+            # recursive case: first pattern is a ListVariable
+            for i in range(len(expressions) + 1):
+                yield from self._matches(
+                    patterns[1:],
+                    expressions[i:],
+                    {
+                        patterns[0].name: expressions[:i],
+                        **bindings,
+                    },
+                )
+        else:
+            # recursive case: first pattern is not a ListVariable
+            if not expressions:
+                return
+            for new_bindings in patterns[0].matches(expressions[0], bindings):
+                yield from self._matches(patterns[1:], expressions[1:], new_bindings)
 
-    def __eq__(self, other):
-        # type: (Any) -> bool
-        return (
-            isinstance(other, SExpression)
-            and self.function == other.function
-            and self.args == other.args
-        )
 
-    def __repr__(self): # pragma: no cover
-        # type: () -> str
-        return f'({self.function} ' + ' '.join(repr(arg) for arg in self.args) + ')'
-
-
-class TokenizationError(Exception):
-    """Tokenization Error."""
-    pass
+_TOKEN_REGEXES = {
+    'space': re.compile(' +'),
+    'number': re.compile('-?[0-9]+'),
+    'identifier': re.compile('[A-Za-z][0-9A-Za-z_]*'),
+    'operator': re.compile('[+*/^-]'),
+    'equal': re.compile('='),
+    'paren_left': re.compile(r'\('),
+    'paren_right': re.compile(r'\)'),
+    'bracket_left': re.compile(r'\['),
+    'bracket_right': re.compile(r'\]'),
+}
 
 
 Token = namedtuple('Token', 'token_class, string, index')
 
-class AlgebraParser:
-    """A parser for algebraic expression and equations.
 
-    The grammar for algebraic expressions is below:
-
-    equation = expression "=" expression;
-    expression = add_exp;
-    add_exp = mul_exp ( [+-] mul_exp )*;
-    mul_exp = pow_exp ( [*/] pow_exp )*;
-    pow_exp = term ( [^] term )?;
-    term = parenthesis
-         | number
-         | function
-         | variable;
-    identifier = [a-z][a-z0-9_]+;
-    variable = identifier;
-    function = identifier "(" add_exp ( "," add_exp )* ")";
-    parenthesis = "(" add_exp ")";
-    operator = [+-*/^];
-    number = -?[0-9]+;
-
-    This parser is also used for parsing s-expressions, which are used to
-    specify rewriting rules. The grammar has the following non-terminals:
-
-    s_expression = "(" s_head ( s_term )* ")";
-    s_head = variable
-           | literal
-           | operator;
-    s_term = s_list_var
-           | variable
-           | number
-           | s_expression;
-    s_list_var = "[" identifier "]";
-    literal = '"' identifier '"';
-    """
-
-    REGEXES = {
-        'space': re.compile(' +'),
-        'number': re.compile('-?[0-9]+'),
-        'identifier': re.compile('[A-Za-z][0-9A-Za-z_]*'),
-        'add_op': re.compile('[+-]'),
-        'mul_op': re.compile('[*/]'),
-        'pow_op': re.compile('\\^'),
-        'equal': re.compile('='),
-        'comma': re.compile(','),
-        'paren_left': re.compile(r'\('),
-        'paren_right': re.compile(r'\)'),
-        'quote': re.compile('"'),
-        'bracket_left': re.compile(r'\['),
-        'bracket_right': re.compile(r'\]'),
-    }
-
-    def _tokenize(self, string):
-        # type: (str) -> list[Token]
-        tokens = []
-        index = 0
-        while index < len(string):
-            match = None
-            for token_class, regex in AlgebraParser.REGEXES.items():
-                if match := regex.match(string, pos=index):
-                    tokens.append(Token(token_class, match.group(), index))
-                    break
-            if match is None:
-                raise TokenizationError(string, index, tokens)
-            index += len(match.group())
-        assert index == len(string)
-        return tokens
-
-    def _token_is(self, tokens, index, token_class):
-        # type: (list[Token], int, str) -> bool
-        return index < len(tokens) and tokens[index].token_class == token_class
-
-    def _parse_equation(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[Equation], int]
-        exp1_parse, exp1_index = self._parse_expression(tokens, index, depth + 1)
-        if exp1_parse is None:
-            return None, index
-        if not self._token_is(tokens, exp1_index, 'equal'):
-            return None, index
-        exp2_parse, exp2_index = self._parse_expression(tokens, exp1_index + 1, depth + 1)
-        if exp2_parse is None:
-            return None, index
-        return Equation(exp1_parse, exp2_parse), exp2_index
-
-    def _parse_expression(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[Expression], int]
-        #print(depth * '  ' + f'expression@{index}')
-        return self._parse_add_exp(tokens, index, depth)
-
-    def _parse_add_exp(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[Expression], int]
-        #print(depth * '  ' + f'add_exp@{index}')
-        args = []
-        arg_parse, arg_index = self._parse_mul_exp(tokens, index, depth + 1)
-        if arg_parse is None:
-            return None, index
-        args.append(arg_parse)
-        while arg_index < len(tokens):
-            if not self._token_is(tokens, arg_index, 'add_op'):
+def _tokenize(string):
+    # type: (str) -> list[Token]
+    tokens = []
+    index = 0
+    while index < len(string):
+        match = None
+        for token_class, regex in _TOKEN_REGEXES.items():
+            if match := regex.match(string, pos=index):
+                tokens.append(Token(token_class, match.group(), index))
                 break
-            op = tokens[arg_index].string
-            arg_parse, arg_index = self._parse_expression(tokens, arg_index + 1, depth + 1)
-            if arg_parse is None:
-                return None, index
-            if op == '-':
-                arg_parse = FunctionCall(Function('-'), arg_parse)
-            args.append(arg_parse)
-        if len(args) == 1:
-            return args[0], arg_index
-        else:
-            return FunctionCall(Function('+'), *args), arg_index
+        if match is None:
+            return None
+        index += len(match.group())
+    assert index == len(string)
+    return tokens
 
-    def _parse_mul_exp(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[Expression], int]
-        #print(depth * '  ' + f'mul_exp@{index}')
-        args = []
-        arg_parse, arg_index = self._parse_pow_exp(tokens, index, depth + 1)
-        if arg_parse is None:
-            return None, index
-        args.append(arg_parse)
-        while arg_index < len(tokens):
-            if not self._token_is(tokens, arg_index, 'mul_op'):
-                break
-            op = tokens[arg_index].string
-            arg_parse, arg_index = self._parse_expression(tokens, arg_index + 1, depth + 1)
-            if arg_parse is None:
-                return None, index
-            if op == '/':
-                arg_parse = FunctionCall(Function('/'), arg_parse)
-            args.append(arg_parse)
-        if len(args) == 1:
-            return args[0], arg_index
-        else:
-            return FunctionCall(Function('*'), *args), arg_index
 
-    def _parse_pow_exp(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[Expression], int]
-        #print(depth * '  ' + f'pow_exp@{index}')
-        base_parse, base_index = self._parse_term(tokens, index, depth + 1)
-        if base_parse is None:
-            return None, index
-        if not self._token_is(tokens, base_index, 'pow_op'):
-            return base_parse, base_index
-        exp_parse, exp_index = self._parse_term(tokens, base_index + 1, depth + 1)
-        if exp_parse is None:
-            return None, index
-        return FunctionCall(Function('^'), base_parse, exp_parse), exp_index
+def _token_is(tokens, index, token_class):
+    # type: (list[Token], int, str) -> bool
+    return index < len(tokens) and tokens[index].token_class == token_class
 
-    def _parse_term(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[Expression], int]
-        #print(depth * '  ' + f'term@{index}')
-        parse = None # type: Expression
-        parse, new_index = self._parse_parenthesis(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
-        parse, new_index = self._parse_number(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
-        parse, new_index = self._parse_function_call(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
-        parse, new_index = self._parse_variable(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
+
+def _parse_number(tokens, index):
+    # type: (list[Token], int) -> tuple[Number, int]
+    if _token_is(tokens, index, 'number'):
+        return Number(Fraction(tokens[index].string)), index + 1
+    else:
         return None, index
 
-    def _parse_parenthesis(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[Expression], int]
-        #print(depth * '  ' + f'parenthesis@{index}')
-        if not self._token_is(tokens, index, 'paren_left'):
-            return None, index
-        parse, new_index = self._parse_expression(tokens, index + 1, depth + 1)
-        if parse is None:
-            return None, index
-        if not self._token_is(tokens, new_index, 'paren_right'):
-            return None, index
-        return parse, new_index + 1
 
-    def _parse_number(self, tokens, index, depth): # pylint: disable = unused-argument
-        # type: (list[Token], int, int) -> tuple[Optional[Number], int]
-        #print(depth * '  ' + f'number@{index}')
-        if self._token_is(tokens, index, 'number'):
-            if tokens[index].string.startswith('-'):
-                return (
-                    FunctionCall(
-                        Function('-'),
-                        Number(Fraction(tokens[index].string[1:])),
-                    ),
-                    index + 1
-                )
-            else:
-                return Number(Fraction(tokens[index].string)), index + 1
-        else:
-            return None, index
-
-    def _parse_function_call(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[FunctionCall], int]
-        #print(depth * '  ' + f'function@{index}')
-        if not self._token_is(tokens, index, 'identifier'):
-            return None, index
-        function = Function(tokens[index].string)
-        if not self._token_is(tokens, index + 1, 'paren_left'):
-            return None, index
-        args = []
-        arg_parse, arg_index = self._parse_expression(tokens, index + 2, depth + 1)
-        if arg_parse is not None:
-            args.append(arg_parse)
-            while arg_index < len(tokens):
-                if not self._token_is(tokens, arg_index, 'comma'):
-                    break
-                arg_parse, arg_index = self._parse_expression(tokens, arg_index + 1, depth + 1)
-                if arg_parse is None:
-                    return None, index
-                args.append(arg_parse)
-        if not self._token_is(tokens, arg_index, 'paren_right'):
-            return None, index
-        return FunctionCall(function, *args), arg_index + 1
-
-    def _parse_variable(self, tokens, index, depth): # pylint: disable = unused-argument
-        # type: (list[Token], int, int) -> tuple[Optional[Variable], int]
-        #print(depth * '  ' + f'variable@{index}')
-        if self._token_is(tokens, index, 'identifier'):
-            return Variable(tokens[index].string), index + 1
-        else:
-            return None, index
-
-    def _parse_s_expression(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[SExpression], int]
-        #print(depth * '  ' + f's_expression@{index}')
-        if not self._token_is(tokens, index, 'paren_left'):
-            return None, index
-        args = []
-        arg_parse, arg_index = self._parse_s_head(tokens, index + 1, depth + 1)
-        if arg_parse is None:
-            return arg_parse, index
-        args.append(arg_parse)
-        while arg_index < len(tokens):
-            arg_parse, arg_index = self._parse_s_term(tokens, arg_index, depth + 1)
-            if arg_parse is None:
-                break
-            args.append(arg_parse)
-        if len(args) == 1:
-            return None, index
-        if not self._token_is(tokens, arg_index, 'paren_right'):
-            return None, index
-        return SExpression(*args), arg_index + 1
-
-    def _parse_s_head(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[SExpression], int]
-        #print(depth * '  ' + f's_head@{index}')
-        if index >= len(tokens):
-            return None, index
-        if tokens[index].token_class == 'quote':
-            return self._parse_s_literal(tokens, index, depth + 1)
-        elif tokens[index].token_class == 'identifier':
-            return self._parse_variable(tokens, index, depth + 1)
-        elif tokens[index].token_class.endswith('_op'):
-            return Literal(tokens[index].string), index + 1
-        else:
-            return None, index
-
-    def _parse_s_term(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[SymbolicMath], int]
-        #print(depth * '  ' + f's_term@{index}')
-        parse = None # type: SymbolicMath
-        parse, new_index = self._parse_s_expression(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
-        parse, new_index = self._parse_s_list_var(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
-        parse, new_index = self._parse_number(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
-        parse, new_index = self._parse_variable(tokens, index, depth + 1)
-        if parse is not None:
-            return parse, new_index
+def _parse_variable(tokens, index):
+    # type: (list[Token], int) -> tuple[Variable, int]
+    if _token_is(tokens, index, 'identifier'):
+        return Variable(tokens[index].string), index + 1
+    else:
         return None, index
 
-    def _parse_s_list_var(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[ListVar], int]
-        #print(depth * '  ' + f's_list_var@{index}')
-        if not self._token_is(tokens, index, 'bracket_left'):
-            return None, index
-        parse, new_index = self._parse_variable(tokens, index + 1, depth + 1)
-        if parse is None:
-            return None, index
-        if not self._token_is(tokens, new_index, 'bracket_right'):
-            return None, index
-        return ListVar(parse.name), new_index + 1
 
-    def _parse_s_literal(self, tokens, index, depth):
-        # type: (list[Token], int, int) -> tuple[Optional[Literal], int]
-        #print(depth * '  ' + f'literal@{index}')
-        if not self._token_is(tokens, index, 'quote'):
-            return None, index
-        parse, new_index = self._parse_variable(tokens, index + 1, depth + 1)
-        if parse is None:
-            return None, index
-        if not self._token_is(tokens, new_index, 'quote'):
-            return None, index
-        return Literal(parse.name), new_index + 1
+def _parse_function(tokens, index):
+    # type: (list[Token], int) -> tuple[Function, int]
+    if _token_is(tokens, index, 'identifier'):
+        return Function(tokens[index].string), index + 1
+    if _token_is(tokens, index, 'operator'):
+        return Function(tokens[index].string), index + 1
+    else:
+        return None, index
 
-    def parse_equation(self, string):
-        # type: (str) -> Optional[Equation]
-        try:
-            tokens = self._tokenize(string)
-        except TokenizationError:
-            return None
-        tokens = [token for token in tokens if token.token_class != 'space']
-        parse, index = self._parse_equation(tokens, 0, 0)
-        if index != len(tokens):
-            return None
-        else:
-            return parse
 
-    def parse_expression(self, string):
-        # type: (str) -> Optional[Expression]
-        try:
-            tokens = self._tokenize(string)
-        except TokenizationError:
-            return None
-        tokens = [token for token in tokens if token.token_class != 'space']
-        parse, index = self._parse_expression(tokens, 0, 0)
-        if index != len(tokens):
-            return None
-        else:
-            return parse
+def _parse_list_variable(tokens, index):
+    # type: (list[Token], int) -> tuple[ListVariable, int]
+    if not _token_is(tokens, index, 'bracket_left'):
+        return None, index
+    parse, new_index = _parse_variable(tokens, index + 1)
+    if parse is None:
+        return None, index
+    if not _token_is(tokens, new_index, 'bracket_right'):
+        return None, index
+    return ListVariable(parse.name), new_index + 1
 
-    def parse_s_expression(self, string):
-        # type: (str) -> Optional[SExpression]
-        try:
-            tokens = self._tokenize(string)
-        except TokenizationError:
-            return None
-        tokens = [token for token in tokens if token.token_class != 'space']
-        parse, index = self._parse_s_expression(tokens, 0, 0)
-        if parse is not None and index == len(tokens):
-            return parse
-        parse, index = self._parse_variable(tokens, 0, 0)
-        if parse is not None and index == len(tokens):
-            return parse
-        parse, index = self._parse_number(tokens, 0, 0)
-        if parse is not None and index == len(tokens):
-            return parse
-        return None
+
+def _parse_function_call_expression(tokens, index):
+    # type: (list[Token], int) -> tuple[FunctionCallExpression, int]
+    if not _token_is(tokens, index, 'paren_left'):
+        return None, index
+    head, arg_index = _parse_function(tokens, index + 1)
+    if head is None:
+        return None, index
+    args = []
+    while arg_index < len(tokens):
+        arg_parse, arg_index = _parse_expression(tokens, arg_index)
+        if arg_parse is None:
+            break
+        args.append(arg_parse)
+    if not _token_is(tokens, arg_index, 'paren_right'):
+        return None, index
+    return FunctionCallExpression(head, *args), arg_index + 1
+
+
+def _parse_expression(tokens, index):
+    # type: (list[Token], int) -> tuple[Expression, int]
+    parse = None # type: Expression
+    parse, new_index = _parse_function_call_expression(tokens, index)
+    if parse is not None:
+        return parse, new_index
+    parse, new_index = _parse_variable(tokens, index)
+    if parse is not None:
+        return parse, new_index
+    parse, new_index = _parse_number(tokens, index)
+    if parse is not None:
+        return parse, new_index
+    return None, index
+
+
+def _parse_function_call_pattern(tokens, index):
+    # type: (list[Token], int) -> tuple[FunctionCallPattern, int]
+    if not _token_is(tokens, index, 'paren_left'):
+        return None, index
+    head, arg_index = _parse_function(tokens, index + 1)
+    if head is None:
+        return None, index
+    args = []
+    while arg_index < len(tokens):
+        arg_parse, arg_index = _parse_pattern(tokens, arg_index, listvar=True)
+        if arg_parse is None:
+            break
+        args.append(arg_parse)
+    if not _token_is(tokens, arg_index, 'paren_right'):
+        return None, index
+    return FunctionCallPattern(head, *args), arg_index + 1
+
+
+def _parse_pattern(tokens, index, listvar=False):
+    # type: (list[Token], int, bool) -> tuple[Pattern, int]
+    parse = None # type: Pattern
+    parse, new_index = _parse_function_call_pattern(tokens, index)
+    if parse is not None:
+        return parse, new_index
+    parse, new_index = _parse_variable(tokens, index)
+    if parse is not None:
+        return parse, new_index
+    parse, new_index = _parse_number(tokens, index)
+    if parse is not None:
+        return parse, new_index
+    if listvar:
+        parse, new_index = _parse_list_variable(tokens, index)
+        if parse is not None:
+            return parse, new_index
+    return None, index
+
+
+def parse_expression(string):
+    # type: (str) -> Expression
+    """Parse an S-expression as an expression."""
+    tokens = _tokenize(string)
+    if tokens is None:
+        raise ValueError(f'tokenization error: {string}')
+    tokens = [token for token in tokens if token.token_class != 'space']
+    parse, index = _parse_expression(tokens, 0)
+    if parse is None or index != len(tokens):
+        raise ValueError(f'parsing error: {string}')
+    return parse
+
+
+def parse_pattern(string):
+    # type: (str) -> Pattern
+    """Parse an S-expression as a pattern."""
+    tokens = _tokenize(string)
+    if tokens is None:
+        raise ValueError(f'tokenization error: {string}')
+    tokens = [token for token in tokens if token.token_class != 'space']
+    parse, index = _parse_pattern(tokens, 0)
+    if parse is None or index != len(tokens):
+        raise ValueError(f'parsing error: {string}')
+    return parse
