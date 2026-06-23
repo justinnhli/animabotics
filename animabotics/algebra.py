@@ -29,7 +29,16 @@ BuiltInNumber = Union[int, float, Fraction]
 Bindings = dict[str, Union['Expression', tuple['Expression', ...]]]
 
 
-class Expression:
+class Pattern:
+    """A pattern."""
+
+    def matches(self, expression, bindings):
+        # type: (Expression, Bindings) -> Iterator[Bindings]
+        """Match this pattern to the expression."""
+        raise NotImplementedError()
+
+
+class Expression(Pattern):
     """An expression."""
 
     def __neg__(self):
@@ -132,16 +141,7 @@ class Expression:
         raise NotImplementedError()
 
 
-class Pattern:
-    """A pattern."""
-
-    def matches(self, expression, bindings):
-        # type: (Expression, Bindings) -> Iterator[Bindings]
-        """Match this pattern to the expression."""
-        raise NotImplementedError()
-
-
-class Number(Expression, Pattern):
+class Number(Expression):
     """A number."""
 
     def __init__(self, value):
@@ -181,7 +181,7 @@ class Number(Expression, Pattern):
             yield bindings
 
 
-class Variable(Expression, Pattern):
+class Variable(Expression):
     """A variable."""
 
     def __init__(self, name):
@@ -255,7 +255,7 @@ def _register(*extra_names):
     return wrapped
 
 
-class Function(Expression, Pattern):
+class Function(Expression):
     """A function."""
 
     TAYLOR_TERMS = 10
@@ -409,13 +409,13 @@ class Function(Expression, Pattern):
         )
 
 
-class FunctionCall[T]:
+class FunctionCallPattern(Pattern):
     """A function call."""
 
     def __init__(self, head, *args):
-        # type: (Function, *T) -> None
+        # type: (Function, *Pattern) -> None
         self.head = head
-        self.args = args # type: tuple[T, ...]
+        self.args = args
 
     def __hash__(self):
         # type: () -> int
@@ -435,24 +435,13 @@ class FunctionCall[T]:
 
     def __repr__(self):
         # type: () -> str
-        return f'FunctionCallExpression({self.head}, {", ".join(repr(arg) for arg in self.args)})'
-
-
-class FunctionCallExpression(FunctionCall[Expression], Expression):
-    """A function call (expression)."""
-
-    def evaluate(self):
-        # type: () -> BuiltInNumber
-        return self.head.evaluate()(*(arg.evaluate() for arg in self.args))
-
-
-class FunctionCallPattern(FunctionCall[Pattern], Pattern):
-    """A function call (pattern)."""
+        return f'FunctionCallPattern({self.head}, {", ".join(repr(arg) for arg in self.args)})'
 
     def matches(self, expression, bindings):
         # type: (Expression, Bindings) -> Iterator[Bindings]
         if not isinstance(expression, FunctionCallExpression):
             return
+        assert isinstance(expression, FunctionCallExpression)
         bindings_list = list(self.head.matches(expression.head, bindings))
         if not bindings_list:
             return
@@ -484,6 +473,24 @@ class FunctionCallPattern(FunctionCall[Pattern], Pattern):
                 return
             for new_bindings in patterns[0].matches(expressions[0], bindings):
                 yield from self._matches(patterns[1:], expressions[1:], new_bindings)
+
+
+class FunctionCallExpression(FunctionCallPattern, Expression):
+    """A function call (expression)."""
+
+    def __init__(self, head, *args):
+        # type: (Function, *Expression) -> None
+        super().__init__(head, *args)
+        self.args = args # type: tuple[Expression, ...]
+
+    def __repr__(self):
+        # type: () -> str
+        return f'FunctionCallExpression({self.head}, {", ".join(repr(arg) for arg in self.args)})'
+
+    def evaluate(self):
+        # type: () -> BuiltInNumber
+        return self.head.evaluate()(*(arg.evaluate() for arg in self.args))
+
 
 
 _TOKEN_REGEXES = {
