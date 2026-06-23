@@ -21,7 +21,8 @@ identifier = [a-z][a-z0-9_]+;
 import re
 from collections import namedtuple
 from fractions import Fraction
-from typing import Any, Union, Iterator
+from functools import reduce
+from typing import Any, Union, Iterator, Callable
 
 
 BuiltInNumber = Union[int, float, Fraction]
@@ -171,8 +172,8 @@ class Number(Expression, Pattern):
         return f'Number({self.value})'
 
     def evaluate(self):
-        # type: () -> Any
-        raise NotImplementedError()
+        # type: () -> BuiltInNumber
+        return self.value
 
     def matches(self, expression, bindings):
         # type: (Expression, Bindings) -> Iterator[Bindings]
@@ -202,7 +203,7 @@ class Variable(Expression, Pattern):
 
     def evaluate(self):
         # type: () -> Any
-        raise NotImplementedError()
+        raise ValueError(f'Unbound variable {self.name}.')
 
     def matches(self, expression, bindings):
         # type: (Expression, Bindings) -> Iterator[Bindings]
@@ -237,8 +238,27 @@ class ListVariable(Pattern):
         assert False
 
 
+EvaluatableFunction = Callable[[*tuple[BuiltInNumber, ...]], BuiltInNumber]
+_FUNCTION_REGISTRY = {} # type: dict[str, EvaluatableFunction]
+
+
+def _register(*extra_names):
+    # type: (*str) -> Callable[[EvaluatableFunction], EvaluatableFunction]
+
+    def wrapped(func: EvaluatableFunction) -> EvaluatableFunction:
+        names = [func.__name__.strip('_'), *extra_names]
+        for name in names:
+            assert name not in _FUNCTION_REGISTRY
+            _FUNCTION_REGISTRY[name] = func
+        return func
+
+    return wrapped
+
+
 class Function(Expression, Pattern):
     """A function."""
+
+    TAYLOR_TERMS = 10
 
     def __init__(self, name):
         # type: (str) -> None
@@ -262,13 +282,131 @@ class Function(Expression, Pattern):
         return f'Function({self.name})'
 
     def evaluate(self):
-        # type: () -> Any
-        raise NotImplementedError()
+        # type: () -> EvaluatableFunction
+        if self.name in _FUNCTION_REGISTRY:
+            return _FUNCTION_REGISTRY[self.name]
+        else:
+            raise ValueError(f'unknown function "{self.name}()"')
 
     def matches(self, expression, bindings):
         # type: (Expression, Bindings) -> Iterator[Bindings]
         if isinstance(expression, Function) and expression.name == self.name:
             yield bindings
+
+    @_register()
+    @staticmethod
+    def _e(*_):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        return Fraction(
+            27182818284590452353602874713526,
+            10000000000000000000000000000000,
+        )
+
+    @_register()
+    @staticmethod
+    def _pi(*_):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        return Fraction(
+            31415926535897932384626433832795,
+            10000000000000000000000000000000,
+        )
+
+    @_register('+')
+    @staticmethod
+    def _sum(*terms):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        if len(terms) == 0:
+            raise ValueError('operator + must have at least one argument; got zero')
+        if len(terms) == 1:
+            return terms[0]
+        return reduce((lambda x, y: x + y), terms)
+
+    @_register('-')
+    @staticmethod
+    def _negate(*terms):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        if len(terms) == 0:
+            raise ValueError('operator - must have at least one argument; got zero')
+        if len(terms) == 1:
+            return -terms[0]
+        return reduce((lambda x, y: x - y), terms)
+
+    @_register('*')
+    @staticmethod
+    def _product(*terms):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        if len(terms) == 0:
+            raise ValueError('operator * must have at least one argument; got zero')
+        if len(terms) == 1:
+            return terms[0]
+        return reduce((lambda x, y: x * y), terms)
+
+    @_register('/')
+    @staticmethod
+    def _inverse(*terms):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        if len(terms) == 0:
+            raise ValueError('operator / must have at least one argument; got zero')
+        if len(terms) == 1:
+            if isinstance(terms[0], int):
+                return Fraction(1, terms[0])
+            else:
+                return 1 / terms[0]
+        return reduce((lambda x, y: x / y), terms)
+
+    @_register('^')
+    @staticmethod
+    def _exponentiate(*terms):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        if len(terms) < 2:
+            raise ValueError('operator ^ must have at least two arguments; got zero')
+        return reduce((lambda x, y: x ** y), terms)
+
+    @_register()
+    @staticmethod
+    def _fact(*terms):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        assert len(terms) == 1
+        n = terms[0]
+        assert n.is_integer() and n >= 0
+        if n == 0:
+            return Fraction(1)
+        else:
+            return _FUNCTION_REGISTRY['*'](*range(1, int(n) + 1))
+
+    @_register()
+    @staticmethod
+    def _sin(*terms):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        assert len(terms) == 1
+        theta = terms[0]
+        return sum(
+            (
+                Fraction(
+                    ((-1) ** n) * theta**(2 * n + 1),
+                    int(Function._fact(2 * n + 1)),
+                )
+                for n in range(Function.TAYLOR_TERMS)
+            ),
+            start=Fraction(0),
+        )
+
+    @_register()
+    @staticmethod
+    def _cos(*terms):
+        # type: (*BuiltInNumber) -> BuiltInNumber
+        assert len(terms) == 1
+        theta = terms[0]
+        return sum(
+            (
+                Fraction(
+                    ((-1) ** n) * theta**(2 * n),
+                    int(Function._fact(2 * n )),
+                )
+                for n in range(Function.TAYLOR_TERMS)
+            ),
+            start=Fraction(0),
+        )
 
 
 class FunctionCall[T]:
@@ -304,8 +442,8 @@ class FunctionCallExpression(FunctionCall[Expression], Expression):
     """A function call (expression)."""
 
     def evaluate(self):
-        # type: () -> Any
-        raise NotImplementedError()
+        # type: () -> BuiltInNumber
+        return self.head.evaluate()(*(arg.evaluate() for arg in self.args))
 
 
 class FunctionCallPattern(FunctionCall[Pattern], Pattern):

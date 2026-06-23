@@ -1,5 +1,7 @@
 """Tests for algebra.py."""
 
+from fractions import Fraction
+
 from animabotics.algebra import FunctionCallExpression, Function, Number
 from animabotics.algebra import parse_expression, parse_pattern
 
@@ -106,3 +108,41 @@ def test_parser_bad():
             print(parse_pattern(test))
         except ValueError:
             pass
+
+
+def test_evaluate():
+    # type: () -> None
+    """Test the evaluation of Expressions."""
+    assert parse_expression('1').evaluate() == 1
+    assert parse_expression('(+ 2 3)').evaluate() == 5
+    assert parse_expression('(- 2 3)').evaluate() == -1
+    assert parse_expression('(* 2 3)').evaluate() == 6
+    assert parse_expression('(/ 2 3)').evaluate() == Fraction(2, 3)
+    assert parse_expression('(^ 2 3)').evaluate() == 8
+    assert parse_expression('(+ 5)').evaluate() == 5
+    assert parse_expression('(- 5)').evaluate() == -5
+    assert parse_expression('(* 5)').evaluate() == 5
+    assert parse_expression('(/ 5)').evaluate() == Fraction(1, 5)
+    assert parse_expression('(^ 2 (+ -1 -1))').evaluate() == Fraction(1, 4)
+    assert parse_expression('(^ (/ 2 3) 2)').evaluate() == Fraction(4, 9)
+    assert parse_expression('(fact 0)').evaluate() == 1
+    assert parse_expression('(fact 5)').evaluate() == 120
+    assert round(parse_expression('(* (pi) 100)').evaluate()) == 314
+    assert round(parse_expression('(* (e) 100)').evaluate()) == 272
+    for op in '+-*/^':
+        try:
+            print(parse_expression(f'({op})').evaluate())
+            assert False
+        except ValueError:
+            pass
+
+    try:
+        print(parse_expression('a').evaluate())
+        assert False
+    except ValueError:
+        pass
+    try:
+        print(parse_expression('(asdf 0)').evaluate())
+        assert False
+    except ValueError:
+        pass
