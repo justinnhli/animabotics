@@ -4,7 +4,7 @@ from fractions import Fraction
 
 from animabotics.algebra import FunctionCallExpression, Function, Number
 from animabotics.algebra import parse_expression, parse_pattern
-from animabotics.algebra import RewriteRule
+from animabotics.algebra import RewriteRule, simplify
 
 
 def test_interoperability():
@@ -355,3 +355,21 @@ def test_rewrite_conditions():
     )
     for expression_str, result_str in tests:
         assert rule.apply_all(parse_expression(expression_str)) == parse_expression(result_str)
+
+
+def test_simplification():
+    tests = (
+        ('(+ 1 2 3)', '6'),
+        ('(+ 0)', '0'),
+        ('(- 1)', '-1'),
+        ('(- a)', '(- a)'),
+        ('(/ 1 2)', '(/ 1 2)'),
+        ('(/ 1 1 1)', '1'),
+        ('(+ a (+ b c) d)', '(+ a b c d)'),
+        ('(* a (* b c) d)', '(* a b c d)'),
+    )
+    for expression_str, expect_str in tests:
+        expression = parse_expression(expression_str)
+        expect = parse_expression(expect_str)
+        actual = simplify(expression)
+        assert actual == expect, (expression_str, expect_str, actual)

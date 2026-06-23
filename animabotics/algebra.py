@@ -22,6 +22,7 @@ import re
 from collections import namedtuple
 from fractions import Fraction
 from functools import reduce
+from math import prod
 from typing import Any, Union, Iterator, Callable
 
 
@@ -737,9 +738,15 @@ class RewriteRule:
     """A rewrite rule."""
 
     def __init__(self, before, after, condition=None, results=None):
-        # type: (Pattern, Pattern, ConditionsFunction, ResultsFunction) -> None
-        self.before = before
-        self.after = after
+        # type: (str|Pattern, str|Pattern, ConditionsFunction, ResultsFunction) -> None
+        if isinstance(before, str):
+            self.before = parse_pattern(before)
+        else:
+            self.before = before
+        if isinstance(after, str):
+            self.after = parse_pattern(after)
+        else:
+            self.after = after
         if condition is None:
             self.condition = _true
         else:
@@ -783,3 +790,100 @@ class RewriteRule:
             )
         # apply again
         return self.apply_all_no_recur(expression)
+
+
+SIMPLIFICATION_RULESET = (
+    # rules that could quickly reduce the number of terms go first
+    # fold constants
+    RewriteRule(
+        '(+ [terms])',
+        '(+ number [non_numbers])',
+        condition=(lambda rule, expression, bindings:
+            sum(1 for term in bindings['terms'] if isinstance(term, Number)) > 1
+        ),
+        results=(lambda rule, expression, bindings: {
+            'number': sum(term.value for term in bindings['terms'] if isinstance(term, Number)),
+            'non_numbers': tuple(term for term in bindings['terms'] if not isinstance(term, Number)),
+        }),
+    ),
+    RewriteRule(
+        '(* [terms])',
+        '(* number [non_numbers])',
+        condition=(lambda rule, expression, bindings:
+            sum(1 for term in bindings['terms'] if isinstance(term, Number)) > 1
+        ),
+        results=(lambda rule, expression, bindings: {
+            'number': prod(term.value for term in bindings['terms'] if isinstance(term, Number)),
+            'non_numbers': tuple(term for term in bindings['terms'] if not isinstance(term, Number)),
+        }),
+    ),
+    # reduce the empty product
+    RewriteRule('(* [a] 0 [b])', '0'),
+    RewriteRule('(/ 0 [a])', '0'),
+    # drop identity terms
+    RewriteRule('(+ [a] 0 [b])', '(+ [a] [b])'),
+    RewriteRule(
+        '(- [a] 0 [b])',
+        '(- [a] [b])',
+        condition=(lambda rule, expression, bindings:
+            len(bindings['a']) > 0
+        ),
+    ),
+    RewriteRule('(* [a] 1 [b])', '(* [a] [b])'),
+    RewriteRule(
+        '(/ [a] 1 [b])',
+        '(/ [a] [b])',
+        condition=(lambda rule, expression, bindings:
+            len(bindings['a']) > 0
+        ),
+    ),
+    # unwrap
+    RewriteRule('(+ x)', 'x'),
+    RewriteRule('(+)', '0'),
+    RewriteRule(
+        '(- x)',
+        'y',
+        condition=(lambda rule, expression, bindings:
+            isinstance(bindings['x'], Number)
+        ),
+        results=(lambda rule, expression, bindings: {
+            'y': -bindings['x'].value,
+        }),
+    ),
+    RewriteRule('(-)', '0'),
+    RewriteRule('(* x)', 'x'),
+    RewriteRule('(*)', '1'),
+    RewriteRule('(/ x)', 'x'),
+    # flatten
+    RewriteRule(
+        '(+ [a] (+ [b]) [c])',
+        '(+ [a] [b] [c])',
+    ),
+    RewriteRule(
+        '(* [a] (* [b]) [c])',
+        '(* [a] [b] [c])',
+    ),
+    # cancel
+    RewriteRule(
+        '(+ [a] x [b] (- x) [c])',
+        '(+ [a] [b] [c])',
+    ),
+    RewriteRule(
+        '(* [a] x [b] (/ 1 x) [c])',
+        '(* [a] [b] [c])',
+    ),
+    RewriteRule(
+        '(* [a] (- x) [b] (- y) [c])',
+        '(* [a] x [b] y [c])',
+    ),
+)
+
+
+def simplify(expression):
+    changed = True
+    while changed:
+        old_expression = expression
+        for rule in SIMPLIFICATION_RULESET:
+            expression = rule.apply_all(expression)
+        changed = (expression != old_expression)
+    return expression
