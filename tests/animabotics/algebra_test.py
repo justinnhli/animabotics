@@ -361,12 +361,17 @@ def test_simplification():
     tests = (
         ('(+ 1 2 3)', '6'),
         ('(+ 0)', '0'),
-        ('(- 1)', '-1'),
-        ('(- a)', '(- a)'),
+        ('(- 1)', '(- 0 1)'),
+        ('(- a)', '(- 0 a)'),
         ('(/ 1 2)', '(/ 1 2)'),
         ('(/ 1 1 1)', '1'),
         ('(+ a (+ b c) d)', '(+ a b c d)'),
         ('(* a (* b c) d)', '(* a b c d)'),
+        ('(/ a (/ b c) d)', '(/ (* a c) (* b d))'),
+        ('(* a (- b) c)', '(- 0 (* a b c))'),
+        ('(/ (- 0 (* -1 a)) b)', '(/ a b)'),
+        ('(* a (+ b c d) e)', '(+ (* a b e) (* a c e) (* a d e))'),
+        ('(/ (/ a b) (/ c d))', '(/ (* a d) (* b c))')
     )
     for expression_str, expect_str in tests:
         expression = parse_expression(expression_str)
