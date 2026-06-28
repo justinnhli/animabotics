@@ -792,8 +792,75 @@ class RewriteRule:
         return self.apply_all_no_recur(expression)
 
 
+def abelian_rules(operation, inverse, identity):
+    # type: (str, str, str) -> tuple[RewriteRule, ...]
+    """Generate rewrite rules for abelian groups."""
+    return (
+        # unwrap
+        RewriteRule(f'({operation})', identity),
+        RewriteRule(f'({operation} x)', 'x'),
+        RewriteRule(f'({inverse} x {identity})', 'x'),
+        # remove identity
+        RewriteRule(f'({operation} [a] {identity} [b])', f'({operation} [a] [b])'),
+        # force inverse to have arity 2
+        RewriteRule(
+            f'({inverse} x)',
+            f'({inverse} {identity} x)',
+        ),
+        RewriteRule(
+            f'({inverse} a b c [d])',
+            f'({inverse} a ({operation} b c [d]))',
+        ),
+        # flatten/disassociate
+        RewriteRule(
+            f'({operation} [a] ({operation} [b]) [c])',
+            f'({operation} [a] [b] [c])',
+        ),
+        RewriteRule(
+            f'({operation} [a] ({inverse} b c) [d])',
+            f'({inverse} ({operation} [a] b [d]) c)',
+        ),
+        RewriteRule(
+            f'({inverse} a ({inverse} b c))',
+            f'({inverse} ({operation} a c) b)',
+        ),
+        RewriteRule(
+            f'({inverse} ({inverse} a b) c)',
+            f'({inverse} a ({operation} b c))',
+        ),
+        # cancellation
+        RewriteRule(
+            f'({inverse} x x)',
+            identity,
+        ),
+        RewriteRule(
+            f'({inverse} ({operation} [a] x [b]) x)',
+            f'({operation} [a] [b])',
+        ),
+        RewriteRule(
+            f'({inverse} x ({operation} [a] x [b]))',
+            f'({inverse} {identity} ({operation} [a] [b]))',
+        ),
+        RewriteRule(
+            f'({inverse} ({operation} [a] x [b]) ({operation} [c] x [d]))',
+            f'({inverse} ({operation} [a] [b]) ({operation} [c] [d]))',
+        ),
+    )
+
+
 SIMPLIFICATION_RULESET = (
-    # rules that could quickly reduce the number of terms go first
+    # remove negatives
+    RewriteRule(
+        'a',
+        ('(- 0 b)'),
+        condition=(lambda rule, expression, bindings:
+            isinstance(bindings['a'], Number)
+            and bindings['a'].value < 0
+        ),
+        results=(lambda rule, expression, bindings: {
+            'b': Number(abs(bindings['a'].value)),
+        }),
+    ),
     # fold constants
     RewriteRule(
         '(+ [terms])',
@@ -802,7 +869,7 @@ SIMPLIFICATION_RULESET = (
             sum(1 for term in bindings['terms'] if isinstance(term, Number)) > 1
         ),
         results=(lambda rule, expression, bindings: {
-            'number': sum(term.value for term in bindings['terms'] if isinstance(term, Number)),
+            'number': Number(sum(term.value for term in bindings['terms'] if isinstance(term, Number))),
             'non_numbers': tuple(term for term in bindings['terms'] if not isinstance(term, Number)),
         }),
     ),
@@ -813,69 +880,67 @@ SIMPLIFICATION_RULESET = (
             sum(1 for term in bindings['terms'] if isinstance(term, Number)) > 1
         ),
         results=(lambda rule, expression, bindings: {
-            'number': prod(term.value for term in bindings['terms'] if isinstance(term, Number)),
+            'number': Number(prod(term.value for term in bindings['terms'] if isinstance(term, Number))),
             'non_numbers': tuple(term for term in bindings['terms'] if not isinstance(term, Number)),
         }),
     ),
-    # reduce the empty product
+    # reduce the zero product
     RewriteRule('(* [a] 0 [b])', '0'),
     RewriteRule('(/ 0 [a])', '0'),
-    # drop identity terms
-    RewriteRule('(+ [a] 0 [b])', '(+ [a] [b])'),
+    # double negatives
     RewriteRule(
-        '(- [a] 0 [b])',
-        '(- [a] [b])',
-        condition=(lambda rule, expression, bindings:
-            len(bindings['a']) > 0
-        ),
-    ),
-    RewriteRule('(* [a] 1 [b])', '(* [a] [b])'),
-    RewriteRule(
-        '(/ [a] 1 [b])',
-        '(/ [a] [b])',
-        condition=(lambda rule, expression, bindings:
-            len(bindings['a']) > 0
-        ),
-    ),
-    # unwrap
-    RewriteRule('(+ x)', 'x'),
-    RewriteRule('(+)', '0'),
-    RewriteRule(
-        '(- x)',
-        'y',
-        condition=(lambda rule, expression, bindings:
-            isinstance(bindings['x'], Number)
-        ),
-        results=(lambda rule, expression, bindings: {
-            'y': -bindings['x'].value,
-        }),
-    ),
-    RewriteRule('(-)', '0'),
-    RewriteRule('(* x)', 'x'),
-    RewriteRule('(*)', '1'),
-    RewriteRule('(/ x)', 'x'),
-    # flatten
-    RewriteRule(
-        '(+ [a] (+ [b]) [c])',
-        '(+ [a] [b] [c])',
-    ),
-    RewriteRule(
-        '(* [a] (* [b]) [c])',
-        '(* [a] [b] [c])',
-    ),
-    # cancel
-    RewriteRule(
-        '(+ [a] x [b] (- x) [c])',
-        '(+ [a] [b] [c])',
-    ),
-    RewriteRule(
-        '(* [a] x [b] (/ 1 x) [c])',
-        '(* [a] [b] [c])',
-    ),
-    RewriteRule(
-        '(* [a] (- x) [b] (- y) [c])',
+        '(* [a] (- 0 x) [b] (- 0 y) [c])',
         '(* [a] x [b] y [c])',
     ),
+    RewriteRule(
+        '(/ (- 0 x) (- 0 y))',
+        '(/ x y)',
+    ),
+    # share denominators
+    RewriteRule(
+        '(+ [a] (/ b c) [d] (/ e c) [f])',
+        '(+ (/ (+ b e) c) [a] [d] [f])',
+    ),
+    RewriteRule(
+        '(- (/ a b) (/ c b))',
+        '(/ (- a c) b)',
+    ),
+    # distribute
+    RewriteRule(
+        '(* [a] (+ [b]) [c])',
+        '(+ [d])',
+        results=(lambda rule, expression, bindings: {
+            'd': tuple(
+                FunctionCallExpression(
+                    Function('*'),
+                    *bindings['a'],
+                    expression,
+                    *bindings['c'],
+                )
+                for expression in bindings['b']
+            ),
+        }),
+    ),
+    RewriteRule(
+        '(* [a] (- b c) [d])',
+        '(- (* [a] b [d]) (* [a] c [d]))',
+    ),
+    RewriteRule(
+        '(/ (- 0 a) b)',
+        '(- 0 (/ a b))',
+    ),
+    RewriteRule(
+        '(/ a (- 0 b))',
+        '(- 0 (/ a b))',
+    ),
+    # FIXME these should be part of a search instead
+    RewriteRule(
+        '(/ (* [a] b [c]) (+ (* [d] b [e]) (* [f] b [g])))',
+        '(/ (* [a] [c]) (+ (* [d] [e]) (* [f] [g])))',
+    ),
+    # generic abelian group rules
+    *abelian_rules('+', '-', '0'),
+    *abelian_rules('*', '/', '1'),
 )
 
 
