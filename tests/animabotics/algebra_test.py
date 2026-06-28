@@ -149,6 +149,8 @@ def test_evaluate():
 
 
 def test_pattern_matching():
+    # type: () -> None
+    """Test algebraic pattern matching."""
     tests = [
         ('1', '1', [{}]),
         ('1', '0', []),
@@ -245,6 +247,8 @@ def test_pattern_matching():
 
 
 def test_substitute_good():
+    # type: () -> None
+    """Test successful substitutions."""
     tests = (
         ('1', {}, '1'),
         ('x', {}, 'x'),
@@ -275,6 +279,8 @@ def test_substitute_good():
 
 
 def test_substitute_bad():
+    # type: () -> None
+    """Test unsuccessful substitutions."""
     tests = (
         ('p', {'p': ('1',)}),
         ('(+ p)', {'p': ('1', '2', '3')}),
@@ -299,6 +305,8 @@ def test_substitute_bad():
 
 
 def test_rewrite_lists():
+    # type: () -> None
+    """Test rule rewriting with list variables."""
     rule = RewriteRule(
         parse_pattern('(+ [a] 0 [b])'),
         parse_pattern('(+ [a] [b])'),
@@ -316,6 +324,8 @@ def test_rewrite_lists():
 
 
 def test_rewrite_conditions():
+    # type: () -> None
+    """Test rule rewriting with conditions."""
     rule = RewriteRule(
         parse_pattern('(+ a b)'),
         parse_pattern('c'),

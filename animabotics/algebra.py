@@ -767,11 +767,10 @@ class RewriteRule:
                     break
             if bindings is None:
                 break
-            else:
-                expression = self.after.substitute({
-                    **bindings,
-                    **self.results(self, expression, bindings),
-                })
+            expression = self.after.substitute({
+                **bindings,
+                **self.results(self, expression, bindings),
+            })
         return expression
 
     def apply_all(self, expression):
