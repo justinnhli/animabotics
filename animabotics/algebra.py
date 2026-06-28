@@ -21,7 +21,7 @@ identifier = [a-z][a-z0-9_]+;
 import re
 from collections import namedtuple
 from fractions import Fraction
-from functools import reduce
+from functools import reduce, lru_cache
 from math import prod
 from typing import Any, Union, Iterator, Callable
 
@@ -944,7 +944,16 @@ SIMPLIFICATION_RULESET = (
 )
 
 
+@lru_cache(maxsize=2**20)
 def simplify(expression):
+    # type: (Expression) -> Expression
+    for rule in SIMPLIFICATION_RULESET:
+        expression = rule.apply_all_no_recur(expression)
+    if isinstance(expression, FunctionCallExpression):
+        expression = FunctionCallExpression(
+            expression.head,
+            *(simplify(term) for term in expression.args),
+        )
     changed = True
     while changed:
         old_expression = expression
