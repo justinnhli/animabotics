@@ -3,7 +3,18 @@
 from fractions import Fraction
 from typing import TypeVar, Union
 
-from hypothesis import strategies as strats, given
+from hypothesis import strategies as strats
+from hypothesis import example, given
+
+
+def examples(*args_list):
+
+    def wrapped(function):
+        for args in args_list:
+            function = example(*args)(function)
+        return function
+
+    return wrapped
 
 
 finite_floats = strats.floats(

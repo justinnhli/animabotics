@@ -3,10 +3,12 @@
 from math import floor, ceil
 from fractions import Fraction
 
-from hypothesis import strategies as strats, given
+from hypothesis import strategies as strats
+from hypothesis import example, given
 
 from animabotics.matrix import Matrix, identity, ones
 
+from hypostrats import examples
 from hypostrats import rationals, inverse_metatest, involution_metatest, abelian_group_metatest
 
 
@@ -221,61 +223,88 @@ def test_matrix_inverse():
     inverse_metatest(strategy, identity(size), Matrix.__matmul__, (lambda matrix: matrix.inverse))
 
 
-def test_rref():
-    # type: () -> None
-    """Test Matrix row-reduced echelon form."""
-    # pylint: disable = line-too-long
-    testcases = [
-        (
-            ((2, 0, 0), (0, 3, 0)),
-            ((1, 0, 0), (0, 1, 0)),
-        ),
-        (
-            ((2, 4), (1, 2), (3, 6)),
-            ((1, 2), (0, 0), (0, 0)),
-        ),
-        (
-            ((1, 0), (1, 0), (0, 1)),
-            ((1, 0), (0, 1), (0, 0)),
-        ),
-        (
-            ((2, 6, 3, 6), (0, 0, 1, 2), (0, 0, 0, 0)),
-            ((1, 3, 0, 0), (0, 0, 1, 2), (0, 0, 0, 0)),
-        ),
-        (
-            ((1, 1, 1), (0, 0, 1), (0, 0, 1), (0, 1, 0)),
-            ((1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, 0)),
-        ),
-        (
-            # from https://kirkmcdonald.github.io/posts/calculation.html
-            (
-                (-40,  0,    30,    10,    0,  0,  10),
-                (30,   -30,  30,    45,    0,  0,  0),
-                (0,    20,   40,    55,    0,  0,  45),
-                (-30,  -30,  0,     -50,   1,  0,  0),
-                (0,    0,    -100,  -100,  0,  1,  0),
-            ),
-            (
-                (1,  0,  0,  0,  0,  Fraction(-13, 400),  Fraction(-23, 12)),
-                (0,  1,  0,  0,  0,  Fraction(-7, 400),   Fraction(-1, 4)),
-                (0,  0,  1,  0,  0,  Fraction(-3, 50),    Fraction(-10, 3)),
-                (0,  0,  0,  1,  0,  Fraction(1, 20),     Fraction(10, 3)),
-                (0,  0,  0,  0,  1,  1,                   Fraction(305, 3)),
-            ),
-        ),
-    ]
-    for elements, expect in testcases:
-        matrix = Matrix(tuple(
-            tuple(Fraction(element) for element in row)
-            for row in elements
-        ))
-        actual = matrix.rref
-        assert Matrix(expect) == actual
-
-
+@examples(
+    (
+        Matrix((
+            (Fraction(2), Fraction(0), Fraction(0)),
+            (Fraction(0), Fraction(3), Fraction(0)),
+        )),
+        Matrix((
+            (Fraction(1), Fraction(0), Fraction(0)),
+            (Fraction(0), Fraction(1), Fraction(0)),
+        )),
+    ),
+    (
+        Matrix((
+            (Fraction(2), Fraction(4)),
+            (Fraction(1), Fraction(2)),
+            (Fraction(3), Fraction(6)),
+        )),
+        Matrix((
+            (Fraction(1), Fraction(2)),
+            (Fraction(0), Fraction(0)),
+            (Fraction(0), Fraction(0)),
+        )),
+    ),
+    (
+        Matrix((
+            (Fraction(1), Fraction(0)),
+            (Fraction(1), Fraction(0)),
+            (Fraction(0), Fraction(1)),
+        )),
+        Matrix((
+            (Fraction(1), Fraction(0)),
+            (Fraction(0), Fraction(1)),
+            (Fraction(0), Fraction(0)),
+        )),
+    ),
+    (
+        Matrix((
+            (Fraction(2), Fraction(6), Fraction(3), Fraction(6)),
+            (Fraction(0), Fraction(0), Fraction(1), Fraction(2)),
+            (Fraction(0), Fraction(0), Fraction(0), Fraction(0)),
+        )),
+        Matrix((
+            (Fraction(1), Fraction(3), Fraction(0), Fraction(0)),
+            (Fraction(0), Fraction(0), Fraction(1), Fraction(2)),
+            (Fraction(0), Fraction(0), Fraction(0), Fraction(0)),
+        )),
+    ),
+    (
+        Matrix((
+            (Fraction(1), Fraction(1), Fraction(1)),
+            (Fraction(0), Fraction(0), Fraction(1)),
+            (Fraction(0), Fraction(0), Fraction(1)),
+            (Fraction(0), Fraction(1), Fraction(0)),
+        )),
+        Matrix((
+            (Fraction(1), Fraction(0), Fraction(0)),
+            (Fraction(0), Fraction(1), Fraction(0)),
+            (Fraction(0), Fraction(0), Fraction(1)),
+            (Fraction(0), Fraction(0), Fraction(0)),
+        )),
+    ),
+    (
+        # from https://kirkmcdonald.github.io/posts/calculation.html
+        Matrix((
+            (Fraction(-40),  Fraction(0),    Fraction(30),    Fraction(10),    Fraction(0),  Fraction(0),  Fraction(10)),
+            (Fraction(30),   Fraction(-30),  Fraction(30),    Fraction(45),    Fraction(0),  Fraction(0),  Fraction(0)),
+            (Fraction(0),    Fraction(20),   Fraction(40),    Fraction(55),    Fraction(0),  Fraction(0),  Fraction(45)),
+            (Fraction(-30),  Fraction(-30),  Fraction(0),     Fraction(-50),   Fraction(1),  Fraction(0),  Fraction(0)),
+            (Fraction(0),    Fraction(0),    Fraction(-100),  Fraction(-100),  Fraction(0),  Fraction(1),  Fraction(0)),
+        )),
+        Matrix((
+            (1,  0,  0,  0,  0,  Fraction(-13, 400),  Fraction(-23, 12)),
+            (0,  1,  0,  0,  0,  Fraction(-7, 400),   Fraction(-1, 4)),
+            (0,  0,  1,  0,  0,  Fraction(-3, 50),    Fraction(-10, 3)),
+            (0,  0,  0,  1,  0,  Fraction(1, 20),     Fraction(10, 3)),
+            (0,  0,  0,  0,  1,  1,                   Fraction(305, 3)),
+        )),
+    ),
+)
 # test with Fractions to avoid floating points from division in RREF algorithm
-@given(matrices(strats.fractions))
-def test_rref_hypothesis(matrix):
+@given(matrices(strats.fractions), strats.none())
+def test_rref(matrix, expect):
     # type: (Matrix) -> None
     """Test Matrix.rref using hypothesis."""
     rref = matrix.rref
@@ -298,3 +327,5 @@ def test_rref_hypothesis(matrix):
         assert all(element == 0 for element in col[:r])
         assert cols[c][r] == 1
         assert all(element == 0 for element in col[r+1:])
+    if expect is not None:
+        assert rref == expect
