@@ -30,27 +30,84 @@ S = TypeVar('S')
 T = TypeVar('T')
 
 
+def identity_metatest(strategy, identity, function):
+    # type: (strats.SearchStrategy[T], T, Callable[[T, T], T]) -> None
+    """Test that identity leaves a value unchanged."""
+    # pylint: disable = no-value-for-parameter
+
+    @given(strategy)
+    def test(obj):
+        # type: (T) -> None
+        assert function(obj, identity) == obj
+
+    test()
+
+
+def inverse_metatest(strategy, identity, function, inverse):
+    # type: (strats.SearchStrategy[T], T, Callable[[T, T], T], Callable[[T], T]) -> None
+    """Test that inverse element undoes the function."""
+    # pylint: disable = no-value-for-parameter
+
+    @given(strategy)
+    def test_inverse(obj):
+        # type: (T) -> None
+        assert function(obj, inverse(obj)) == identity
+
+    @given(strategy)
+    def test_double_inverse(obj):
+        # type: (T) -> None
+        assert obj == inverse(inverse(obj))
+
+    test_inverse()
+    test_double_inverse()
+
+
 def involution_metatest(strategy, function):
     # type: (strats.SearchStrategy[T], Callable[[T], T]) -> None
     """Test that applying the function twice returns the original."""
     # pylint: disable = no-value-for-parameter
 
     @given(strategy)
-    def test_involution(instance):
-        assert instance == function(function(instance))
+    def test(obj):
+        # type: (T) -> None
+        assert obj == function(function(obj))
 
-    test_involution()
+    test()
+
+
+def associativity_metatest(strategy, function):
+    # type: (strats.SearchStrategy[T], Callable[[T, T], T]) -> None
+    """Test that the function is associative."""
+    # pylint: disable = no-value-for-parameter
+
+    @given(strategy, strategy, strategy)
+    def test(obj1, obj2, obj3):
+        # type: (T, T, T) -> None
+        assert (
+            function(function(obj1, obj2), obj3)
+            == function(obj1, function(obj2, obj3))
+        )
+
+    test()
+
+
+def commutativity_metatest(strategy, function):
+    # type: (strats.SearchStrategy[T], Callable[[T, T], T]) -> None
+    """Test that the function is commutative."""
+    # pylint: disable = no-value-for-parameter
+
+    @given(strategy, strategy)
+    def test(obj1, obj2):
+        # type: (T, T) -> None
+        assert function(obj1, obj2) == function(obj2, obj1)
+
+    test()
 
 
 def affine_space_metatest(point_strategy, vector_strategy, vector_identity):
     # type: (strats.SearchStrategy[S], strats.SearchStrategy[T], T) -> None
     """Test that objects form an affine space and an associated vector space."""
     # pylint: disable = no-value-for-parameter
-
-    @given(point_strategy)
-    def test_identity(point):
-        # type: (S) -> None
-        assert point + vector_identity == point
 
     @given(point_strategy, vector_strategy, vector_strategy)
     def test_associative(point, vector1, vector2):
@@ -76,62 +133,31 @@ def affine_space_metatest(point_strategy, vector_strategy, vector_identity):
             == (point1 - point3) + (point3 - point4)
         )
 
-    test_identity()
+    identity_metatest(point_strategy, vector_identity, (lambda a, b: a + b))
     test_associative()
     test_subtraction()
     test_weyl()
     test_parallelogram()
 
 
-def abelian_group_metatest(strategy, identity):
+def abelian_group_metatest(strategy, identity, function, inverse):
     # type: (strats.SearchStrategy[T], T) -> None
     """Test that objects form an abelian group."""
     # pylint: disable = no-value-for-parameter
 
-    @given(strategy)
-    def test_double_inverse(obj):
-        # type: (T) -> None
-        assert obj == -(-obj)
-
-    @given(strategy)
-    def test_identity(obj):
-        # type: (T) -> None
-        assert obj + identity == obj
-        assert obj - identity == obj
-
-    @given(strategy)
-    def test_inverse_self(obj):
-        # type: (T) -> None
-        assert obj + (-obj) == identity
-
     @given(strategy, strategy)
     def test_antisymmetric(obj1, obj2):
         # type: (T, T) -> None
-        assert obj1 - obj2 == -(obj2 - obj1)
+        assert (
+            function(obj1, inverse(obj2))
+            == inverse(function(obj2, inverse(obj1)))
+        )
 
-    @given(strategy, strategy)
-    def test_add_sub_roundtrip(obj1, obj2):
-        # type: (T, T) -> None
-        assert (obj1 + obj2) - obj2 == obj1
-        assert (obj1 - obj2) + obj2 == obj1
-
-    @given(strategy, strategy, strategy)
-    def test_associative(obj1, obj2, obj3):
-        # type: (T, T, T) -> None
-        assert (obj1 + obj2) + obj3 == obj1 + (obj2 + obj3)
-
-    @given(strategy, strategy)
-    def test_commutative(obj1, obj2):
-        # type: (T, T) -> None
-        assert obj1 + obj2 == obj2 + obj1
-
-    test_double_inverse()
-    test_identity()
-    test_inverse_self()
+    identity_metatest(strategy, identity, function)
+    inverse_metatest(strategy, identity, function, inverse)
+    associativity_metatest(strategy, function)
+    commutativity_metatest(strategy, function)
     test_antisymmetric()
-    test_add_sub_roundtrip()
-    test_associative()
-    test_commutative()
 
 
 def field_metatest(strategy, additive_identity, multiplicative_identity):

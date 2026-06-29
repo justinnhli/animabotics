@@ -7,11 +7,11 @@ from hypothesis import strategies as strats, given
 
 from animabotics.matrix import Matrix, identity, ones
 
-from hypostrats import rationals, involution_metatest, abelian_group_metatest
+from hypostrats import rationals, inverse_metatest, involution_metatest, abelian_group_metatest
 
 
 def sized_matrices(height, width, strategy=None):
-    # type: (int, int) -> strats.SearchStrategy[Matrix]
+    # type: (int, int, strats.SearchStrategy[T]) -> strats.SearchStrategy[Matrix]
     """Generate matrices of a given size."""
     if strategy is None:
         strategy = rationals
@@ -25,11 +25,13 @@ def sized_matrices(height, width, strategy=None):
 
 
 def diagonal_matrices(size, strategy=None):
+    # type: (int, strats.SearchStrategy[T]) -> strats.SearchStrategy[Matrix]
+    """Generate diagonal matrices of a given size."""
     if strategy is None:
         strategy = rationals
     diagonal = [strategy().filter(lambda n: n != 0) for _ in range(size)]
     return strats.builds(
-        (lambda diag_nums: 
+        (lambda diag_nums:
             Matrix(tuple(
                 (
                     *(0,) * i,
@@ -44,12 +46,14 @@ def diagonal_matrices(size, strategy=None):
 
 
 def upper_triangle_matrices(size, strategy=None):
+    # type: (int, strats.SearchStrategy[T]) -> strats.SearchStrategy[Matrix]
+    """Generate upper triangle matrices of a given size."""
     if strategy is None:
         strategy = rationals
     diagonal = [strategy().filter(lambda n: n != 0) for _ in range(size)]
     triangle = [strategy() for _ in range(size * (size - 1) // 2)]
     return strats.builds(
-        (lambda numbers: 
+        (lambda numbers:
             Matrix(tuple(
                 (
                     *(0,) * i,
@@ -190,22 +194,31 @@ def test_matrix():
 
 def test_matrix_abelian():
     # type: () -> None
-    """Test the algebraic properties of Matrix."""
+    """Test the element-wise algebraic properties of Matrix."""
     abelian_group_metatest(
         sized_matrices(4, 4),
         0 * ones(),
+        Matrix.__add__,
+        Matrix.__neg__,
     )
 
 
 def test_matrix_transpose_involution():
+    # type: () -> None
+    """Test that matrix transposition is an involution."""
     involution_metatest(matrices(), (lambda matrix: matrix.transpose))
 
 
-@given(diagonal_matrices(4, strategy=strats.fractions) | upper_triangle_matrices(4, strategy=strats.fractions))
-def test_matrix_inverse(matrix):
-    assert matrix.determinant != 0
-    assert matrix == matrix.inverse.inverse
-    assert matrix @ matrix.inverse == identity(4)
+def test_matrix_inverse():
+    # type: () -> None
+    """Test matrix inversion."""
+    size = 4
+    strategy = (
+        diagonal_matrices(size, strategy=strats.fractions)
+        | upper_triangle_matrices(size, strategy=strats.fractions)
+    )
+    involution_metatest(strategy, (lambda matrix: matrix.inverse))
+    inverse_metatest(strategy, identity(size), Matrix.__matmul__, (lambda matrix: matrix.inverse))
 
 
 def test_rref():

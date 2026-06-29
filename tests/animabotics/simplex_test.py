@@ -78,7 +78,7 @@ def test_point():
 def test_point_vector_algebriac():
     # type: () -> None
     """Test the algebraic properties of Point2D and Vector2D."""
-    abelian_group_metatest(vectors(), Vector2D(0, 0))
+    abelian_group_metatest(vectors(), Vector2D(0, 0), Vector2D.__add__, Vector2D.__neg__)
     affine_space_metatest(points(), vectors(), Vector2D(0, 0))
     affine_space_metatest(vectors(), vectors(), Vector2D(0, 0))
 
